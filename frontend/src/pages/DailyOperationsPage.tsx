@@ -18,7 +18,15 @@ import { getTodaySales, createSale, deleteSale } from '../api/sales'
 import { getProducts } from '../api/products'
 import { formatCurrency, formatDate, getTodayDateString } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import { OpenDayModal, CloseDayModal, DaySummary } from '../components/daily'
+import {
+  OpenDayModal,
+  CloseDayModal,
+  DaySummary,
+  DeliveryModal,
+  TransferModal,
+  SpoilageModal,
+  MidDayEventsList,
+} from '../components/daily'
 import type { DailyRecord, RecentDayRecord } from '../types'
 
 export default function DailyOperationsPage() {
@@ -30,6 +38,11 @@ export default function DailyOperationsPage() {
   const [closeDayModalOpen, setCloseDayModalOpen] = useState(false)
   const [summaryModalOpen, setSummaryModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<DailyRecord | null>(null)
+
+  // Mid-day operation modal states
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
+  const [spoilageModalOpen, setSpoilageModalOpen] = useState(false)
 
   // Fetch recent days
   const { data: recentDays, isLoading: recentDaysLoading } = useQuery({
@@ -117,6 +130,13 @@ export default function DailyOperationsPage() {
     refetch()
     queryClient.invalidateQueries({ queryKey: ['recentDays'] })
     queryClient.invalidateQueries({ queryKey: ['todaySales'] })
+  }
+
+  // Handle mid-day operation success - just invalidate day events
+  const handleMidDayOperationSuccess = () => {
+    if (todayRecord) {
+      queryClient.invalidateQueries({ queryKey: ['dayEvents', todayRecord.id] })
+    }
   }
 
   if (recordLoading) {
@@ -216,10 +236,40 @@ export default function DailyOperationsPage() {
         </div>
       </div>
 
-      {/* Today's events - only show when day is open */}
+      {/* Mid-day operations buttons - only show when day is open */}
+      {isDayOpen && todayRecord && (
+        <div className="card">
+          <h3 className="card-header">Operacje magazynowe</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <button
+              onClick={() => setDeliveryModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors flex flex-col items-center gap-2"
+            >
+              <Truck className="w-8 h-8" />
+              <span className="font-medium">Dodaj dostawe</span>
+            </button>
+            <button
+              onClick={() => setTransferModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-colors flex flex-col items-center gap-2"
+            >
+              <Package className="w-8 h-8" />
+              <span className="font-medium">Transfer z magazynu</span>
+            </button>
+            <button
+              onClick={() => setSpoilageModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors flex flex-col items-center gap-2"
+            >
+              <Trash2 className="w-8 h-8" />
+              <span className="font-medium">Zapisz straty</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Today's events summary - only show when day is open */}
       {isDayOpen && dayEvents && (
         <div className="card">
-          <h3 className="card-header">Wydarzenia dnia</h3>
+          <h3 className="card-header">Podsumowanie zdarzen</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
               <Truck className="w-6 h-6 text-green-600" />
@@ -253,6 +303,11 @@ export default function DailyOperationsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mid-day events list - only show when day is open */}
+      {isDayOpen && todayRecord && (
+        <MidDayEventsList dailyRecordId={todayRecord.id} />
       )}
 
       {/* Sales section - only show when day is open */}
@@ -460,6 +515,30 @@ export default function DailyOperationsPage() {
           }}
           dailyRecord={selectedRecord}
         />
+      )}
+
+      {/* Mid-day operation modals */}
+      {todayRecord && (
+        <>
+          <DeliveryModal
+            isOpen={deliveryModalOpen}
+            onClose={() => setDeliveryModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+          <TransferModal
+            isOpen={transferModalOpen}
+            onClose={() => setTransferModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+          <SpoilageModal
+            isOpen={spoilageModalOpen}
+            onClose={() => setSpoilageModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+        </>
       )}
     </div>
   )

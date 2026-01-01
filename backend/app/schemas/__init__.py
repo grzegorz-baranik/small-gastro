@@ -32,6 +32,7 @@ from app.schemas.expense_category import (
 )
 from app.schemas.daily_record import (
     DailyRecordCreate,
+    DailyRecordClose,
     DailyRecordResponse,
     DailyRecordSummary,
 )
@@ -40,6 +41,7 @@ from app.schemas.inventory import (
     InventorySnapshotResponse,
     InventoryDiscrepancy,
     CurrentStock,
+    IngredientAvailability,
 )
 from app.schemas.storage import (
     StorageInventoryCreate,
@@ -66,4 +68,24 @@ from app.schemas.dashboard import (
     ExpensesBreakdown,
     ProfitData,
     DiscrepancyWarning,
+)
+from app.schemas.daily_operations import (
+    InventorySnapshotItem,
+    InventorySnapshotResponse as DailyInventorySnapshotResponse,
+    OpenDayRequest,
+    OpenDayResponse,
+    PreviousDayWarning,
+    CloseDayRequest,
+    CloseDayResponse,
+    UsageItem,
+    DeliverySummaryItem,
+    TransferSummaryItem,
+    SpoilageSummaryItem,
+    MidDayEventsSummary,
+    DaySummaryResponse,
+    PreviousClosingItem,
+    PreviousClosingResponse,
+    EditClosedDayRequest,
+    EditClosedDayResponse,
+    DailyRecordDetailResponse,
 )

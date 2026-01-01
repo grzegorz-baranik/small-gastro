@@ -347,3 +347,64 @@ export interface VariantIngredientListResponse {
 export interface ProductVariantWithIngredients extends ProductVariant {
   ingredients: VariantIngredient[]
 }
+
+// Mid-Day Operations types
+
+// Delivery types
+export interface Delivery {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  price_pln: number
+  delivered_at: string
+}
+
+export interface DeliveryCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+  price_pln: number
+}
+
+// Storage Transfer types
+export interface StorageTransfer {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  transferred_at: string
+}
+
+export interface StorageTransferCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+}
+
+// Spoilage types
+export type SpoilageReason = 'expired' | 'damaged' | 'quality' | 'other'
+
+export interface Spoilage {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  reason: SpoilageReason
+  notes: string | null
+  recorded_at: string
+}
+
+export interface SpoilageCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+  reason: SpoilageReason
+  notes?: string
+}
