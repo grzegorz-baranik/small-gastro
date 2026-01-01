@@ -22,10 +22,10 @@ export async function createDelivery(delivery: DeliveryCreate): Promise<Delivery
  * Get deliveries for a specific daily record
  */
 export async function getDeliveries(dailyRecordId: number): Promise<Delivery[]> {
-  const { data } = await client.get<Delivery[]>('/deliveries', {
+  const { data } = await client.get<{ items: Delivery[]; total: number }>('/deliveries', {
     params: { daily_record_id: dailyRecordId },
   })
-  return data
+  return data.items
 }
 
 /**
@@ -49,10 +49,10 @@ export async function createTransfer(transfer: StorageTransferCreate): Promise<S
  * Get transfers for a specific daily record
  */
 export async function getTransfers(dailyRecordId: number): Promise<StorageTransfer[]> {
-  const { data } = await client.get<StorageTransfer[]>('/transfers', {
+  const { data } = await client.get<{ items: StorageTransfer[]; total: number }>('/transfers', {
     params: { daily_record_id: dailyRecordId },
   })
-  return data
+  return data.items
 }
 
 /**
@@ -76,10 +76,10 @@ export async function createSpoilage(spoilage: SpoilageCreate): Promise<Spoilage
  * Get spoilage records for a specific daily record
  */
 export async function getSpoilage(dailyRecordId: number): Promise<Spoilage[]> {
-  const { data } = await client.get<Spoilage[]>('/spoilage', {
+  const { data } = await client.get<{ items: Spoilage[]; total: number }>('/spoilage', {
     params: { daily_record_id: dailyRecordId },
   })
-  return data
+  return data.items
 }
 
 /**

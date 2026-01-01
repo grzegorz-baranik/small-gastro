@@ -18,8 +18,9 @@ type ReportTab = 'trends' | 'usage' | 'spoilage'
 
 const SPOILAGE_REASON_LABELS: Record<SpoilageReason, string> = {
   expired: 'Przeterminowane',
-  damaged: 'Uszkodzone',
-  quality: 'Niska jakosc',
+  over_prepared: 'Nadmiernie przygotowane',
+  contaminated: 'Zanieczyszczone',
+  equipment_failure: 'Awaria sprzetu',
   other: 'Inne',
 }
 

@@ -19,11 +19,12 @@ interface MidDayEventsListProps {
   dailyRecordId: number
 }
 
-// Spoilage reason labels in Polish
+// Spoilage reason labels in Polish - matches backend SpoilageReason enum
 const SPOILAGE_REASON_LABELS: Record<SpoilageReason, string> = {
   expired: 'Przeterminowane',
-  damaged: 'Uszkodzone',
-  quality: 'Jakosc',
+  over_prepared: 'Nadmiernie przygotowane',
+  contaminated: 'Zanieczyszczone',
+  equipment_failure: 'Awaria sprzetu',
   other: 'Inne',
 }
 

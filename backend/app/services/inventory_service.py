@@ -6,7 +6,7 @@ Updated to use unified quantity field and include mid-day events
 (deliveries, transfers, spoilage) in calculations.
 """
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
 from decimal import Decimal
@@ -27,14 +27,16 @@ from app.schemas.inventory import (
 
 
 # Discrepancy alert thresholds (as percentages)
-DISCREPANCY_THRESHOLD_OK = Decimal("5")      # < 5% is OK
-DISCREPANCY_THRESHOLD_WARNING = Decimal("10")  # 5-10% is warning
-# > 10% is critical
+# These could be moved to environment variables or config for different environments
+DISCREPANCY_THRESHOLD_OK = Decimal("5")        # < 5% is OK (green)
+DISCREPANCY_THRESHOLD_WARNING = Decimal("10")  # 5-10% is warning (yellow), > 10% is critical (red)
 
 
 def get_snapshots_for_day(db: Session, daily_record_id: int) -> list[InventorySnapshot]:
-    """Get all inventory snapshots for a daily record."""
-    return db.query(InventorySnapshot).filter(
+    """Get all inventory snapshots for a daily record with eager loaded ingredients."""
+    return db.query(InventorySnapshot).options(
+        joinedload(InventorySnapshot.ingredient)
+    ).filter(
         InventorySnapshot.daily_record_id == daily_record_id
     ).all()
 

@@ -12,7 +12,7 @@ Business Rules:
 - Error messages in Polish
 """
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from datetime import datetime
@@ -152,19 +152,20 @@ def get_deliveries(
 ) -> DeliveryListResponse:
     """
     Get list of deliveries, optionally filtered by daily_record_id.
+    Uses eager loading to avoid N+1 queries.
     """
-    query = db.query(Delivery)
+    query = db.query(Delivery).options(joinedload(Delivery.ingredient))
 
     if daily_record_id is not None:
         query = query.filter(Delivery.daily_record_id == daily_record_id)
 
     deliveries = query.order_by(Delivery.delivered_at.desc()).all()
 
-    items = []
-    for delivery in deliveries:
-        ingredient = db.query(Ingredient).filter(Ingredient.id == delivery.ingredient_id).first()
-        if ingredient:
-            items.append(_build_delivery_response(delivery, ingredient))
+    items = [
+        _build_delivery_response(delivery, delivery.ingredient)
+        for delivery in deliveries
+        if delivery.ingredient
+    ]
 
     return DeliveryListResponse(items=items, total=len(items))
 
@@ -294,19 +295,20 @@ def get_storage_transfers(
 ) -> StorageTransferListResponse:
     """
     Get list of storage transfers, optionally filtered by daily_record_id.
+    Uses eager loading to avoid N+1 queries.
     """
-    query = db.query(StorageTransfer)
+    query = db.query(StorageTransfer).options(joinedload(StorageTransfer.ingredient))
 
     if daily_record_id is not None:
         query = query.filter(StorageTransfer.daily_record_id == daily_record_id)
 
     transfers = query.order_by(StorageTransfer.transferred_at.desc()).all()
 
-    items = []
-    for transfer in transfers:
-        ingredient = db.query(Ingredient).filter(Ingredient.id == transfer.ingredient_id).first()
-        if ingredient:
-            items.append(_build_transfer_response(transfer, ingredient))
+    items = [
+        _build_transfer_response(transfer, transfer.ingredient)
+        for transfer in transfers
+        if transfer.ingredient
+    ]
 
     return StorageTransferListResponse(items=items, total=len(items))
 
@@ -431,19 +433,20 @@ def get_spoilages(
 ) -> SpoilageListResponse:
     """
     Get list of spoilage records, optionally filtered by daily_record_id.
+    Uses eager loading to avoid N+1 queries.
     """
-    query = db.query(Spoilage)
+    query = db.query(Spoilage).options(joinedload(Spoilage.ingredient))
 
     if daily_record_id is not None:
         query = query.filter(Spoilage.daily_record_id == daily_record_id)
 
     spoilages = query.order_by(Spoilage.recorded_at.desc()).all()
 
-    items = []
-    for spoilage in spoilages:
-        ingredient = db.query(Ingredient).filter(Ingredient.id == spoilage.ingredient_id).first()
-        if ingredient:
-            items.append(_build_spoilage_response(spoilage, ingredient))
+    items = [
+        _build_spoilage_response(spoilage, spoilage.ingredient)
+        for spoilage in spoilages
+        if spoilage.ingredient
+    ]
 
     return SpoilageListResponse(items=items, total=len(items))
 

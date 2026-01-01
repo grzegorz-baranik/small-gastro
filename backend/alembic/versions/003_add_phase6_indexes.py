@@ -8,6 +8,7 @@ This migration adds performance indexes identified during Phase 6 optimization:
 - Index on daily_records.date for frequent date filtering
 - Compound index on inventory_snapshots for (daily_record_id, snapshot_type) queries
 - Index on inventory_snapshots.daily_record_id
+- Index on inventory_snapshots.ingredient_id for foreign key queries
 """
 from typing import Sequence, Union
 from alembic import op
@@ -45,8 +46,17 @@ def upgrade() -> None:
         unique=False
     )
 
+    # Index on inventory_snapshots.ingredient_id for foreign key queries
+    op.create_index(
+        'ix_inventory_snapshots_ingredient_id',
+        'inventory_snapshots',
+        ['ingredient_id'],
+        unique=False
+    )
+
 
 def downgrade() -> None:
+    op.drop_index('ix_inventory_snapshots_ingredient_id', table_name='inventory_snapshots')
     op.drop_index('ix_inventory_snapshots_daily_record_id', table_name='inventory_snapshots')
     op.drop_index('ix_inventory_snapshots_record_type', table_name='inventory_snapshots')
     op.drop_index('ix_daily_records_date', table_name='daily_records')

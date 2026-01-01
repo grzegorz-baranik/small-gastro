@@ -395,8 +395,8 @@ export interface StorageTransferCreate {
   quantity: number
 }
 
-// Spoilage types
-export type SpoilageReason = 'expired' | 'damaged' | 'quality' | 'other'
+// Spoilage types - must match backend SpoilageReason enum
+export type SpoilageReason = 'expired' | 'over_prepared' | 'contaminated' | 'equipment_failure' | 'other'
 
 export interface Spoilage {
   id: number
