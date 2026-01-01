@@ -1,15 +1,15 @@
 """Add index on expense_categories.parent_id
 
-Revision ID: 002
-Revises: 001
-Create Date: 2024-01-02
+Revision ID: 004
+Revises: 003
+Create Date: 2026-01-01
 
 """
 from typing import Sequence, Union
 from alembic import op
 
-revision: str = '002'
-down_revision: Union[str, None] = '001'
+revision: str = '004'
+down_revision: Union[str, None] = '003'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
