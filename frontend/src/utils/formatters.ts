@@ -1,10 +1,11 @@
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | string): string {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount)
+  }).format(numAmount)
 }
 
 export function formatDate(dateString: string): string {
@@ -25,18 +26,20 @@ export function formatDateTime(dateString: string): string {
   }).format(new Date(dateString))
 }
 
-export function formatWeight(grams: number): string {
-  if (grams >= 1000) {
-    return `${(grams / 1000).toFixed(2)} kg`
+export function formatWeight(grams: number | string): string {
+  const numGrams = typeof grams === 'string' ? parseFloat(grams) : grams
+  if (numGrams >= 1000) {
+    return `${(numGrams / 1000).toFixed(2)} kg`
   }
-  return `${grams.toFixed(0)} g`
+  return `${numGrams.toFixed(0)} g`
 }
 
-export function formatQuantity(value: number, unitType: string): string {
+export function formatQuantity(value: number | string, unitType: string): string {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value
   if (unitType === 'weight') {
-    return formatWeight(value)
+    return formatWeight(numValue)
   }
-  return `${value} szt.`
+  return `${numValue} szt.`
 }
 
 export function getTodayDateString(): string {

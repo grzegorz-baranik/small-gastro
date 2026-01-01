@@ -2,7 +2,7 @@ import client from './client'
 import type { DailyRecord, DailyRecordCreate, InventorySnapshotCreate } from '../types'
 
 export async function getDailyRecords(): Promise<DailyRecord[]> {
-  const { data } = await client.get('/daily-records')
+  const { data } = await client.get('/daily-records/')
   return data
 }
 
