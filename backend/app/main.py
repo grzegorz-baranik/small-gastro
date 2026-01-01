@@ -9,7 +9,6 @@ app = FastAPI(
     title="Small Gastro API",
     description="API dla aplikacji do zarzadzania mala gastronomia",
     version="1.0.0",
-    redirect_slashes=False,
 )
 
 app.add_middleware(

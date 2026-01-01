@@ -2,12 +2,13 @@ import client from './client'
 import type { Product, ProductCreate } from '../types'
 
 export async function getProducts(activeOnly = true): Promise<{ items: Product[]; total: number }> {
-  const { data } = await client.get('/products/', { params: { active_only: activeOnly } })
+  const { data } = await client.get('/products', { params: { active_only: activeOnly } })
   return data
 }
 
 export async function createProduct(product: ProductCreate): Promise<Product> {
-  const { data } = await client.post('/products/', product)
+  // Use /simple endpoint for creating products with a single price
+  const { data } = await client.post('/products/simple', product)
   return data
 }
 

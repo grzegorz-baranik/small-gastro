@@ -331,7 +331,7 @@ export default function DailyOperationsPage() {
                 >
                   <p className="font-medium text-gray-900">{product.name}</p>
                   <p className="text-primary-600 font-bold">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(product.variants[0]?.price_pln ?? 0)}
                   </p>
                 </button>
               ))}

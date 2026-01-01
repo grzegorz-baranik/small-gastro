@@ -23,23 +23,33 @@ export interface ProductIngredient {
   id: number
   ingredient_id: number
   quantity: number
+  is_primary: boolean
   ingredient_name?: string
   ingredient_unit_type?: string
+}
+
+export interface ProductVariantInProduct {
+  id: number
+  name: string | null
+  price_pln: number
+  is_active: boolean
+  ingredients: ProductIngredient[]
+  created_at: string
 }
 
 export interface Product {
   id: number
   name: string
-  price: number
+  has_variants: boolean
   is_active: boolean
-  ingredients: ProductIngredient[]
+  variants: ProductVariantInProduct[]
   created_at: string
   updated_at: string
 }
 
 export interface ProductCreate {
   name: string
-  price: number
+  price_pln: number
   ingredients?: { ingredient_id: number; quantity: number }[]
 }
 

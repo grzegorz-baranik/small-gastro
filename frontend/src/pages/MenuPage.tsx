@@ -2,13 +2,12 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProducts, createProduct, deleteProduct } from '../api/products'
 import { getIngredients, createIngredient, deleteIngredient } from '../api/ingredients'
-import { getVariants } from '../api/productVariants'
 import { formatCurrency, formatQuantity } from '../utils/formatters'
 import { Plus, Trash2, Package, Scale, Layers, Star } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import VariantManagementModal from '../components/products/VariantManagementModal'
-import type { Product, ProductCreate, IngredientCreate, ProductVariant } from '../types'
+import type { Product, ProductCreate, IngredientCreate, ProductVariantInProduct } from '../types'
 
 export default function MenuPage() {
   const [activeTab, setActiveTab] = useState<'products' | 'ingredients'>('products')
@@ -214,17 +213,13 @@ function ProductCard({
   onManageVariants: () => void
   onDelete: () => void
 }) {
-  const { data: variantsData, isLoading: variantsLoading } = useQuery({
-    queryKey: ['productVariants', product.id],
-    queryFn: () => getVariants(product.id, true),
-  })
+  const variants = product.variants || []
+  const hasVariants = variants.length > 1
+  const defaultVariant = variants[0]
+  const displayPrice = defaultVariant?.price_pln ?? 0
 
-  const variants = variantsData?.items || []
-  const hasVariants = variants.length > 0
-  const defaultVariant = variants.find((v) => v.is_default)
-  const displayPrice = hasVariants
-    ? defaultVariant?.price ?? variants[0]?.price ?? product.price
-    : product.price
+  // Get ingredients from the first variant for display
+  const ingredients = defaultVariant?.ingredients || []
 
   return (
     <div className={`card ${!product.is_active ? 'opacity-50' : ''}`}>
@@ -248,11 +243,7 @@ function ProductCard({
           {/* Price display */}
           {hasVariants ? (
             <div className="mt-2">
-              {variantsLoading ? (
-                <p className="text-sm text-gray-400">Ladowanie wariantow...</p>
-              ) : (
-                <VariantPriceList variants={variants} />
-              )}
+              <VariantPriceList variants={variants} />
             </div>
           ) : (
             <p className="text-lg font-bold text-primary-600 mt-1">
@@ -260,12 +251,12 @@ function ProductCard({
             </p>
           )}
 
-          {/* Legacy ingredients display (for backward compatibility) */}
-          {product.ingredients.length > 0 && !hasVariants && (
+          {/* Ingredients display from first variant */}
+          {ingredients.length > 0 && !hasVariants && (
             <div className="mt-3 space-y-1">
               <p className="text-sm text-gray-500">Skladniki:</p>
               <div className="flex flex-wrap gap-2">
-                {product.ingredients.map((pi) => (
+                {ingredients.map((pi) => (
                   <span
                     key={pi.id}
                     className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded"
@@ -299,29 +290,26 @@ function ProductCard({
 }
 
 // Component to display variant prices in a compact list
-function VariantPriceList({ variants }: { variants: ProductVariant[] }) {
+function VariantPriceList({ variants }: { variants: ProductVariantInProduct[] }) {
   const sortedVariants = [...variants].sort((a, b) => {
-    // Default variant first
-    if (a.is_default && !b.is_default) return -1
-    if (!a.is_default && b.is_default) return 1
-    // Then by price
-    return a.price - b.price
+    // Sort by price
+    return a.price_pln - b.price_pln
   })
 
   return (
     <div className="flex flex-wrap gap-2">
-      {sortedVariants.map((variant) => (
+      {sortedVariants.map((variant, index) => (
         <div
           key={variant.id}
           className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
-            variant.is_default
+            index === 0
               ? 'bg-primary-100 text-primary-700 font-medium'
               : 'bg-gray-100 text-gray-700'
           }`}
         >
-          {variant.is_default && <Star className="w-3 h-3 fill-current" />}
-          <span>{variant.name}</span>
-          <span className="font-semibold">{formatCurrency(variant.price)}</span>
+          {index === 0 && <Star className="w-3 h-3 fill-current" />}
+          <span>{variant.name || 'Domyslny'}</span>
+          <span className="font-semibold">{formatCurrency(variant.price_pln)}</span>
         </div>
       ))}
     </div>
@@ -334,7 +322,7 @@ function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ name, price: parseFloat(price) })
+    onSubmit({ name, price_pln: parseFloat(price) })
   }
 
   return (
