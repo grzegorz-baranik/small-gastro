@@ -6,6 +6,10 @@ from app.core.database import Base
 class ExpenseCategory(Base):
     __tablename__ = "expense_categories"
 
+    # Category hierarchy constants
+    MAX_DEPTH = 3
+    LEAF_LEVEL = 3
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     parent_id = Column(Integer, ForeignKey("expense_categories.id", ondelete="RESTRICT"), nullable=True)

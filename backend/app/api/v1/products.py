@@ -15,7 +15,7 @@ from app.services import product_service
 router = APIRouter()
 
 
-@router.get("/", response_model=ProductListResponse)
+@router.get("", response_model=ProductListResponse)
 def list_products(
     skip: int = 0,
     limit: int = 100,
@@ -50,7 +50,7 @@ def list_products(
     return ProductListResponse(items=response_items, total=total)
 
 
-@router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
     product: ProductCreate,
     db: Session = Depends(get_db),

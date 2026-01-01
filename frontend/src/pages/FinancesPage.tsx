@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTransactions, createTransaction, deleteTransaction } from '../api/transactions'
-import { getCategories } from '../api/categories'
+import { getLeafCategories } from '../api/categories'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import { Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import type { TransactionCreate, TransactionType, PaymentMethod } from '../types'
+import SearchableSelect from '../components/common/SearchableSelect'
+import type { TransactionCreate, TransactionType, PaymentMethod, LeafCategory } from '../types'
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Gotowka',
@@ -24,9 +25,9 @@ export default function FinancesPage() {
     queryFn: () => getTransactions(typeFilter ? { type_filter: typeFilter } : undefined),
   })
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
+  const { data: leafCategories } = useQuery({
+    queryKey: ['leafCategories'],
+    queryFn: getLeafCategories,
   })
 
   const createMutation = useMutation({
@@ -138,7 +139,7 @@ export default function FinancesPage() {
         title="Dodaj transakcje"
       >
         <TransactionForm
-          categories={categories || []}
+          leafCategories={leafCategories || []}
           onSubmit={(data) => createMutation.mutate(data)}
           isLoading={createMutation.isPending}
         />
@@ -148,20 +149,26 @@ export default function FinancesPage() {
 }
 
 function TransactionForm({
-  categories,
+  leafCategories,
   onSubmit,
   isLoading,
 }: {
-  categories: { id: number; name: string }[]
+  leafCategories: LeafCategory[]
   onSubmit: (data: TransactionCreate) => void
   isLoading: boolean
 }) {
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
-  const [categoryId, setCategoryId] = useState<number | undefined>()
+  const [categoryId, setCategoryId] = useState<number | null>(null)
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+
+  const categoryOptions = leafCategories.map((cat) => ({
+    id: cat.id,
+    label: cat.full_path,
+    searchText: cat.full_path,
+  }))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -169,7 +176,7 @@ function TransactionForm({
       type,
       amount: parseFloat(amount),
       payment_method: paymentMethod,
-      category_id: type === 'expense' ? categoryId : undefined,
+      category_id: type === 'expense' && categoryId !== null ? categoryId : undefined,
       description: description || undefined,
       transaction_date: date,
     })
@@ -227,19 +234,15 @@ function TransactionForm({
         </select>
       </div>
 
-      {type === 'expense' && categories.length > 0 && (
+      {type === 'expense' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Kategoria</label>
-          <select
-            value={categoryId || ''}
-            onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
-            className="input"
-          >
-            <option value="">Bez kategorii</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+          <SearchableSelect
+            options={categoryOptions}
+            value={categoryId}
+            onChange={setCategoryId}
+            placeholder="Wybierz kategorie..."
+          />
         </div>
       )}
 
