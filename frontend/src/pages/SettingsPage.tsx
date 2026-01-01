@@ -241,12 +241,10 @@ function CategoryForm({
   isLoading: boolean
 }) {
   const [name, setName] = useState('')
-  const [submitted, setSubmitted] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (isLoading || submitted || !name.trim()) return
-    setSubmitted(true)
+    if (isLoading || !name.trim()) return
     onSubmit(name.trim())
   }
 
@@ -304,8 +302,8 @@ function CategoryForm({
           required
         />
       </div>
-      <button type="submit" className="btn btn-primary w-full" disabled={isLoading || submitted}>
-        {isLoading || submitted ? 'Zapisywanie...' : 'Zapisz'}
+      <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+        {isLoading ? 'Zapisywanie...' : 'Zapisz'}
       </button>
     </form>
   )

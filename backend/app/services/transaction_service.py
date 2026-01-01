@@ -8,7 +8,8 @@ from app.models.expense_category import ExpenseCategory
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionSummary
 
 
-LEAF_CATEGORY_LEVEL = 3
+# Use constant from model for single source of truth
+LEAF_CATEGORY_LEVEL = ExpenseCategory.LEAF_LEVEL
 
 
 class InvalidCategoryError(Exception):

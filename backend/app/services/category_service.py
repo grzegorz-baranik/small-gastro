@@ -9,8 +9,19 @@ from app.schemas.expense_category import (
 )
 
 
-MAX_CATEGORY_DEPTH = 3
-LEAF_CATEGORY_LEVEL = 3
+# Use constants from model for single source of truth
+MAX_CATEGORY_DEPTH = ExpenseCategory.MAX_DEPTH
+LEAF_CATEGORY_LEVEL = ExpenseCategory.LEAF_LEVEL
+
+
+class CategoryNotFoundError(Exception):
+    """Raised when parent category does not exist."""
+    pass
+
+
+class MaxDepthExceededError(Exception):
+    """Raised when category would exceed maximum depth."""
+    pass
 
 
 def get_categories(db: Session, active_only: bool = True) -> list[ExpenseCategory]:
@@ -49,15 +60,28 @@ def get_category_tree(db: Session, active_only: bool = True) -> list[ExpenseCate
 
 def get_leaf_categories(db: Session, active_only: bool = True) -> list[ExpenseCategoryLeafResponse]:
     """Get only leaf categories (level 3) that can be assigned to transactions."""
-    query = db.query(ExpenseCategory).filter(ExpenseCategory.level == LEAF_CATEGORY_LEVEL)
+    # Fetch ALL categories in a single query to build paths in memory (avoids N+1)
+    all_query = db.query(ExpenseCategory)
     if active_only:
-        query = query.filter(ExpenseCategory.is_active == True)
-    categories = query.order_by(ExpenseCategory.name).all()
+        all_query = all_query.filter(ExpenseCategory.is_active == True)
+    all_categories = all_query.all()
 
-    # Build response with full paths
+    # Build lookup map
+    category_map = {c.id: c for c in all_categories}
+
+    # Build response with full paths for leaf categories only
     result = []
-    for category in categories:
-        full_path = get_category_path(db, category.id)
+    for category in all_categories:
+        if category.level != LEAF_CATEGORY_LEVEL:
+            continue
+
+        # Build path by traversing parents in memory
+        path_parts = [category.name]
+        current = category
+        while current.parent_id and current.parent_id in category_map:
+            current = category_map[current.parent_id]
+            path_parts.insert(0, current.name)
+
         result.append(
             ExpenseCategoryLeafResponse(
                 id=category.id,
@@ -65,10 +89,11 @@ def get_leaf_categories(db: Session, active_only: bool = True) -> list[ExpenseCa
                 parent_id=category.parent_id,
                 level=category.level,
                 is_active=category.is_active,
-                full_path=full_path,
+                full_path=" > ".join(path_parts),
             )
         )
-    return result
+
+    return sorted(result, key=lambda x: x.name)
 
 
 def get_category_path(db: Session, category_id: int) -> str:
@@ -86,15 +111,17 @@ def get_category_path(db: Session, category_id: int) -> str:
     return " > ".join(path_parts)
 
 
-def create_category(db: Session, category: ExpenseCategoryCreate) -> Optional[ExpenseCategory]:
+def create_category(db: Session, category: ExpenseCategoryCreate) -> ExpenseCategory:
     level = 1
     if category.parent_id:
         parent = get_category(db, category.parent_id)
         if not parent:
-            return None
+            raise CategoryNotFoundError("Kategoria nadrzedna nie istnieje")
         level = parent.level + 1
         if level > MAX_CATEGORY_DEPTH:
-            return None
+            raise MaxDepthExceededError(
+                f"Maksymalna glebokosc kategorii to {MAX_CATEGORY_DEPTH} poziomy"
+            )
 
     db_category = ExpenseCategory(
         name=category.name,
