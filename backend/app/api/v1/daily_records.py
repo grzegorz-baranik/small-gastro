@@ -1,99 +1,262 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+"""
+Daily Records API - Core daily operations endpoints.
+
+Provides endpoints for:
+- Opening and closing days
+- Viewing day summaries
+- Pre-filling from previous closing
+- Editing closed days
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from datetime import date
+from typing import Optional
+
 from app.api.deps import get_db
-from app.schemas.daily_record import (
-    DailyRecordCreate,
-    DailyRecordClose,
-    DailyRecordResponse,
-    DailyRecordSummary,
+from app.services import daily_operations_service
+from app.schemas.daily_operations import (
+    OpenDayRequest,
+    OpenDayResponse,
+    CloseDayRequest,
+    CloseDayResponse,
+    DaySummaryResponse,
+    PreviousClosingResponse,
+    EditClosedDayRequest,
+    EditClosedDayResponse,
+    DailyRecordDetailResponse,
 )
-from app.services import daily_record_service
+from app.schemas.daily_record import DailyRecordResponse
+from app.models.daily_record import DailyRecord, DayStatus
+
 
 router = APIRouter()
 
 
+# -----------------------------------------------------------------------------
+# List Daily Records
+# -----------------------------------------------------------------------------
+
 @router.get("/", response_model=list[DailyRecordResponse])
 def list_daily_records(
-    skip: int = 0,
-    limit: int = 30,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(30, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    """Pobierz liste rekordow dziennych."""
-    items, _ = daily_record_service.get_daily_records(db, skip, limit)
+    """
+    Pobierz liste rekordow dziennych.
+
+    Zwraca rekordy posortowane od najnowszych.
+    """
+    items = db.query(DailyRecord).order_by(
+        DailyRecord.date.desc()
+    ).offset(skip).limit(limit).all()
     return items
 
 
-@router.get("/today", response_model=DailyRecordResponse)
+# -----------------------------------------------------------------------------
+# Get Today's Record
+# -----------------------------------------------------------------------------
+
+@router.get("/today", response_model=Optional[DailyRecordDetailResponse])
 def get_today_record(
     db: Session = Depends(get_db),
 ):
-    """Pobierz dzisiejszy rekord."""
-    record = daily_record_service.get_today_record(db)
+    """
+    Pobierz dzisiejszy rekord (lub null jesli nie istnieje).
+
+    Zwraca pelne szczegoly dnia wlacznie ze snapshotami i wydarzeniami.
+    """
+    record = daily_operations_service.get_today_record(db)
     if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dzien nie zostal jeszcze otwarty",
-        )
-    return record
+        return None
+
+    return daily_operations_service.get_daily_record_detail(db, record.id)
 
 
-@router.post("/open", response_model=DailyRecordResponse, status_code=status.HTTP_201_CREATED)
-def open_day(
-    data: DailyRecordCreate,
+# -----------------------------------------------------------------------------
+# Get Previous Closing (for pre-fill)
+# -----------------------------------------------------------------------------
+
+@router.get("/previous-closing", response_model=PreviousClosingResponse)
+def get_previous_closing(
     db: Session = Depends(get_db),
 ):
-    """Otworz nowy dzien."""
-    result = daily_record_service.open_day(db, data)
-    if not result:
+    """
+    Pobierz poprzedni stan zamkniecia do pre-fill otwarcia.
+
+    Zwraca stany koncowe z ostatniego zamknietego dnia.
+    Uzywane do wypelnienia formularza otwarcia dnia.
+    """
+    return daily_operations_service.get_previous_closing(db)
+
+
+# -----------------------------------------------------------------------------
+# Open Day
+# -----------------------------------------------------------------------------
+
+@router.post("/open", response_model=OpenDayResponse, status_code=status.HTTP_201_CREATED)
+def open_day(
+    data: OpenDayRequest,
+    force: bool = Query(False, description="Wymus otwarcie nawet jesli inny dzien jest otwarty"),
+    db: Session = Depends(get_db),
+):
+    """
+    Otworz nowy dzien z poczatkowymi stanami magazynowymi.
+
+    - Tworzy nowy DailyRecord ze statusem 'open'
+    - Tworzy InventorySnapshot dla kazdego skladnika (type='open', location='shop')
+    - Ostrzega (ale pozwala) jesli poprzedni dzien nie jest zamkniety
+
+    Query params:
+    - force: Jesli true, pozwala otworzyc nawet gdy inny dzien jest otwarty
+
+    Walidacja:
+    - Nie mozna otworzyc dnia dla tej samej daty dwukrotnie
+    - Domyslnie blokuje jesli inny dzien jest otwarty (chyba ze force=true)
+    """
+    response, error = daily_operations_service.open_day(db, data, force=force)
+
+    if error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dzien o tej dacie juz istnieje",
+            detail=error
         )
-    return result
+
+    return response
 
 
-@router.post("/{record_id}/close", response_model=DailyRecordResponse)
+# -----------------------------------------------------------------------------
+# Close Day
+# -----------------------------------------------------------------------------
+
+@router.post("/{record_id}/close", response_model=CloseDayResponse)
 def close_day(
     record_id: int,
-    data: DailyRecordClose,
+    data: CloseDayRequest,
     db: Session = Depends(get_db),
 ):
-    """Zamknij dzien."""
-    result = daily_record_service.close_day(db, record_id, data)
-    if not result:
+    """
+    Zamknij otwarty dzien ze stanami koncowymi.
+
+    - Waliduje ze dzien istnieje i jest otwarty
+    - Tworzy InventorySnapshot dla kazdego skladnika (type='close', location='shop')
+    - Oblicza zuzycie dla kazdego skladnika: Otwarcie + Dostawy + Transfery - Straty - Zamkniecie
+    - Aktualizuje status na 'closed' i ustawia closed_at
+
+    Zwraca:
+    - Obliczone zuzycie i podsumowanie
+    """
+    response, error = daily_operations_service.close_day(db, record_id, data)
+
+    if error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nie mozna zamknac dnia. Rekord nie istnieje lub jest juz zamkniety.",
+            detail=error
         )
-    return result
+
+    return response
 
 
-@router.get("/{record_id}", response_model=DailyRecordResponse)
+# -----------------------------------------------------------------------------
+# Get Daily Record Detail
+# -----------------------------------------------------------------------------
+
+@router.get("/{record_id}", response_model=DailyRecordDetailResponse)
 def get_daily_record(
     record_id: int,
     db: Session = Depends(get_db),
 ):
-    """Pobierz rekord dzienny po ID."""
-    record = daily_record_service.get_daily_record(db, record_id)
-    if not record:
+    """
+    Pobierz rekord dzienny po ID z pelnymi szczegolami.
+
+    Zawiera:
+    - Snapshoty otwarcia i zamkniecia
+    - Podsumowanie dostaw, transferow, strat
+    """
+    result = daily_operations_service.get_daily_record_detail(db, record_id)
+
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord nie znaleziony",
+            detail="Rekord nie znaleziony"
         )
-    return record
+
+    return result
 
 
-@router.get("/{record_id}/summary", response_model=DailyRecordSummary)
+# -----------------------------------------------------------------------------
+# Get Day Summary
+# -----------------------------------------------------------------------------
+
+@router.get("/{record_id}/summary", response_model=DaySummaryResponse)
 def get_daily_summary(
     record_id: int,
     db: Session = Depends(get_db),
 ):
-    """Pobierz podsumowanie dnia z rozbiezno sciami."""
-    summary = daily_record_service.get_daily_summary(db, record_id)
-    if not summary:
+    """
+    Pobierz pelne podsumowanie dnia.
+
+    Zawiera:
+    - Stany otwarcia i zamkniecia
+    - Dostawy, transfery, straty
+    - Obliczone zuzycie (jesli dzien zamkniety)
+    """
+    result = daily_operations_service.get_day_summary(db, record_id)
+
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord nie znaleziony",
+            detail="Rekord nie znaleziony"
         )
-    return summary
+
+    return result
+
+
+# -----------------------------------------------------------------------------
+# Edit Closed Day
+# -----------------------------------------------------------------------------
+
+@router.put("/{record_id}", response_model=EditClosedDayResponse)
+def edit_closed_day(
+    record_id: int,
+    data: EditClosedDayRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Edytuj zamkniety dzien.
+
+    Pozwala na:
+    - Aktualizacje stanow koncowych
+    - Przeliczenie zuzycia
+
+    Uwaga: Mozna edytowac tylko zamkniete dni.
+    """
+    response, error = daily_operations_service.edit_closed_day(db, record_id, data)
+
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error
+        )
+
+    return response
+
+
+# -----------------------------------------------------------------------------
+# Get Open Day
+# -----------------------------------------------------------------------------
+
+@router.get("/status/open", response_model=Optional[DailyRecordDetailResponse])
+def get_open_day(
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz aktualnie otwarty dzien (jesli istnieje).
+
+    Uzywane do sprawdzenia czy jakis dzien jest aktualnie otwarty.
+    """
+    record = daily_operations_service.get_open_day(db)
+    if not record:
+        return None
+
+    return daily_operations_service.get_daily_record_detail(db, record.id)

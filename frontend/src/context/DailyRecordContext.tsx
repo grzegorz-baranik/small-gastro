@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getTodayRecord } from '../api/dailyRecords'
+import { getTodayRecord } from '../api/dailyOperations'
 import type { DailyRecord } from '../types'
 
 interface DailyRecordContextType {
