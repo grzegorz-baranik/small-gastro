@@ -355,3 +355,15 @@ class DailyRecordDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# -----------------------------------------------------------------------------
+# Previous Day Status Check
+# -----------------------------------------------------------------------------
+
+class PreviousDayStatusResponse(BaseModel):
+    """Response for checking if previous day needs closing."""
+    has_unclosed_previous: bool = False
+    unclosed_date: Optional[date] = None
+    unclosed_record_id: Optional[int] = None
+    message: Optional[str] = None

@@ -59,6 +59,7 @@ from app.schemas.daily_operations import (
     EditClosedDayResponse,
     DailyRecordDetailResponse,
     CalculatedSaleItem,
+    PreviousDayStatusResponse,
 )
 
 
@@ -933,3 +934,34 @@ def get_today_record(db: Session) -> Optional[DailyRecord]:
     """Get today's daily record if it exists."""
     today = date.today()
     return db.query(DailyRecord).filter(DailyRecord.date == today).first()
+
+
+# -----------------------------------------------------------------------------
+# Check Previous Day Status
+# -----------------------------------------------------------------------------
+
+def check_previous_day_status(db: Session) -> PreviousDayStatusResponse:
+    """
+    Check if there is a previous unclosed day that needs to be closed.
+
+    VR-06: Warning if previous day not closed.
+
+    Returns information about any unclosed previous day.
+    """
+    today = date.today()
+
+    # Find any unclosed day before today
+    unclosed = get_previous_unclosed_day(db, today)
+
+    if unclosed:
+        return PreviousDayStatusResponse(
+            has_unclosed_previous=True,
+            unclosed_date=unclosed.date,
+            unclosed_record_id=unclosed.id,
+            message=f"Dzien {unclosed.date} nie zostal zamkniety"
+        )
+
+    return PreviousDayStatusResponse(
+        has_unclosed_previous=False,
+        message="Wszystkie poprzednie dni sa zamkniete"
+    )

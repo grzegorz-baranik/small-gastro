@@ -12,7 +12,7 @@ class Delivery(Base):
     __tablename__ = "deliveries"
 
     id = Column(Integer, primary_key=True, index=True)
-    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False)
+    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False, index=True)
     ingredient_id = Column(Integer, ForeignKey("ingredients.id", ondelete="RESTRICT"), nullable=False)
     quantity = Column(Numeric(10, 3), nullable=False)  # In ingredient's unit (kg or count)
     price_pln = Column(Numeric(10, 2), nullable=False)  # Cost of delivery

@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Square, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react'
 import Modal from '../common/Modal'
+import ConfirmDialog from '../common/ConfirmDialog'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { closeDay, getDaySummary } from '../../api/dailyOperations'
 import { formatCurrency, formatDate, formatQuantity } from '../../utils/formatters'
@@ -32,11 +34,13 @@ export default function CloseDayModal({
   dailyRecord,
 }: CloseDayModalProps) {
   const queryClient = useQueryClient()
+  const { showSuccess, showError } = useToast()
   const [closingInventory, setClosingInventory] = useState<ClosingInventoryState>({})
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<number, string>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [showCalculation, setShowCalculation] = useState(false)
+  const [showConfirmClose, setShowConfirmClose] = useState(false)
 
   // Fetch ingredients
   const { data: ingredientsData, isLoading: ingredientsLoading } = useQuery({
@@ -65,13 +69,15 @@ export default function CloseDayModal({
       queryClient.invalidateQueries({ queryKey: ['todayRecord'] })
       queryClient.invalidateQueries({ queryKey: ['recentDays'] })
       queryClient.invalidateQueries({ queryKey: ['daySummary'] })
+      showSuccess('Dzien zostal zamkniety')
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      setGeneralError(
-        error.response?.data?.detail || 'Wystapil blad podczas zamykania dnia'
-      )
+      const message = error.response?.data?.detail || 'Wystapil blad podczas zamykania dnia'
+      setGeneralError(message)
+      showError(message)
+      setShowConfirmClose(false)
     },
   })
 
@@ -99,6 +105,7 @@ export default function CloseDayModal({
       setErrors({})
       setGeneralError(null)
       setShowCalculation(false)
+      setShowConfirmClose(false)
     }
   }, [isOpen])
 
@@ -267,7 +274,7 @@ export default function CloseDayModal({
     return isValid
   }
 
-  // Handle form submission
+  // Handle form submission - show confirmation first
   const handleSubmit = () => {
     setGeneralError(null)
 
@@ -276,6 +283,12 @@ export default function CloseDayModal({
       return
     }
 
+    // Show confirmation dialog
+    setShowConfirmClose(true)
+  }
+
+  // Actually close the day after confirmation
+  const handleConfirmClose = () => {
     const inventory: InventorySnapshotItem[] = activeIngredients.map((ingredient) => ({
       ingredient_id: ingredient.id,
       quantity: parseFloat(closingInventory[ingredient.id] || '0'),
@@ -639,6 +652,7 @@ export default function CloseDayModal({
               type="button"
               onClick={onClose}
               className="btn btn-secondary flex-1"
+              disabled={closeDayMutation.isPending}
             >
               Anuluj
             </button>
@@ -646,14 +660,36 @@ export default function CloseDayModal({
               type="button"
               onClick={handleSubmit}
               disabled={closeDayMutation.isPending}
-              className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              className="btn btn-danger flex-1 flex items-center justify-center gap-2"
             >
-              <Square className="w-4 h-4" />
-              {closeDayMutation.isPending ? 'Zamykanie...' : 'Zamknij dzien'}
+              {closeDayMutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Zamykanie...
+                </>
+              ) : (
+                <>
+                  <Square className="w-4 h-4" />
+                  Zamknij dzien
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
+
+      {/* Close day confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showConfirmClose}
+        onClose={() => setShowConfirmClose(false)}
+        onConfirm={handleConfirmClose}
+        title="Potwierdz zamkniecie dnia"
+        message={`Czy na pewno chcesz zamknac dzien ${formatDate(dailyRecord.date)}? Po zamknieciu nie bedziesz mogl dodawac nowych dostaw, transferow ani strat do tego dnia.`}
+        confirmText="Zamknij dzien"
+        cancelText="Anuluj"
+        variant="danger"
+        isLoading={closeDayMutation.isPending}
+      />
     </Modal>
   )
 }

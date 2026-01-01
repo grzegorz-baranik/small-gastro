@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Trash2, AlertCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { createSpoilage } from '../../api/midDayOperations'
 import type { Ingredient, SpoilageReason } from '../../types'
@@ -29,6 +30,7 @@ export default function SpoilageModal({
   dailyRecordId,
 }: SpoilageModalProps) {
   const queryClient = useQueryClient()
+  const { showSuccess, showError } = useToast()
   const [ingredientId, setIngredientId] = useState<number | ''>('')
   const [quantity, setQuantity] = useState('')
   const [reason, setReason] = useState<SpoilageReason | ''>('')
@@ -49,11 +51,14 @@ export default function SpoilageModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spoilage', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
+      showSuccess('Strata zostala zapisana')
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      setGeneralError(error.response?.data?.detail || 'Wystapil blad podczas zapisywania straty')
+      const message = error.response?.data?.detail || 'Wystapil blad podczas zapisywania straty'
+      setGeneralError(message)
+      showError(message)
     },
   })
 
@@ -151,7 +156,7 @@ export default function SpoilageModal({
 
           {/* Ingredient select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Skladnik
             </label>
             <select
@@ -182,7 +187,7 @@ export default function SpoilageModal({
 
           {/* Quantity input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Ilosc {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
             </label>
             <input
@@ -210,7 +215,7 @@ export default function SpoilageModal({
 
           {/* Reason select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Powod straty
             </label>
             <select
@@ -259,6 +264,7 @@ export default function SpoilageModal({
               type="button"
               onClick={onClose}
               className="btn btn-secondary flex-1"
+              disabled={createSpoilageMutation.isPending}
             >
               Anuluj
             </button>
@@ -268,8 +274,17 @@ export default function SpoilageModal({
               disabled={createSpoilageMutation.isPending}
               className="btn btn-danger flex-1 flex items-center justify-center gap-2"
             >
-              <Trash2 className="w-4 h-4" />
-              {createSpoilageMutation.isPending ? 'Zapisywanie...' : 'Zapisz strate'}
+              {createSpoilageMutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Zapisywanie...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Zapisz strate
+                </>
+              )}
             </button>
           </div>
         </div>

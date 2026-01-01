@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Truck, AlertCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { createDelivery } from '../../api/midDayOperations'
 import type { Ingredient } from '../../types'
@@ -21,6 +22,7 @@ export default function DeliveryModal({
   dailyRecordId,
 }: DeliveryModalProps) {
   const queryClient = useQueryClient()
+  const { showSuccess, showError } = useToast()
   const [ingredientId, setIngredientId] = useState<number | ''>('')
   const [quantity, setQuantity] = useState('')
   const [pricePln, setPricePln] = useState('')
@@ -40,11 +42,14 @@ export default function DeliveryModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deliveries', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
+      showSuccess('Dostawa zostala dodana')
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      setGeneralError(error.response?.data?.detail || 'Wystapil blad podczas zapisywania dostawy')
+      const message = error.response?.data?.detail || 'Wystapil blad podczas zapisywania dostawy'
+      setGeneralError(message)
+      showError(message)
     },
   })
 
@@ -139,7 +144,7 @@ export default function DeliveryModal({
 
           {/* Ingredient select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Skladnik
             </label>
             <select
@@ -170,7 +175,7 @@ export default function DeliveryModal({
 
           {/* Quantity input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Ilosc {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
             </label>
             <input
@@ -198,7 +203,7 @@ export default function DeliveryModal({
 
           {/* Price input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Cena (PLN)
             </label>
             <input
@@ -230,6 +235,7 @@ export default function DeliveryModal({
               type="button"
               onClick={onClose}
               className="btn btn-secondary flex-1"
+              disabled={createDeliveryMutation.isPending}
             >
               Anuluj
             </button>
@@ -239,8 +245,17 @@ export default function DeliveryModal({
               disabled={createDeliveryMutation.isPending}
               className="btn btn-primary flex-1 flex items-center justify-center gap-2"
             >
-              <Truck className="w-4 h-4" />
-              {createDeliveryMutation.isPending ? 'Zapisywanie...' : 'Zapisz dostawe'}
+              {createDeliveryMutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Zapisywanie...
+                </>
+              ) : (
+                <>
+                  <Truck className="w-4 h-4" />
+                  Zapisz dostawe
+                </>
+              )}
             </button>
           </div>
         </div>

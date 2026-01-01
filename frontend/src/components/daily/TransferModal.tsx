@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Package, AlertCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { createTransfer } from '../../api/midDayOperations'
 import type { Ingredient } from '../../types'
@@ -21,6 +22,7 @@ export default function TransferModal({
   dailyRecordId,
 }: TransferModalProps) {
   const queryClient = useQueryClient()
+  const { showSuccess, showError } = useToast()
   const [ingredientId, setIngredientId] = useState<number | ''>('')
   const [quantity, setQuantity] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -39,11 +41,14 @@ export default function TransferModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transfers', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
+      showSuccess('Transfer zostal dodany')
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      setGeneralError(error.response?.data?.detail || 'Wystapil blad podczas zapisywania transferu')
+      const message = error.response?.data?.detail || 'Wystapil blad podczas zapisywania transferu'
+      setGeneralError(message)
+      showError(message)
     },
   })
 
@@ -132,7 +137,7 @@ export default function TransferModal({
 
           {/* Ingredient select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Skladnik
             </label>
             <select
@@ -163,7 +168,7 @@ export default function TransferModal({
 
           {/* Quantity input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
               Ilosc {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
             </label>
             <input
@@ -195,6 +200,7 @@ export default function TransferModal({
               type="button"
               onClick={onClose}
               className="btn btn-secondary flex-1"
+              disabled={createTransferMutation.isPending}
             >
               Anuluj
             </button>
@@ -204,8 +210,17 @@ export default function TransferModal({
               disabled={createTransferMutation.isPending}
               className="btn btn-primary flex-1 flex items-center justify-center gap-2"
             >
-              <Package className="w-4 h-4" />
-              {createTransferMutation.isPending ? 'Zapisywanie...' : 'Zapisz transfer'}
+              {createTransferMutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Zapisywanie...
+                </>
+              ) : (
+                <>
+                  <Package className="w-4 h-4" />
+                  Zapisz transfer
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -12,7 +12,7 @@ class CalculatedSale(Base):
     __tablename__ = "calculated_sales"
 
     id = Column(Integer, primary_key=True, index=True)
-    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False)
+    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False, index=True)
     product_variant_id = Column(Integer, ForeignKey("product_variants.id", ondelete="RESTRICT"), nullable=False)
     quantity_sold = Column(Numeric(10, 2), nullable=False)  # Derived quantity (rounded up)
     revenue_pln = Column(Numeric(10, 2), nullable=False)  # quantity_sold * price_pln

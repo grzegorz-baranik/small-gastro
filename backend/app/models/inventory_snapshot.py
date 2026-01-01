@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, DateTime, ForeignKey, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, Integer, Numeric, DateTime, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -23,7 +23,7 @@ class InventorySnapshot(Base):
     __tablename__ = "inventory_snapshots"
 
     id = Column(Integer, primary_key=True, index=True)
-    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False)
+    daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False, index=True)
     ingredient_id = Column(Integer, ForeignKey("ingredients.id", ondelete="RESTRICT"), nullable=False)
     snapshot_type = Column(SQLEnum(SnapshotType, values_callable=lambda x: [e.value for e in x]), nullable=False)
     location = Column(
@@ -39,6 +39,8 @@ class InventorySnapshot(Base):
             "daily_record_id", "ingredient_id", "snapshot_type", "location",
             name="uq_snapshot_per_day_ingredient_type_location"
         ),
+        # Compound index for frequent queries by daily_record_id + snapshot_type
+        Index("ix_inventory_snapshots_record_type", "daily_record_id", "snapshot_type"),
     )
 
     # Relationships

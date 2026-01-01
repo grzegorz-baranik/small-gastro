@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, Date, DateTime, Text, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Numeric, Date, DateTime, Text, Enum as SQLEnum, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -14,7 +14,7 @@ class DailyRecord(Base):
     __tablename__ = "daily_records"
 
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(Date, nullable=False, unique=True)
+    date = Column(Date, nullable=False, unique=True, index=True)  # Frequently filtered
     status = Column(SQLEnum(DayStatus), nullable=False, default=DayStatus.OPEN)
 
     # Financial summary fields

@@ -24,6 +24,7 @@ from app.schemas.daily_operations import (
     EditClosedDayRequest,
     EditClosedDayResponse,
     DailyRecordDetailResponse,
+    PreviousDayStatusResponse,
 )
 from app.schemas.daily_record import DailyRecordResponse
 from app.models.daily_record import DailyRecord, DayStatus
@@ -88,6 +89,28 @@ def get_previous_closing(
     Uzywane do wypelnienia formularza otwarcia dnia.
     """
     return daily_operations_service.get_previous_closing(db)
+
+
+# -----------------------------------------------------------------------------
+# Check Previous Day Status (VR-06)
+# -----------------------------------------------------------------------------
+
+@router.get("/check-previous", response_model=PreviousDayStatusResponse)
+def check_previous_day_status(
+    db: Session = Depends(get_db),
+):
+    """
+    Sprawdz czy poprzedni dzien wymaga zamkniecia.
+
+    VR-06: Ostrzezenie jesli poprzedni dzien nie jest zamkniety.
+
+    Zwraca:
+    - has_unclosed_previous: czy jest niezamkniety poprzedni dzien
+    - unclosed_date: data niezamknietego dnia
+    - unclosed_record_id: ID niezamknietego rekordu
+    - message: komunikat w jezyku polskim
+    """
+    return daily_operations_service.check_previous_day_status(db)
 
 
 # -----------------------------------------------------------------------------

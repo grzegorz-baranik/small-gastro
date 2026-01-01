@@ -13,15 +13,20 @@ Business Rules:
 """
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.models.daily_record import DailyRecord, DayStatus
 from app.models.ingredient import Ingredient
 from app.models.delivery import Delivery
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
+from app.models.storage_inventory import StorageInventory
 
 from app.schemas.mid_day_operations import (
     DeliveryCreate,
@@ -72,6 +77,31 @@ def _validate_ingredient_active(db: Session, ingredient_id: int) -> tuple[Option
     return ingredient, None
 
 
+def _validate_storage_inventory_sufficient(
+    db: Session,
+    ingredient_id: int,
+    requested_quantity: Decimal
+) -> tuple[Optional[Decimal], Optional[str]]:
+    """
+    Validate that storage inventory has sufficient quantity for transfer.
+    VR-10: Storage transfer <= storage inventory (BLOCK)
+
+    Returns (available_quantity, error_message).
+    """
+    storage = db.query(StorageInventory).filter(
+        StorageInventory.ingredient_id == ingredient_id
+    ).first()
+
+    available = Decimal("0")
+    if storage:
+        available = Decimal(str(storage.quantity))
+
+    if requested_quantity > available:
+        return None, f"Niewystarczajacy stan magazynowy (dostepne: {available})"
+
+    return available, None
+
+
 # -----------------------------------------------------------------------------
 # Delivery CRUD
 # -----------------------------------------------------------------------------
@@ -96,19 +126,24 @@ def create_delivery(
     if error:
         return None, error
 
-    # Create delivery
-    db_delivery = Delivery(
-        daily_record_id=data.daily_record_id,
-        ingredient_id=data.ingredient_id,
-        quantity=data.quantity,
-        price_pln=data.price_pln,
-        delivered_at=data.delivered_at or datetime.now(),
-    )
-    db.add(db_delivery)
-    db.commit()
-    db.refresh(db_delivery)
+    try:
+        # Create delivery
+        db_delivery = Delivery(
+            daily_record_id=data.daily_record_id,
+            ingredient_id=data.ingredient_id,
+            quantity=data.quantity,
+            price_pln=data.price_pln,
+            delivered_at=data.delivered_at or datetime.now(),
+        )
+        db.add(db_delivery)
+        db.commit()
+        db.refresh(db_delivery)
 
-    return _build_delivery_response(db_delivery, ingredient), None
+        return _build_delivery_response(db_delivery, ingredient), None
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Blad integralnosci bazy danych przy tworzeniu dostawy: {e}")
+        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
 
 
 def get_deliveries(
@@ -204,6 +239,8 @@ def create_storage_transfer(
     """
     Create a new storage transfer record.
 
+    VR-10: Validates that transfer quantity does not exceed storage inventory.
+
     Returns:
         Tuple of (response, error_message). If error_message is not None, operation failed.
     """
@@ -217,18 +254,38 @@ def create_storage_transfer(
     if error:
         return None, error
 
-    # Create transfer
-    db_transfer = StorageTransfer(
-        daily_record_id=data.daily_record_id,
-        ingredient_id=data.ingredient_id,
-        quantity=data.quantity,
-        transferred_at=data.transferred_at or datetime.now(),
+    # VR-10: Validate storage inventory has sufficient quantity
+    _, error = _validate_storage_inventory_sufficient(
+        db, data.ingredient_id, Decimal(str(data.quantity))
     )
-    db.add(db_transfer)
-    db.commit()
-    db.refresh(db_transfer)
+    if error:
+        return None, error
 
-    return _build_transfer_response(db_transfer, ingredient), None
+    try:
+        # Create transfer
+        db_transfer = StorageTransfer(
+            daily_record_id=data.daily_record_id,
+            ingredient_id=data.ingredient_id,
+            quantity=data.quantity,
+            transferred_at=data.transferred_at or datetime.now(),
+        )
+        db.add(db_transfer)
+
+        # Update storage inventory (deduct transferred quantity)
+        storage = db.query(StorageInventory).filter(
+            StorageInventory.ingredient_id == data.ingredient_id
+        ).first()
+        if storage:
+            storage.quantity = Decimal(str(storage.quantity)) - Decimal(str(data.quantity))
+
+        db.commit()
+        db.refresh(db_transfer)
+
+        return _build_transfer_response(db_transfer, ingredient), None
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Blad integralnosci bazy danych przy tworzeniu transferu: {e}")
+        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
 
 
 def get_storage_transfers(
@@ -279,6 +336,7 @@ def delete_storage_transfer(
     """
     Delete a storage transfer record.
     Can only delete from an open day.
+    Restores the quantity back to storage inventory.
 
     Returns:
         Tuple of (success, error_message).
@@ -291,6 +349,13 @@ def delete_storage_transfer(
     daily_record = db.query(DailyRecord).filter(DailyRecord.id == transfer.daily_record_id).first()
     if daily_record and daily_record.status != DayStatus.OPEN:
         return False, "Nie mozna usuwac transferow z zamknietego dnia"
+
+    # Restore quantity to storage inventory
+    storage = db.query(StorageInventory).filter(
+        StorageInventory.ingredient_id == transfer.ingredient_id
+    ).first()
+    if storage:
+        storage.quantity = Decimal(str(storage.quantity)) + Decimal(str(transfer.quantity))
 
     db.delete(transfer)
     db.commit()
@@ -339,20 +404,25 @@ def create_spoilage(
     # Convert schema enum to model enum
     reason_value = SpoilageReason(data.reason.value)
 
-    # Create spoilage
-    db_spoilage = Spoilage(
-        daily_record_id=data.daily_record_id,
-        ingredient_id=data.ingredient_id,
-        quantity=data.quantity,
-        reason=reason_value,
-        notes=data.notes,
-        recorded_at=data.recorded_at or datetime.now(),
-    )
-    db.add(db_spoilage)
-    db.commit()
-    db.refresh(db_spoilage)
+    try:
+        # Create spoilage
+        db_spoilage = Spoilage(
+            daily_record_id=data.daily_record_id,
+            ingredient_id=data.ingredient_id,
+            quantity=data.quantity,
+            reason=reason_value,
+            notes=data.notes,
+            recorded_at=data.recorded_at or datetime.now(),
+        )
+        db.add(db_spoilage)
+        db.commit()
+        db.refresh(db_spoilage)
 
-    return _build_spoilage_response(db_spoilage, ingredient), None
+        return _build_spoilage_response(db_spoilage, ingredient), None
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Blad integralnosci bazy danych przy tworzeniu straty: {e}")
+        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
 
 
 def get_spoilages(

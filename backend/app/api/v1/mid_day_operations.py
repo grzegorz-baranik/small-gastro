@@ -115,8 +115,10 @@ def delete_delivery(
     success, error = mid_day_operations_service.delete_delivery(db, delivery_id)
 
     if not success:
+        # Use 404 for "not found" errors, 400 for other validation errors
+        status_code = status.HTTP_404_NOT_FOUND if "nie znaleziona" in error.lower() else status.HTTP_400_BAD_REQUEST
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status_code,
             detail=error
         )
 
@@ -205,8 +207,10 @@ def delete_storage_transfer(
     success, error = mid_day_operations_service.delete_storage_transfer(db, transfer_id)
 
     if not success:
+        # Use 404 for "not found" errors, 400 for other validation errors
+        status_code = status.HTTP_404_NOT_FOUND if "nie znaleziony" in error.lower() else status.HTTP_400_BAD_REQUEST
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status_code,
             detail=error
         )
 
@@ -299,8 +303,10 @@ def delete_spoilage(
     success, error = mid_day_operations_service.delete_spoilage(db, spoilage_id)
 
     if not success:
+        # Use 404 for "not found" errors, 400 for other validation errors
+        status_code = status.HTTP_404_NOT_FOUND if "nie znaleziona" in error.lower() else status.HTTP_400_BAD_REQUEST
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status_code,
             detail=error
         )
 
