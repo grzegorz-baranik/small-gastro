@@ -6,13 +6,14 @@ from app.schemas.expense_category import (
     ExpenseCategoryUpdate,
     ExpenseCategoryResponse,
     ExpenseCategoryTree,
+    ExpenseCategoryLeafResponse,
 )
 from app.services import category_service
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ExpenseCategoryResponse])
+@router.get("", response_model=list[ExpenseCategoryResponse])
 def list_categories(
     active_only: bool = True,
     db: Session = Depends(get_db),
@@ -30,7 +31,16 @@ def get_category_tree(
     return category_service.get_category_tree(db, active_only)
 
 
-@router.post("/", response_model=ExpenseCategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.get("/leaves", response_model=list[ExpenseCategoryLeafResponse])
+def get_leaf_categories(
+    active_only: bool = True,
+    db: Session = Depends(get_db),
+):
+    """Pobierz tylko kategorie lisciowe (poziom 3) do przypisania do transakcji."""
+    return category_service.get_leaf_categories(db, active_only)
+
+
+@router.post("", response_model=ExpenseCategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     category: ExpenseCategoryCreate,
     db: Session = Depends(get_db),

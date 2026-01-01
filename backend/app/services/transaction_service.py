@@ -8,6 +8,29 @@ from app.models.expense_category import ExpenseCategory
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionSummary
 
 
+LEAF_CATEGORY_LEVEL = 3
+
+
+class InvalidCategoryError(Exception):
+    """Raised when a non-leaf category is assigned to a transaction."""
+    pass
+
+
+def validate_leaf_category(db: Session, category_id: Optional[int]) -> None:
+    """Validate that the category is a leaf category (level 3) if provided."""
+    if category_id is None:
+        return
+
+    category = db.query(ExpenseCategory).filter(ExpenseCategory.id == category_id).first()
+    if not category:
+        raise InvalidCategoryError("Kategoria nie istnieje")
+    if category.level != LEAF_CATEGORY_LEVEL:
+        raise InvalidCategoryError(
+            f"Mozna przypisac tylko kategorie poziomu 3 (lisciowe). "
+            f"Wybrana kategoria '{category.name}' jest poziomu {category.level}."
+        )
+
+
 def get_transactions(
     db: Session,
     skip: int = 0,
@@ -42,6 +65,10 @@ def get_transaction(db: Session, transaction_id: int) -> Optional[Transaction]:
 
 
 def create_transaction(db: Session, data: TransactionCreate) -> Transaction:
+    # Validate that only leaf categories can be assigned
+    if data.type == TransactionType.EXPENSE:
+        validate_leaf_category(db, data.category_id)
+
     db_transaction = Transaction(
         type=data.type,
         category_id=data.category_id,
@@ -62,7 +89,11 @@ def update_transaction(db: Session, transaction_id: int, data: TransactionUpdate
     if not db_transaction:
         return None
 
+    # Validate category if being updated on an expense transaction
     update_data = data.model_dump(exclude_unset=True)
+    if "category_id" in update_data and db_transaction.type == TransactionType.EXPENSE:
+        validate_leaf_category(db, update_data["category_id"])
+
     for field, value in update_data.items():
         setattr(db_transaction, field, value)
 

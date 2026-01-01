@@ -1,5 +1,5 @@
 import client from './client'
-import type { ExpenseCategory } from '../types'
+import type { ExpenseCategory, LeafCategory } from '../types'
 
 export async function getCategories(): Promise<ExpenseCategory[]> {
   const { data } = await client.get('/categories')
@@ -8,6 +8,11 @@ export async function getCategories(): Promise<ExpenseCategory[]> {
 
 export async function getCategoryTree(): Promise<ExpenseCategory[]> {
   const { data } = await client.get('/categories/tree')
+  return data
+}
+
+export async function getLeafCategories(): Promise<LeafCategory[]> {
+  const { data } = await client.get('/categories/leaves')
   return data
 }
 

@@ -1,10 +1,16 @@
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.models.expense_category import ExpenseCategory
-from app.schemas.expense_category import ExpenseCategoryCreate, ExpenseCategoryUpdate, ExpenseCategoryTree
+from app.schemas.expense_category import (
+    ExpenseCategoryCreate,
+    ExpenseCategoryUpdate,
+    ExpenseCategoryTree,
+    ExpenseCategoryLeafResponse,
+)
 
 
 MAX_CATEGORY_DEPTH = 3
+LEAF_CATEGORY_LEVEL = 3
 
 
 def get_categories(db: Session, active_only: bool = True) -> list[ExpenseCategory]:
@@ -22,7 +28,13 @@ def get_category_tree(db: Session, active_only: bool = True) -> list[ExpenseCate
     categories = get_categories(db, active_only)
 
     # Build tree structure
-    category_map = {c.id: ExpenseCategoryTree.model_validate(c) for c in categories}
+    # Clear children first since model_validate picks them up from SQLAlchemy relationship
+    category_map = {}
+    for c in categories:
+        tree_cat = ExpenseCategoryTree.model_validate(c)
+        tree_cat.children = []  # Clear auto-loaded children to avoid duplicates
+        category_map[c.id] = tree_cat
+
     roots = []
 
     for cat in categories:
@@ -33,6 +45,45 @@ def get_category_tree(db: Session, active_only: bool = True) -> list[ExpenseCate
             category_map[cat.parent_id].children.append(tree_cat)
 
     return roots
+
+
+def get_leaf_categories(db: Session, active_only: bool = True) -> list[ExpenseCategoryLeafResponse]:
+    """Get only leaf categories (level 3) that can be assigned to transactions."""
+    query = db.query(ExpenseCategory).filter(ExpenseCategory.level == LEAF_CATEGORY_LEVEL)
+    if active_only:
+        query = query.filter(ExpenseCategory.is_active == True)
+    categories = query.order_by(ExpenseCategory.name).all()
+
+    # Build response with full paths
+    result = []
+    for category in categories:
+        full_path = get_category_path(db, category.id)
+        result.append(
+            ExpenseCategoryLeafResponse(
+                id=category.id,
+                name=category.name,
+                parent_id=category.parent_id,
+                level=category.level,
+                is_active=category.is_active,
+                full_path=full_path,
+            )
+        )
+    return result
+
+
+def get_category_path(db: Session, category_id: int) -> str:
+    """Get full category path like 'Koszty operacyjne > Skladniki > Warzywa'."""
+    category = db.query(ExpenseCategory).filter(ExpenseCategory.id == category_id).first()
+    if not category:
+        return ""
+
+    path_parts = [category.name]
+    current = category
+    while current.parent_id:
+        current = db.query(ExpenseCategory).filter(ExpenseCategory.id == current.parent_id).first()
+        if current:
+            path_parts.insert(0, current.name)
+    return " > ".join(path_parts)
 
 
 def create_category(db: Session, category: ExpenseCategoryCreate) -> Optional[ExpenseCategory]:

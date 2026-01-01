@@ -26,7 +26,12 @@ class ExpenseCategoryResponse(ExpenseCategoryBase):
 
 
 class ExpenseCategoryTree(ExpenseCategoryResponse):
-    children: list["ExpenseCategoryTree"] = []
+    children: list["ExpenseCategoryTree"] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
+
+
+class ExpenseCategoryLeafResponse(ExpenseCategoryResponse):
+    """Response schema for leaf categories with full path."""
+    full_path: str  # e.g., "Koszty operacyjne > Skladniki > Warzywa"

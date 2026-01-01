@@ -13,7 +13,7 @@ from app.services import daily_record_service
 router = APIRouter()
 
 
-@router.get("/", response_model=list[DailyRecordResponse])
+@router.get("", response_model=list[DailyRecordResponse])
 def list_daily_records(
     skip: int = 0,
     limit: int = 30,

@@ -12,11 +12,12 @@ from app.schemas.transaction import (
     TransactionSummary,
 )
 from app.services import transaction_service
+from app.services.transaction_service import InvalidCategoryError
 
 router = APIRouter()
 
 
-@router.get("/", response_model=TransactionListResponse)
+@router.get("", response_model=TransactionListResponse)
 def list_transactions(
     skip: int = 0,
     limit: int = 100,
@@ -51,13 +52,19 @@ def list_transactions(
     return TransactionListResponse(items=response_items, total=total)
 
 
-@router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 def create_transaction(
     data: TransactionCreate,
     db: Session = Depends(get_db),
 ):
     """Utworz nowa transakcje."""
-    transaction = transaction_service.create_transaction(db, data)
+    try:
+        transaction = transaction_service.create_transaction(db, data)
+    except InvalidCategoryError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
     return TransactionResponse(
         id=transaction.id,
         type=transaction.type,
@@ -115,7 +122,13 @@ def update_transaction(
     db: Session = Depends(get_db),
 ):
     """Zaktualizuj transakcje."""
-    transaction = transaction_service.update_transaction(db, transaction_id, data)
+    try:
+        transaction = transaction_service.update_transaction(db, transaction_id, data)
+    except InvalidCategoryError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
     if not transaction:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
