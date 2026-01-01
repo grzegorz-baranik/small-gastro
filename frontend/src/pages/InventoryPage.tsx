@@ -1,21 +1,24 @@
 import { useQuery } from '@tanstack/react-query'
-import { getDailyRecords, getDailySummary } from '../api/dailyRecords'
+import { getDailyRecords, getDaySummary } from '../api/dailyRecords'
 import { formatDate, formatQuantity } from '../utils/formatters'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { CalculatedSalesTable } from '../components/daily'
 import { useState } from 'react'
 
 export default function InventoryPage() {
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null)
 
-  const { data: records, isLoading: recordsLoading } = useQuery({
+  const { data: recordsData, isLoading: recordsLoading } = useQuery({
     queryKey: ['dailyRecords'],
-    queryFn: getDailyRecords,
+    queryFn: () => getDailyRecords(),
   })
+
+  const records = recordsData?.items || []
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['dailySummary', selectedRecordId],
-    queryFn: () => getDailySummary(selectedRecordId!),
+    queryFn: () => getDaySummary(selectedRecordId!),
     enabled: !!selectedRecordId,
   })
 
@@ -31,7 +34,7 @@ export default function InventoryPage() {
             <LoadingSpinner />
           ) : (
             <div className="space-y-2">
-              {records?.map((record) => (
+              {records.map((record) => (
                 <button
                   key={record.id}
                   onClick={() => setSelectedRecordId(record.id)}
@@ -65,43 +68,44 @@ export default function InventoryPage() {
             ) : summary ? (
               <div className="space-y-6">
                 <div>
-                  <h2 className="card-header">Podsumowanie dnia {formatDate(summary.date)}</h2>
+                  <h2 className="card-header">Podsumowanie dnia {formatDate(summary.daily_record?.date || '')}</h2>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-500">Sprzedane produkty</p>
-                      <p className="text-xl font-bold text-gray-900">{summary.items_sold}</p>
+                      <p className="text-xl font-bold text-gray-900">{summary.calculated_sales?.length || 0}</p>
                     </div>
                     <div className="p-4 bg-green-50 rounded-lg">
                       <p className="text-sm text-gray-500">Przychody</p>
-                      <p className="text-xl font-bold text-green-600">{summary.total_revenue} zl</p>
+                      <p className="text-xl font-bold text-green-600">{summary.total_income_pln || 0} zl</p>
                     </div>
                     <div className="p-4 bg-red-50 rounded-lg">
-                      <p className="text-sm text-gray-500">Wydatki</p>
-                      <p className="text-xl font-bold text-red-600">{summary.total_expenses} zl</p>
+                      <p className="text-sm text-gray-500">Dostawy</p>
+                      <p className="text-xl font-bold text-red-600">{summary.events?.deliveries_total_pln || 0} zl</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Discrepancies */}
-                {summary.discrepancies && summary.discrepancies.length > 0 && (
+                {/* Calculated Sales */}
+                {summary.calculated_sales && summary.calculated_sales.length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Rozbieznosci magazynowe</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3">Obliczona sprzedaz</h3>
+                    <CalculatedSalesTable
+                      sales={summary.calculated_sales}
+                      totalIncome={summary.total_income_pln || 0}
+                    />
+                  </div>
+                )}
+
+                {/* Usage Items with Discrepancies */}
+                {summary.usage_items && summary.usage_items.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Zuzycie skladnikow</h3>
                     <div className="space-y-2">
-                      {summary.discrepancies.map((disc: {
-                        ingredient_id: number
-                        ingredient_name: string
-                        unit_type: string
-                        opening_quantity: number
-                        closing_quantity: number
-                        actual_used: number
-                        expected_used: number
-                        discrepancy: number
-                        discrepancy_percent: number | null
-                      }) => {
-                        const hasIssue = Math.abs(disc.discrepancy) > 0.01
+                      {summary.usage_items.map((item) => {
+                        const hasIssue = item.discrepancy_level && item.discrepancy_level !== 'ok'
                         return (
                           <div
-                            key={disc.ingredient_id}
+                            key={item.ingredient_id}
                             className={`p-3 rounded-lg ${
                               hasIssue ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
                             }`}
@@ -113,33 +117,33 @@ export default function InventoryPage() {
                                 ) : (
                                   <CheckCircle className="w-4 h-4 text-green-600" />
                                 )}
-                                <span className="font-medium text-gray-900">{disc.ingredient_name}</span>
+                                <span className="font-medium text-gray-900">{item.ingredient_name}</span>
                               </div>
-                              {disc.discrepancy_percent !== null && (
+                              {item.discrepancy_percent !== null && (
                                 <span className={`text-sm font-medium ${
-                                  Math.abs(disc.discrepancy_percent) > 10 ? 'text-red-600' : 'text-gray-600'
+                                  Math.abs(item.discrepancy_percent) > 10 ? 'text-red-600' : 'text-gray-600'
                                 }`}>
-                                  {disc.discrepancy_percent > 0 ? '+' : ''}{disc.discrepancy_percent.toFixed(1)}%
+                                  {item.discrepancy_percent > 0 ? '+' : ''}{item.discrepancy_percent.toFixed(1)}%
                                 </span>
                               )}
                             </div>
                             <div className="mt-2 grid grid-cols-4 gap-2 text-sm text-gray-600">
                               <div>
                                 <p className="text-xs text-gray-400">Poczatek</p>
-                                <p>{formatQuantity(disc.opening_quantity, disc.unit_type)}</p>
+                                <p>{formatQuantity(item.opening_quantity, item.unit_type)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-400">Koniec</p>
-                                <p>{formatQuantity(disc.closing_quantity, disc.unit_type)}</p>
+                                <p>{formatQuantity(item.closing_quantity || 0, item.unit_type)}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-400">Oczekiwane</p>
-                                <p>{formatQuantity(disc.expected_used, disc.unit_type)}</p>
+                                <p className="text-xs text-gray-400">Zuzycie</p>
+                                <p>{formatQuantity(item.usage || 0, item.unit_type)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-400">Roznica</p>
-                                <p className={Math.abs(disc.discrepancy) > 0.01 ? 'text-red-600 font-medium' : ''}>
-                                  {formatQuantity(disc.discrepancy, disc.unit_type)}
+                                <p className={Math.abs(item.discrepancy || 0) > 0.01 ? 'text-red-600 font-medium' : ''}>
+                                  {formatQuantity(item.discrepancy || 0, item.unit_type)}
                                 </p>
                               </div>
                             </div>

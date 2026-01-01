@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from typing import Optional
 from app.api.deps import get_db
 from app.schemas.ingredient import (
     IngredientCreate,
@@ -16,10 +17,11 @@ router = APIRouter()
 def list_ingredients(
     skip: int = 0,
     limit: int = 100,
+    is_active: Optional[bool] = Query(None, description="Filtruj po statusie aktywnosci"),
     db: Session = Depends(get_db),
 ):
     """Pobierz liste wszystkich skladnikow."""
-    items, total = ingredient_service.get_ingredients(db, skip, limit)
+    items, total = ingredient_service.get_ingredients(db, skip, limit, is_active=is_active)
     return IngredientListResponse(items=items, total=total)
 
 

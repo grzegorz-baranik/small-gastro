@@ -72,7 +72,11 @@ export interface DailyRecord {
   opened_at: string
   closed_at: string | null
   notes: string | null
+  total_income_pln: number | null
+  total_delivery_cost_pln: number | null
+  total_spoilage_cost_pln: number | null
   created_at: string
+  updated_at: string | null
 }
 
 export interface InventorySnapshotCreate {
@@ -85,6 +89,107 @@ export interface DailyRecordCreate {
   date: string
   notes?: string
   opening_inventory: InventorySnapshotCreate[]
+}
+
+export interface OpenDayRequest {
+  date: string
+  notes?: string
+  opening_inventory: InventorySnapshotItem[]
+}
+
+export interface CloseDayRequest {
+  notes?: string
+  closing_inventory: InventorySnapshotItem[]
+}
+
+// Inventory snapshot item for API requests
+export interface InventorySnapshotItem {
+  ingredient_id: number
+  quantity: number
+}
+
+// Previous closing inventory response
+export interface PreviousClosingItem {
+  ingredient_id: number
+  ingredient_name: string
+  unit_type: UnitType
+  unit_label: string
+  quantity: number
+}
+
+export interface PreviousClosingResponse {
+  date: string | null
+  items: PreviousClosingItem[]
+}
+
+// Day events summary
+export interface DayEventsSummary {
+  deliveries_count: number
+  deliveries_total_pln: number
+  transfers_count: number
+  spoilage_count: number
+}
+
+// Usage calculation item
+export interface UsageItem {
+  ingredient_id: number
+  ingredient_name: string
+  unit_type: UnitType
+  unit_label: string
+  opening_quantity: number
+  deliveries_quantity: number
+  transfers_quantity: number
+  spoilage_quantity: number
+  expected_closing: number
+  closing_quantity: number | null
+  usage: number | null
+  expected_usage: number | null
+  discrepancy: number | null
+  discrepancy_percent: number | null
+  discrepancy_level: 'ok' | 'warning' | 'critical' | null
+}
+
+// Day summary response
+export interface DaySummaryResponse {
+  daily_record: DailyRecord
+  opening_time: string | null
+  closing_time: string | null
+  events: DayEventsSummary
+  usage_items: UsageItem[]
+  calculated_sales: CalculatedSaleItem[]
+  total_income_pln: number
+  discrepancy_alerts: DiscrepancyAlert[]
+}
+
+// Calculated sale item
+export interface CalculatedSaleItem {
+  product_id: number
+  product_name: string
+  variant_id: number | null
+  variant_name: string | null
+  quantity_sold: number
+  unit_price_pln: number
+  revenue_pln: number
+}
+
+// Discrepancy alert
+export interface DiscrepancyAlert {
+  ingredient_id: number
+  ingredient_name: string
+  discrepancy_percent: number
+  level: 'ok' | 'warning' | 'critical'
+  message: string
+}
+
+// Recent day record for history
+export interface RecentDayRecord {
+  id: number
+  date: string
+  status: DayStatus
+  total_income_pln: number | null
+  alerts_count: number
+  opened_at: string | null
+  closed_at: string | null
 }
 
 // Inventory types
@@ -188,4 +293,201 @@ export interface DiscrepancyWarning {
   discrepancy: number
   discrepancy_percent: number
   severity: 'low' | 'medium' | 'high'
+}
+
+// Product Variant types
+export interface ProductVariant {
+  id: number
+  product_id: number
+  name: string
+  price: number
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductVariantCreate {
+  name: string
+  price: number
+  is_default?: boolean
+}
+
+export interface ProductVariantUpdate {
+  name?: string
+  price?: number
+  is_default?: boolean
+  is_active?: boolean
+}
+
+export interface ProductVariantListResponse {
+  items: ProductVariant[]
+  total: number
+}
+
+// Variant Ingredient (Recipe) types
+export interface VariantIngredient {
+  id: number
+  ingredient_id: number
+  quantity: number
+  is_primary: boolean
+  ingredient_name?: string
+  ingredient_unit_type?: string
+  ingredient_unit_label?: string
+}
+
+export interface VariantIngredientCreate {
+  ingredient_id: number
+  quantity: number
+  is_primary?: boolean
+}
+
+export interface VariantIngredientUpdate {
+  quantity?: number
+  is_primary?: boolean
+}
+
+export interface VariantIngredientListResponse {
+  items: VariantIngredient[]
+  total: number
+}
+
+// Extended variant with ingredients
+export interface ProductVariantWithIngredients extends ProductVariant {
+  ingredients: VariantIngredient[]
+}
+
+// Mid-Day Operations types
+
+// Delivery types
+export interface Delivery {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  price_pln: number
+  delivered_at: string
+}
+
+export interface DeliveryCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+  price_pln: number
+}
+
+// Storage Transfer types
+export interface StorageTransfer {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  transferred_at: string
+}
+
+export interface StorageTransferCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+}
+
+// Spoilage types - must match backend SpoilageReason enum
+export type SpoilageReason = 'expired' | 'over_prepared' | 'contaminated' | 'equipment_failure' | 'other'
+
+export interface Spoilage {
+  id: number
+  daily_record_id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  reason: SpoilageReason
+  notes: string | null
+  recorded_at: string
+}
+
+export interface SpoilageCreate {
+  daily_record_id: number
+  ingredient_id: number
+  quantity: number
+  reason: SpoilageReason
+  notes?: string
+}
+
+// Report types
+
+// Date range request for reports
+export interface DateRangeRequest {
+  start_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD
+}
+
+// Monthly trends report
+export interface MonthlyTrendItem {
+  date: string
+  income_pln: number
+  delivery_cost_pln: number
+  spoilage_cost_pln: number
+  profit_pln: number
+}
+
+export interface MonthlyTrendsResponse {
+  items: MonthlyTrendItem[]
+  total_income_pln: number
+  total_costs_pln: number
+  avg_daily_income_pln: number
+  best_day: { date: string; income_pln: number } | null
+  worst_day: { date: string; income_pln: number } | null
+}
+
+// Ingredient usage report
+export interface IngredientUsageItem {
+  date: string
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  opening_quantity: number
+  used_quantity: number
+  closing_quantity: number
+}
+
+export interface IngredientUsageResponse {
+  items: IngredientUsageItem[]
+  summary: {
+    ingredient_id: number
+    ingredient_name: string
+    unit_label: string
+    total_used: number
+  }[]
+}
+
+// Spoilage report
+export interface SpoilageReportItem {
+  date: string
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  reason: SpoilageReason
+  notes: string | null
+}
+
+export interface SpoilageReportResponse {
+  items: SpoilageReportItem[]
+  summary_by_reason: {
+    reason: SpoilageReason
+    count: number
+    total_quantity: number
+  }[]
+  summary_by_ingredient: {
+    ingredient_id: number
+    ingredient_name: string
+    unit_label: string
+    count: number
+    total_quantity: number
+  }[]
 }

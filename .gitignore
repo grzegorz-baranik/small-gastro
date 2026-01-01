@@ -4,6 +4,8 @@ venv/
 .venv/
 env/
 .env/
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -29,12 +31,17 @@ wheels/
 .env
 .env.local
 .env.*.local
+*.local.env
 *.local
 
 # Build outputs
 frontend/dist/
 frontend/build/
+frontend/.vite/
 *.js.map
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 
 # Logs
 logs/
@@ -82,16 +89,11 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
-# TypeScript build info
-*.tsbuildinfo
-vite.config.js
-vite.config.d.ts
-
 # Jupyter
 .ipynb_checkpoints/
 
 # Docker
-*.log
+docker-compose.override.yml
 
 # Database
 *.db
@@ -99,3 +101,6 @@ vite.config.d.ts
 
 # Alembic
 alembic/versions/__pycache__/
+
+# Local settings
+.claude/settings.local.json

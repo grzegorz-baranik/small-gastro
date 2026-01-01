@@ -5,6 +5,7 @@ import {
   Calendar,
   Wallet,
   Package,
+  FileBarChart,
   Settings,
 } from 'lucide-react'
 
@@ -14,6 +15,7 @@ const navItems = [
   { path: '/operacje', icon: Calendar, label: 'Operacje dzienne' },
   { path: '/finanse', icon: Wallet, label: 'Finanse' },
   { path: '/magazyn', icon: Package, label: 'Magazyn' },
+  { path: '/raporty', icon: FileBarChart, label: 'Raporty' },
   { path: '/ustawienia', icon: Settings, label: 'Ustawienia' },
 ]
 

@@ -18,7 +18,32 @@
       "Bash(docker exec:*)",
       "Bash(curl:*)",
       "Bash(docker logs:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(dir /b \"C:\\\\Users\\\\GrzegorzBaranik\\\\source\\\\repos\\\\small-gastro\\\\backend\\\\app\\\\models\")",
+      "Bash(python -m alembic:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(timeout 10 uvicorn:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nImplement Phase 1: Daily Inventory Management foundation\n\nDatabase schema changes:\n- Add ProductVariant model for product size variants\n- Add is_primary flag to ProductIngredient for sales derivation\n- Add unit_label and is_active to Ingredient\n- Add financial tracking fields to DailyRecord\n- Add location enum to InventorySnapshot \\(shop/storage\\)\n- Create new models: Delivery, StorageTransfer, Spoilage, CalculatedSale, StorageInventory\n\nBackend API changes:\n- Add product variant CRUD endpoints\n- Add recipe management endpoints \\(variant ingredients with is_primary\\)\n- Add storage inventory endpoints\n- Update ingredient API with is_active filter\n\nAlembic migration:\n- 002_daily_inventory_management.py with data migration for existing products\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm install)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(timeout 10 python:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(backend/app/schemas/daily_operations.py )",
+      "Bash(backend/app/services/daily_operations_service.py )",
+      "Bash(backend/app/api/v1/daily_records.py )",
+      "Bash(frontend/src/api/dailyOperations.ts )",
+      "Bash(frontend/src/api/dailyRecords.ts )",
+      "Bash(frontend/src/components/daily/ )",
+      "Bash(frontend/src/pages/DailyOperationsPage.tsx )",
+      "Bash(frontend/src/pages/InventoryPage.tsx )",
+      "Bash(frontend/src/types/index.ts )",
+      "Bash(frontend/src/context/DailyRecordContext.tsx )",
+      "Bash(frontend/src/components/common/Modal.tsx)",
+      "Bash(python -c:*)",
+      "Bash(ls:*)"
     ]
   }
 }

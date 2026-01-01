@@ -6,7 +6,7 @@ from app.schemas.sales import (
     SalesItemResponse,
     DailySalesSummary,
 )
-from app.services import sales_service, daily_record_service
+from app.services import sales_service, daily_operations_service
 
 router = APIRouter()
 
@@ -47,7 +47,7 @@ def create_sale(
 ):
     """Zarejestruj sprzedaz (wymaga otwartego dnia)."""
     # Get today's record
-    today_record = daily_record_service.get_today_record(db)
+    today_record = daily_operations_service.get_today_record(db)
     if not today_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

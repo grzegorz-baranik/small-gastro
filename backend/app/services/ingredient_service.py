@@ -5,9 +5,19 @@ from app.models.ingredient import Ingredient
 from app.schemas.ingredient import IngredientCreate, IngredientUpdate
 
 
-def get_ingredients(db: Session, skip: int = 0, limit: int = 100) -> tuple[list[Ingredient], int]:
-    total = db.query(func.count(Ingredient.id)).scalar()
-    items = db.query(Ingredient).offset(skip).limit(limit).all()
+def get_ingredients(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    is_active: Optional[bool] = None
+) -> tuple[list[Ingredient], int]:
+    query = db.query(Ingredient)
+
+    if is_active is not None:
+        query = query.filter(Ingredient.is_active == is_active)
+
+    total = query.count()
+    items = query.offset(skip).limit(limit).all()
     return items, total
 
 
@@ -23,8 +33,10 @@ def create_ingredient(db: Session, ingredient: IngredientCreate) -> Ingredient:
     db_ingredient = Ingredient(
         name=ingredient.name,
         unit_type=ingredient.unit_type,
+        unit_label=ingredient.unit_label,
         current_stock_grams=ingredient.current_stock_grams or 0,
         current_stock_count=ingredient.current_stock_count or 0,
+        is_active=ingredient.is_active if ingredient.is_active is not None else True,
     )
     db.add(db_ingredient)
     db.commit()

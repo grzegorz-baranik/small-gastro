@@ -1,296 +1,545 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Play,
+  Square,
+  FileText,
+  Truck,
+  Package,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Calendar,
+  Clock,
+} from 'lucide-react'
 import { useDailyRecord } from '../context/DailyRecordContext'
-import { openDay, closeDay } from '../api/dailyRecords'
+import { getRecentDays, getDayEvents } from '../api/dailyOperations'
 import { getTodaySales, createSale, deleteSale } from '../api/sales'
 import { getProducts } from '../api/products'
-import { getIngredients } from '../api/ingredients'
-import { formatCurrency, getTodayDateString } from '../utils/formatters'
-import { Play, Square, Trash2 } from 'lucide-react'
+import { formatCurrency, formatDate, getTodayDateString } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import type { Ingredient, InventorySnapshotCreate } from '../types'
+import {
+  OpenDayModal,
+  CloseDayModal,
+  DaySummary,
+  DeliveryModal,
+  TransferModal,
+  SpoilageModal,
+  MidDayEventsList,
+} from '../components/daily'
+import type { DailyRecord, RecentDayRecord } from '../types'
 
 export default function DailyOperationsPage() {
-  const { todayRecord, isDayOpen, refetch } = useDailyRecord()
+  const { todayRecord, isDayOpen, isLoading: recordLoading, refetch } = useDailyRecord()
   const queryClient = useQueryClient()
 
+  // Modal states
+  const [openDayModalOpen, setOpenDayModalOpen] = useState(false)
+  const [closeDayModalOpen, setCloseDayModalOpen] = useState(false)
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<DailyRecord | null>(null)
+
+  // Mid-day operation modal states
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
+  const [spoilageModalOpen, setSpoilageModalOpen] = useState(false)
+
+  // Fetch recent days
+  const { data: recentDays, isLoading: recentDaysLoading } = useQuery({
+    queryKey: ['recentDays'],
+    queryFn: () => getRecentDays(7),
+  })
+
+  // Fetch today's sales
   const { data: salesData, isLoading: salesLoading } = useQuery({
     queryKey: ['todaySales'],
     queryFn: getTodaySales,
     enabled: isDayOpen,
   })
 
+  // Fetch day events for today
+  const { data: dayEvents } = useQuery({
+    queryKey: ['dayEvents', todayRecord?.id],
+    queryFn: () => getDayEvents(todayRecord!.id),
+    enabled: isDayOpen && !!todayRecord?.id,
+  })
+
+  // Fetch products
   const { data: productsData } = useQuery({
     queryKey: ['products'],
     queryFn: () => getProducts(true),
     enabled: isDayOpen,
   })
 
-  const { data: ingredientsData } = useQuery({
-    queryKey: ['ingredients'],
-    queryFn: getIngredients,
-  })
-
+  // Create sale mutation
   const createSaleMutation = useMutation({
     mutationFn: createSale,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todaySales'] }),
   })
 
+  // Delete sale mutation
   const deleteSaleMutation = useMutation({
     mutationFn: deleteSale,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todaySales'] }),
   })
 
-  if (!todayRecord) {
+  // Get day of week name
+  const getDayName = (dateString: string): string => {
+    const date = new Date(dateString)
+    const dayNames = [
+      'Niedziela',
+      'Poniedzialek',
+      'Wtorek',
+      'Sroda',
+      'Czwartek',
+      'Piatek',
+      'Sobota',
+    ]
+    return dayNames[date.getDay()]
+  }
+
+  // Get status badge
+  const getStatusBadge = (status: string) => {
+    if (status === 'open') {
+      return (
+        <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full">
+          OTWARTY
+        </span>
+      )
+    }
     return (
-      <OpenDayView
-        ingredients={ingredientsData?.items || []}
-        onSuccess={refetch}
-      />
+      <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-800 rounded-full">
+        ZAMKNIETY
+      </span>
     )
   }
 
-  if (!isDayOpen) {
+  // Handle opening day summary
+  const handleOpenSummary = (record: DailyRecord) => {
+    setSelectedRecord(record)
+    setSummaryModalOpen(true)
+  }
+
+  // Handle success callbacks
+  const handleOpenDaySuccess = () => {
+    refetch()
+    queryClient.invalidateQueries({ queryKey: ['recentDays'] })
+  }
+
+  const handleCloseDaySuccess = () => {
+    refetch()
+    queryClient.invalidateQueries({ queryKey: ['recentDays'] })
+    queryClient.invalidateQueries({ queryKey: ['todaySales'] })
+  }
+
+  // Handle mid-day operation success - just invalidate day events
+  const handleMidDayOperationSuccess = () => {
+    if (todayRecord) {
+      queryClient.invalidateQueries({ queryKey: ['dayEvents', todayRecord.id] })
+    }
+  }
+
+  if (recordLoading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Operacje dzienne</h1>
-        <div className="card text-center py-12">
-          <p className="text-gray-600">Dzien jest zamkniety.</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
       </div>
     )
   }
 
+  const today = getTodayDateString()
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Operacje dzienne</h1>
-        <CloseDayButton
-          recordId={todayRecord.id}
-          ingredients={ingredientsData?.items || []}
-          onSuccess={refetch}
-        />
       </div>
 
-      {/* Sales Entry */}
+      {/* Today's status card */}
       <div className="card">
-        <h2 className="card-header">Dodaj sprzedaz</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {productsData?.items.map((product) => (
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Calendar className="w-8 h-8 text-primary-600" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                DZISIAJ: {formatDate(today)} ({getDayName(today)})
+              </h2>
+              {todayRecord?.opened_at && (
+                <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  Otwarty o: {new Date(todayRecord.opened_at).toLocaleTimeString('pl-PL', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+          <div>
+            {todayRecord ? getStatusBadge(todayRecord.status) : (
+              <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                NIEOTWART
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-3 gap-4">
+          <button
+            onClick={() => setOpenDayModalOpen(true)}
+            disabled={isDayOpen}
+            className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2 ${
+              isDayOpen
+                ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                : 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 hover:border-primary-300'
+            }`}
+          >
+            <Play className="w-8 h-8" />
+            <span className="font-medium">Otworz dzien</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (todayRecord) {
+                setCloseDayModalOpen(true)
+              }
+            }}
+            disabled={!isDayOpen}
+            className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2 ${
+              !isDayOpen
+                ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-300'
+            }`}
+          >
+            <Square className="w-8 h-8" />
+            <span className="font-medium">Zamknij dzien</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (todayRecord) {
+                handleOpenSummary(todayRecord)
+              }
+            }}
+            disabled={!todayRecord}
+            className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2 ${
+              !todayRecord
+                ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300'
+            }`}
+          >
+            <FileText className="w-8 h-8" />
+            <span className="font-medium">Podsumowanie</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mid-day operations buttons - only show when day is open */}
+      {isDayOpen && todayRecord && (
+        <div className="card">
+          <h3 className="card-header">Operacje magazynowe</h3>
+          <div className="grid grid-cols-3 gap-4">
             <button
-              key={product.id}
-              onClick={() => createSaleMutation.mutate({ product_id: product.id, quantity_sold: 1 })}
-              disabled={createSaleMutation.isPending}
-              className="p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left"
+              onClick={() => setDeliveryModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors flex flex-col items-center gap-2"
             >
-              <p className="font-medium text-gray-900">{product.name}</p>
-              <p className="text-primary-600 font-bold">{formatCurrency(product.price)}</p>
+              <Truck className="w-8 h-8" />
+              <span className="font-medium">Dodaj dostawe</span>
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Today's Sales */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="card-header mb-0">Dzisiejsza sprzedaz</h2>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Suma</p>
-            <p className="text-xl font-bold text-primary-600">
-              {formatCurrency(salesData?.total_revenue ?? 0)}
-            </p>
+            <button
+              onClick={() => setTransferModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-colors flex flex-col items-center gap-2"
+            >
+              <Package className="w-8 h-8" />
+              <span className="font-medium">Transfer z magazynu</span>
+            </button>
+            <button
+              onClick={() => setSpoilageModalOpen(true)}
+              className="p-4 rounded-lg border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors flex flex-col items-center gap-2"
+            >
+              <Trash2 className="w-8 h-8" />
+              <span className="font-medium">Zapisz straty</span>
+            </button>
           </div>
         </div>
+      )}
 
-        {salesLoading ? (
-          <LoadingSpinner />
-        ) : salesData?.items.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Brak sprzedazy</p>
-        ) : (
-          <div className="space-y-2">
-            {salesData?.items.map((sale) => (
-              <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">{sale.product_name}</p>
-                  <p className="text-sm text-gray-500">
-                    {sale.quantity_sold} x {formatCurrency(sale.unit_price)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <p className="font-bold text-gray-900">{formatCurrency(sale.total_price)}</p>
-                  <button
-                    onClick={() => deleteSaleMutation.mutate(sale.id)}
-                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function OpenDayView({ ingredients, onSuccess }: { ingredients: Ingredient[]; onSuccess: () => void }) {
-  const [inventory, setInventory] = useState<Record<number, number>>({})
-  const queryClient = useQueryClient()
-
-  const openDayMutation = useMutation({
-    mutationFn: openDay,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todayRecord'] })
-      onSuccess()
-    },
-  })
-
-  const handleOpenDay = () => {
-    const openingInventory: InventorySnapshotCreate[] = Object.entries(inventory).map(([id, qty]) => {
-      const ingredient = ingredients.find((i) => i.id === parseInt(id))
-      return {
-        ingredient_id: parseInt(id),
-        quantity_grams: ingredient?.unit_type === 'weight' ? qty : undefined,
-        quantity_count: ingredient?.unit_type === 'count' ? qty : undefined,
-      }
-    })
-
-    openDayMutation.mutate({
-      date: getTodayDateString(),
-      opening_inventory: openingInventory,
-    })
-  }
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Otworz dzien</h1>
-
-      <div className="card">
-        <h2 className="card-header">Stany poczatkowe skladnikow</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Wprowadz ilosci skladnikow na poczatek dnia
-        </p>
-
-        <div className="space-y-3">
-          {ingredients.map((ingredient) => (
-            <div key={ingredient.id} className="flex items-center gap-4">
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{ingredient.name}</p>
-                <p className="text-sm text-gray-500">
-                  {ingredient.unit_type === 'weight' ? 'gramy' : 'sztuki'}
+      {/* Today's events summary - only show when day is open */}
+      {isDayOpen && dayEvents && (
+        <div className="card">
+          <h3 className="card-header">Podsumowanie zdarzen</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+              <Truck className="w-6 h-6 text-green-600" />
+              <div>
+                <p className="text-sm text-green-600">Dostawy</p>
+                <p className="font-semibold text-green-800">
+                  {dayEvents.deliveries_count} pozycji
+                </p>
+                <p className="text-sm text-green-600">
+                  {formatCurrency(dayEvents.deliveries_total_pln)}
                 </p>
               </div>
-              <input
-                type="number"
-                min="0"
-                step={ingredient.unit_type === 'weight' ? '0.01' : '1'}
-                value={inventory[ingredient.id] || ''}
-                onChange={(e) => setInventory({ ...inventory, [ingredient.id]: parseFloat(e.target.value) || 0 })}
-                className="input w-32"
-                placeholder="0"
-              />
             </div>
-          ))}
-        </div>
-
-        <button
-          onClick={handleOpenDay}
-          disabled={openDayMutation.isPending}
-          className="btn btn-primary w-full mt-6 flex items-center justify-center gap-2"
-        >
-          <Play className="w-4 h-4" />
-          {openDayMutation.isPending ? 'Otwieranie...' : 'Otworz dzien'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function CloseDayButton({ recordId, ingredients, onSuccess }: { recordId: number; ingredients: Ingredient[]; onSuccess: () => void }) {
-  const [showModal, setShowModal] = useState(false)
-  const [inventory, setInventory] = useState<Record<number, number>>({})
-  const queryClient = useQueryClient()
-
-  const closeDayMutation = useMutation({
-    mutationFn: ({ closingInventory }: { closingInventory: InventorySnapshotCreate[] }) =>
-      closeDay(recordId, closingInventory),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todayRecord'] })
-      queryClient.invalidateQueries({ queryKey: ['todaySales'] })
-      setShowModal(false)
-      onSuccess()
-    },
-  })
-
-  const handleCloseDay = () => {
-    const closingInventory: InventorySnapshotCreate[] = Object.entries(inventory).map(([id, qty]) => {
-      const ingredient = ingredients.find((i) => i.id === parseInt(id))
-      return {
-        ingredient_id: parseInt(id),
-        quantity_grams: ingredient?.unit_type === 'weight' ? qty : undefined,
-        quantity_count: ingredient?.unit_type === 'count' ? qty : undefined,
-      }
-    })
-
-    closeDayMutation.mutate({ closingInventory })
-  }
-
-  return (
-    <>
-      <button onClick={() => setShowModal(true)} className="btn btn-secondary flex items-center gap-2">
-        <Square className="w-4 h-4" />
-        Zamknij dzien
-      </button>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/50" onClick={() => setShowModal(false)} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Zamknij dzien</h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Wprowadz stany koncowe skladnikow
-              </p>
-
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{ingredient.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {ingredient.unit_type === 'weight' ? 'gramy' : 'sztuki'}
-                      </p>
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step={ingredient.unit_type === 'weight' ? '0.01' : '1'}
-                      value={inventory[ingredient.id] || ''}
-                      onChange={(e) => setInventory({ ...inventory, [ingredient.id]: parseFloat(e.target.value) || 0 })}
-                      className="input w-32"
-                      placeholder="0"
-                    />
-                  </div>
-                ))}
+            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+              <Package className="w-6 h-6 text-blue-600" />
+              <div>
+                <p className="text-sm text-blue-600">Transfery z magazynu</p>
+                <p className="font-semibold text-blue-800">
+                  {dayEvents.transfers_count} pozycji
+                </p>
               </div>
-
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowModal(false)} className="btn btn-secondary flex-1">
-                  Anuluj
-                </button>
-                <button
-                  onClick={handleCloseDay}
-                  disabled={closeDayMutation.isPending}
-                  className="btn btn-primary flex-1"
-                >
-                  {closeDayMutation.isPending ? 'Zamykanie...' : 'Zamknij dzien'}
-                </button>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
+              <Trash2 className="w-6 h-6 text-red-600" />
+              <div>
+                <p className="text-sm text-red-600">Straty</p>
+                <p className="font-semibold text-red-800">
+                  {dayEvents.spoilage_count} pozycji
+                </p>
               </div>
             </div>
           </div>
         </div>
       )}
-    </>
+
+      {/* Mid-day events list - only show when day is open */}
+      {isDayOpen && todayRecord && (
+        <MidDayEventsList dailyRecordId={todayRecord.id} />
+      )}
+
+      {/* Sales section - only show when day is open */}
+      {isDayOpen && (
+        <>
+          {/* Quick sales entry */}
+          <div className="card">
+            <h3 className="card-header">Dodaj sprzedaz</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {productsData?.items.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() =>
+                    createSaleMutation.mutate({
+                      product_id: product.id,
+                      quantity_sold: 1,
+                    })
+                  }
+                  disabled={createSaleMutation.isPending}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left"
+                >
+                  <p className="font-medium text-gray-900">{product.name}</p>
+                  <p className="text-primary-600 font-bold">
+                    {formatCurrency(product.price)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Today's sales list */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="card-header mb-0">Dzisiejsza sprzedaz</h3>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Suma</p>
+                <p className="text-xl font-bold text-primary-600">
+                  {formatCurrency(salesData?.total_revenue ?? 0)}
+                </p>
+              </div>
+            </div>
+
+            {salesLoading ? (
+              <LoadingSpinner />
+            ) : salesData?.items.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">Brak sprzedazy</p>
+            ) : (
+              <div className="space-y-2">
+                {salesData?.items.map((sale) => (
+                  <div
+                    key={sale.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {sale.product_name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {sale.quantity_sold} x {formatCurrency(sale.unit_price)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <p className="font-bold text-gray-900">
+                        {formatCurrency(sale.total_price)}
+                      </p>
+                      <button
+                        onClick={() => deleteSaleMutation.mutate(sale.id)}
+                        className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Recent days history */}
+      <div className="card">
+        <h3 className="card-header">Ostatnie dni</h3>
+        {recentDaysLoading ? (
+          <LoadingSpinner />
+        ) : recentDays && recentDays.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Data
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
+                    Przychod
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                    Alerty
+                  </th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
+                    Akcje
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {recentDays.map((day: RecentDayRecord) => (
+                  <tr key={day.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">
+                        {formatDate(day.date)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {getDayName(day.date)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {day.status === 'open' ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+                          OTWARTY
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                          ZAMKNIETY
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      {day.total_income_pln !== null
+                        ? formatCurrency(day.total_income_pln)
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {day.alerts_count > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-yellow-600">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span className="text-sm">
+                            {day.alerts_count} {day.alerts_count === 1 ? 'ostrzezenie' : 'ostrzezenia'}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm">OK</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() =>
+                          handleOpenSummary({
+                            id: day.id,
+                            date: day.date,
+                            status: day.status,
+                            opened_at: day.opened_at || '',
+                            closed_at: day.closed_at,
+                            notes: null,
+                            total_income_pln: day.total_income_pln,
+                            total_delivery_cost_pln: null,
+                            total_spoilage_cost_pln: null,
+                            created_at: '',
+                            updated_at: null,
+                          })
+                        }
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      >
+                        Zobacz szczegoly
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">Brak historii</p>
+        )}
+      </div>
+
+      {/* Modals */}
+      <OpenDayModal
+        isOpen={openDayModalOpen}
+        onClose={() => setOpenDayModalOpen(false)}
+        onSuccess={handleOpenDaySuccess}
+      />
+
+      {todayRecord && (
+        <CloseDayModal
+          isOpen={closeDayModalOpen}
+          onClose={() => setCloseDayModalOpen(false)}
+          onSuccess={handleCloseDaySuccess}
+          dailyRecord={todayRecord}
+        />
+      )}
+
+      {selectedRecord && (
+        <DaySummary
+          isOpen={summaryModalOpen}
+          onClose={() => {
+            setSummaryModalOpen(false)
+            setSelectedRecord(null)
+          }}
+          dailyRecord={selectedRecord}
+        />
+      )}
+
+      {/* Mid-day operation modals */}
+      {todayRecord && (
+        <>
+          <DeliveryModal
+            isOpen={deliveryModalOpen}
+            onClose={() => setDeliveryModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+          <TransferModal
+            isOpen={transferModalOpen}
+            onClose={() => setTransferModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+          <SpoilageModal
+            isOpen={spoilageModalOpen}
+            onClose={() => setSpoilageModalOpen(false)}
+            onSuccess={handleMidDayOperationSuccess}
+            dailyRecordId={todayRecord.id}
+          />
+        </>
+      )}
+    </div>
   )
 }
