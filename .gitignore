@@ -39,6 +39,9 @@ frontend/dist/
 frontend/build/
 frontend/.vite/
 *.js.map
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 
 # Logs
 logs/
@@ -85,11 +88,6 @@ coverage.xml
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# TypeScript build info
-*.tsbuildinfo
-vite.config.js
-vite.config.d.ts
 
 # Jupyter
 .ipynb_checkpoints/

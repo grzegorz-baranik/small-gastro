@@ -1,10 +1,20 @@
-from sqlalchemy.orm import Session, joinedload
+"""
+Legacy Daily Record Service
+
+This module is maintained for backwards compatibility.
+New code should use daily_operations_service instead.
+
+The functions here use the old quantity_grams/quantity_count fields
+and will be deprecated in a future version.
+"""
+
+from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
 from datetime import date, datetime
 from decimal import Decimal
 from app.models.daily_record import DailyRecord, DayStatus
-from app.models.inventory_snapshot import InventorySnapshot, SnapshotType
+from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.sales_item import SalesItem
 from app.models.transaction import Transaction, TransactionType
 from app.schemas.daily_record import DailyRecordCreate, DailyRecordClose, DailyRecordSummary
@@ -12,25 +22,35 @@ from app.services import inventory_service
 
 
 def get_daily_records(db: Session, skip: int = 0, limit: int = 30) -> tuple[list[DailyRecord], int]:
+    """Get paginated list of daily records."""
     total = db.query(func.count(DailyRecord.id)).scalar()
     items = db.query(DailyRecord).order_by(DailyRecord.date.desc()).offset(skip).limit(limit).all()
     return items, total
 
 
 def get_daily_record(db: Session, record_id: int) -> Optional[DailyRecord]:
+    """Get a daily record by ID."""
     return db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
 
 
 def get_today_record(db: Session) -> Optional[DailyRecord]:
+    """Get today's daily record if it exists."""
     today = date.today()
     return db.query(DailyRecord).filter(DailyRecord.date == today).first()
 
 
 def get_record_by_date(db: Session, record_date: date) -> Optional[DailyRecord]:
+    """Get a daily record by date."""
     return db.query(DailyRecord).filter(DailyRecord.date == record_date).first()
 
 
 def open_day(db: Session, data: DailyRecordCreate) -> Optional[DailyRecord]:
+    """
+    Open a new day with opening inventory.
+
+    Uses legacy quantity_grams/quantity_count fields from schema.
+    For new implementations, use daily_operations_service.open_day() instead.
+    """
     # Check if already exists
     existing = get_record_by_date(db, data.date)
     if existing:
@@ -47,12 +67,15 @@ def open_day(db: Session, data: DailyRecordCreate) -> Optional[DailyRecord]:
 
     # Create opening inventory snapshots
     for snap in data.opening_inventory:
+        # Get unified quantity
+        quantity = snap.get_unified_quantity()
+
         db_snap = InventorySnapshot(
             daily_record_id=db_record.id,
             ingredient_id=snap.ingredient_id,
             snapshot_type=SnapshotType.OPEN,
-            quantity_grams=snap.quantity_grams,
-            quantity_count=snap.quantity_count,
+            location=InventoryLocation.SHOP,
+            quantity=quantity,
         )
         db.add(db_snap)
 
@@ -62,18 +85,27 @@ def open_day(db: Session, data: DailyRecordCreate) -> Optional[DailyRecord]:
 
 
 def close_day(db: Session, record_id: int, data: DailyRecordClose) -> Optional[DailyRecord]:
+    """
+    Close an open day with closing inventory.
+
+    Uses legacy quantity_grams/quantity_count fields from schema.
+    For new implementations, use daily_operations_service.close_day() instead.
+    """
     db_record = get_daily_record(db, record_id)
     if not db_record or db_record.status == DayStatus.CLOSED:
         return None
 
     # Create closing inventory snapshots
     for snap in data.closing_inventory:
+        # Get unified quantity
+        quantity = snap.get_unified_quantity()
+
         db_snap = InventorySnapshot(
             daily_record_id=db_record.id,
             ingredient_id=snap.ingredient_id,
             snapshot_type=SnapshotType.CLOSE,
-            quantity_grams=snap.quantity_grams,
-            quantity_count=snap.quantity_count,
+            location=InventoryLocation.SHOP,
+            quantity=quantity,
         )
         db.add(db_snap)
 
@@ -89,6 +121,11 @@ def close_day(db: Session, record_id: int, data: DailyRecordClose) -> Optional[D
 
 
 def get_daily_summary(db: Session, record_id: int) -> Optional[DailyRecordSummary]:
+    """
+    Get summary of a daily record.
+
+    Includes sales totals and discrepancy calculations.
+    """
     db_record = get_daily_record(db, record_id)
     if not db_record:
         return None
