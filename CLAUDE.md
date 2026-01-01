@@ -40,15 +40,30 @@ docker compose up -d                    # Start all services
 docker compose logs -f                  # Follow logs
 ```
 
-## Worktree Workflow
+## Worktree Workflow (MANDATORY)
 
-When asked to work on a new feature in parallel:
+**IMPORTANT: When asked to work on any new feature, fix, or refactor, ALWAYS use git worktrees. Do NOT just create a branch in the main repo.**
 
-1. Create worktree: `git worktree add -b <branch-name> ../worktrees/<branch-name> main`
-2. Navigate to it: `cd ../worktrees/<branch-name>`
-3. Work there independently
+### Steps:
+1. Create worktree with new branch:
+   ```bash
+   git worktree add -b <branch-name> ../small-gastro-worktrees/<branch-name> main
+   ```
+2. Navigate to the worktree:
+   ```bash
+   cd ../small-gastro-worktrees/<branch-name>
+   ```
+3. Work there independently (all commits stay on that branch)
 
-Worktree naming convention: `feature-<name>`, `fix-<name>`, `refactor-<name>`
+### Branch naming convention:
+- `feature-<name>` - New features
+- `fix-<name>` - Bug fixes
+- `refactor-<name>` - Code refactoring
+
+### Why worktrees:
+- Allows parallel work on multiple features without stashing
+- Main repo stays clean on main branch
+- Each feature has its own isolated working directory
 
 ## Project Structure
 
