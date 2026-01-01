@@ -2,6 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## CRITICAL: Specification-Driven Workflow
+
+**BEFORE writing ANY implementation code, you MUST follow the documentation-first approach.**
+
+### Workflow Phases
+
+1. **Specification Phase** (REQUIRED before coding)
+   - Check if spec exists: `docs/specs/{feature-name}/`
+   - If missing, create using: `python scripts/new-feature.py {feature-name}`
+   - Complete all required documents:
+     - `README.md` - Functional specification
+     - `TECHNICAL.md` - Technical design
+     - `scenarios.feature` - BDD scenarios
+     - `TESTING.md` - Test plan
+
+2. **Review & Approval**
+   - Get user approval before implementation
+   - Update spec status to "Zatwierdzony"
+
+3. **Implementation**
+   - Only after spec approval
+   - Follow technical design
+   - Write tests matching BDD scenarios
+
+### Quick Commands
+
+```bash
+# Create new feature structure
+python scripts/new-feature.py <feature-name>
+
+# Check specification coverage
+python scripts/check-spec-coverage.py
+
+# List existing features
+python scripts/new-feature.py --list
+```
+
+### Response When No Spec Exists
+
+```
+Nie znalazłem specyfikacji dla tej funkcjonalności.
+Zanim zacznę implementację, muszę utworzyć dokumentację.
+Czy chcesz, żebym rozpoczął od utworzenia specyfikacji?
+```
+
+See `CLAUDE_CODE_INSTRUCTIONS.md` for complete protocol details.
+
+---
+
 ## Project: small-gastro
 
 A web application for managing a small food business (kebab, burger, etc.) with:
@@ -69,6 +120,20 @@ docker compose logs -f                  # Follow logs
 
 ```
 small-gastro/
+├── docs/
+│   ├── specs/               # Feature specifications (REQUIRED before coding)
+│   │   └── {feature-name}/
+│   │       ├── README.md    # Functional specification
+│   │       ├── TECHNICAL.md # Technical design
+│   │       ├── TESTING.md   # Test plan
+│   │       └── scenarios.feature  # BDD scenarios
+│   ├── adrs/                # Architecture Decision Records
+│   └── templates/           # Specification templates
+├── scripts/
+│   ├── new-feature.py       # Create new feature scaffold
+│   └── check-spec-coverage.py  # Verify spec completeness
+├── tests/
+│   └── features/            # BDD feature files (Gherkin)
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/          # FastAPI routers (endpoints)

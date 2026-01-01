@@ -1,0 +1,104 @@
+# Claude Code Project Configuration - small-gastro
+project_name: "small-gastro"
+documentation_root: "docs/specs"
+
+# Project specifics
+language: "Polish"  # All UI labels in Polish
+currency: "PLN"     # Polish Zloty
+stack:
+  frontend: "React + TypeScript + Vite + TailwindCSS"
+  backend: "Python FastAPI + SQLAlchemy"
+  database: "PostgreSQL"
+
+# CRITICAL: Enforce documentation-first workflow
+workflow_phases:
+  - name: "specification"
+    required_before: ["implementation", "testing"]
+    artifacts:
+      - "functional_spec"
+      - "technical_spec"
+      - "bdd_scenarios"
+      - "adr"  # if architectural decision needed
+
+  - name: "implementation"
+    required_before: ["code_review"]
+    requires_spec_approval: true
+
+  - name: "testing"
+    required_artifacts:
+      - "unit_tests"
+      - "integration_tests"
+
+# Template paths
+templates:
+  functional_spec: "docs/templates/functional-spec.md"
+  technical_spec: "docs/templates/technical-spec.md"
+  bdd_scenarios: "docs/templates/bdd-scenarios.feature"
+  adr: "docs/templates/adr-template.md"
+  test_plan: "docs/templates/test-plan.md"
+
+# Automatic documentation rules
+documentation_rules:
+  - trigger: "code_change"
+    action: "check_spec_sync"
+    description: "Verify specs reflect actual implementation"
+
+  - trigger: "bug_fix"
+    action: "update_edge_cases"
+    description: "Add bug scenario to BDD specs as regression test"
+
+  - trigger: "api_change"
+    action: "update_openapi"
+    description: "Regenerate API documentation"
+
+# File naming conventions
+naming_conventions:
+  specs: "docs/specs/{feature-name}/README.md"
+  adrs: "docs/adrs/ADR-{number}-{title}.md"
+  bdd: "tests/features/{feature-name}.feature"
+  test_plans: "docs/specs/{feature-name}/TESTING.md"
+
+# Code patterns to enforce
+code_standards:
+  backend:
+    - "Use service layer for business logic"
+    - "Use Pydantic schemas for request/response validation"
+    - "All API endpoints must have OpenAPI annotations"
+    - "All services must have corresponding unit tests"
+    - "Error messages in Polish"
+  frontend:
+    - "Use React Query for data fetching"
+    - "Use TailwindCSS with custom .btn, .input, .card classes"
+    - "Use Context API for shared state"
+    - "All UI labels in Polish"
+
+# Pre-implementation checklist
+required_before_coding:
+  - "Functional specification approved"
+  - "Technical design reviewed"
+  - "BDD scenarios written"
+  - "Edge cases documented"
+  - "Success metrics defined"
+
+# Database models reference
+existing_models:
+  - Ingredient        # Skladniki with unit_type (weight/count)
+  - Product           # Produkty with price
+  - ProductIngredient # Junction table linking products to ingredients
+  - ExpenseCategory   # Hierarchical expense categories (max 3 levels)
+  - DailyRecord       # Daily open/close records
+  - InventorySnapshot # Ingredient quantities at day open/close
+  - SalesItem         # Sales transactions for products
+  - Transaction       # Financial transactions (expense/revenue)
+
+# API base structure
+api_structure:
+  base_path: "/api/v1"
+  endpoints:
+    - "/ingredients"     # Ingredient CRUD
+    - "/products"        # Product CRUD with ingredients
+    - "/categories"      # Expense category hierarchy
+    - "/daily-records"   # Open/close day operations
+    - "/sales"           # Sales recording
+    - "/transactions"    # Financial transactions
+    - "/dashboard/*"     # Dashboard data and warnings

@@ -43,7 +43,8 @@
       "Bash(frontend/src/context/DailyRecordContext.tsx )",
       "Bash(frontend/src/components/common/Modal.tsx)",
       "Bash(python -c:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ]
   }
 }
