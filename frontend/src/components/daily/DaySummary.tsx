@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
+import CalculatedSalesTable from './CalculatedSalesTable'
 import { getDaySummary } from '../../api/dailyOperations'
 import { formatCurrency, formatDate, formatDateTime, formatQuantity } from '../../utils/formatters'
 import type { DailyRecord, UsageItem, DiscrepancyAlert } from '../../types'
@@ -262,58 +263,10 @@ export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryP
               <h4 className="text-sm font-medium text-gray-700 mb-3">
                 Obliczona sprzedaz
               </h4>
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Produkt
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                        Ilosc
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                        Cena
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                        Przychod
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {summary.calculated_sales.map((sale, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 font-medium text-gray-900">
-                          {sale.product_name}
-                          {sale.variant_name && ` (${sale.variant_name})`}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {sale.quantity_sold}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-600">
-                          {formatCurrency(sale.unit_price_pln)}
-                        </td>
-                        <td className="px-4 py-2 text-right font-medium text-gray-900">
-                          {formatCurrency(sale.revenue_pln)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="px-4 py-3 text-right font-medium text-gray-900"
-                      >
-                        RAZEM:
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-primary-600 text-lg">
-                        {formatCurrency(summary.total_income_pln)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+              <CalculatedSalesTable
+                sales={summary.calculated_sales}
+                totalIncome={summary.total_income_pln}
+              />
             </div>
           )}
 

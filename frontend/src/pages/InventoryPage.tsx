@@ -3,6 +3,7 @@ import { getDailyRecords, getDaySummary } from '../api/dailyRecords'
 import { formatDate, formatQuantity } from '../utils/formatters'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { CalculatedSalesTable } from '../components/daily'
 import { useState } from 'react'
 
 export default function InventoryPage() {
@@ -83,6 +84,17 @@ export default function InventoryPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Calculated Sales */}
+                {summary.calculated_sales && summary.calculated_sales.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Obliczona sprzedaz</h3>
+                    <CalculatedSalesTable
+                      sales={summary.calculated_sales}
+                      totalIncome={summary.total_income_pln || 0}
+                    />
+                  </div>
+                )}
 
                 {/* Usage Items with Discrepancies */}
                 {summary.usage_items && summary.usage_items.length > 0 && (

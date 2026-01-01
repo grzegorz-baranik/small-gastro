@@ -15,6 +15,8 @@ Business Rules:
 - Error messages in Polish
 """
 
+import math
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import Optional
@@ -27,6 +29,10 @@ from app.models.ingredient import Ingredient
 from app.models.delivery import Delivery
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage
+from app.models.product import ProductVariant, ProductIngredient
+from app.models.calculated_sale import CalculatedSale
+
+logger = logging.getLogger(__name__)
 
 from app.schemas.daily_operations import (
     OpenDayRequest,
@@ -52,6 +58,7 @@ from app.schemas.daily_operations import (
     EditClosedDayRequest,
     EditClosedDayResponse,
     DailyRecordDetailResponse,
+    CalculatedSaleItem,
 )
 
 
@@ -180,6 +187,147 @@ def _get_ingredient_quantities_for_day(
         Decimal(str(transfers_sum)),
         Decimal(str(spoilage_sum))
     )
+
+
+# -----------------------------------------------------------------------------
+# Sales Derivation (Phase 4)
+# -----------------------------------------------------------------------------
+
+def calculate_and_save_sales(
+    db: Session,
+    daily_record_id: int,
+    usage_items: list[UsageItem]
+) -> Decimal:
+    """
+    Calculate derived sales from ingredient usage and save CalculatedSale records.
+
+    Business Rules:
+    - BR-02: For each product variant with a primary ingredient:
+        - raw_quantity = ingredient_usage / recipe_amount
+        - quantity_sold = CEILING(raw_quantity)
+    - BR-03: revenue = quantity_sold * price_pln
+    - Total Daily Income = SUM(all variant revenues)
+
+    Args:
+        db: Database session
+        daily_record_id: ID of the daily record
+        usage_items: List of calculated usage items for ingredients
+
+    Returns:
+        Total income for the day (sum of all revenues)
+    """
+    # Create lookup for usage by ingredient_id
+    usage_map: dict[int, Decimal] = {
+        item.ingredient_id: item.usage
+        for item in usage_items
+    }
+
+    # Get all active product variants with a primary ingredient
+    variants_with_primary = (
+        db.query(ProductVariant)
+        .join(ProductIngredient)
+        .filter(
+            ProductVariant.is_active == True,
+            ProductIngredient.is_primary == True
+        )
+        .all()
+    )
+
+    total_income = Decimal("0")
+
+    for variant in variants_with_primary:
+        # Find the primary ingredient for this variant
+        primary_ingredient = next(
+            (pi for pi in variant.ingredients if pi.is_primary),
+            None
+        )
+
+        if primary_ingredient is None:
+            logger.warning(
+                f"Wariant produktu {variant.id} ({variant.product.name}) "
+                f"nie ma ustawionego glownego skladnika - pomijam"
+            )
+            continue
+
+        ingredient_id = primary_ingredient.ingredient_id
+        recipe_amount = Decimal(str(primary_ingredient.quantity))
+
+        # Skip if recipe amount is zero or negative (avoid division errors)
+        if recipe_amount <= 0:
+            logger.warning(
+                f"Wariant produktu {variant.id} ma nieprawidlowa ilosc skladnika "
+                f"w przepisie ({recipe_amount}) - pomijam"
+            )
+            continue
+
+        # Get usage for this ingredient
+        ingredient_usage = usage_map.get(ingredient_id, Decimal("0"))
+
+        # Skip if usage is zero or negative
+        if ingredient_usage <= 0:
+            continue
+
+        # Calculate derived sales: raw_quantity = usage / recipe_amount
+        raw_quantity = ingredient_usage / recipe_amount
+
+        # Round UP (ceiling) - always round up partial sales
+        quantity_sold = Decimal(str(math.ceil(float(raw_quantity))))
+
+        # Calculate revenue
+        price_pln = Decimal(str(variant.price_pln))
+        revenue_pln = quantity_sold * price_pln
+
+        # Create CalculatedSale record
+        calc_sale = CalculatedSale(
+            daily_record_id=daily_record_id,
+            product_variant_id=variant.id,
+            quantity_sold=quantity_sold,
+            revenue_pln=revenue_pln,
+        )
+        db.add(calc_sale)
+
+        total_income += revenue_pln
+
+        logger.debug(
+            f"Wyliczona sprzedaz: {variant.product.name} "
+            f"({variant.name or 'standardowy'}) - {quantity_sold} szt. = {revenue_pln} PLN"
+        )
+
+    return total_income
+
+
+def _delete_calculated_sales(db: Session, daily_record_id: int) -> None:
+    """Delete all calculated sales for a daily record."""
+    db.query(CalculatedSale).filter(
+        CalculatedSale.daily_record_id == daily_record_id
+    ).delete()
+
+
+def _get_calculated_sales_items(
+    db: Session,
+    daily_record_id: int
+) -> list[CalculatedSaleItem]:
+    """Get calculated sales as response items."""
+    sales = db.query(CalculatedSale).filter(
+        CalculatedSale.daily_record_id == daily_record_id
+    ).all()
+
+    items = []
+    for sale in sales:
+        variant = sale.product_variant
+        product = variant.product
+
+        items.append(CalculatedSaleItem(
+            product_id=product.id,
+            product_name=product.name,
+            variant_id=variant.id,
+            variant_name=variant.name,
+            quantity_sold=Decimal(str(sale.quantity_sold)),
+            unit_price_pln=Decimal(str(variant.price_pln)),
+            revenue_pln=Decimal(str(sale.revenue_pln)),
+        ))
+
+    return items
 
 
 # -----------------------------------------------------------------------------
@@ -399,10 +547,14 @@ def close_day(
         Delivery.daily_record_id == record_id
     ).scalar()
 
+    # Calculate and save derived sales (Phase 4: BR-02, BR-03)
+    total_income = calculate_and_save_sales(db, record_id, usage_summary)
+
     # Update record
     db_record.status = DayStatus.CLOSED
     db_record.closed_at = datetime.now()
     db_record.total_delivery_cost_pln = Decimal(str(total_delivery_cost))
+    db_record.total_income_pln = total_income
     if data.notes:
         db_record.notes = data.notes
 
@@ -547,6 +699,11 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
     # Build discrepancy alerts
     discrepancy_alerts = _build_discrepancy_alerts(usage_items)
 
+    # Get calculated sales (Phase 4)
+    calculated_sales: list[CalculatedSaleItem] = []
+    if db_record.status == DayStatus.CLOSED:
+        calculated_sales = _get_calculated_sales_items(db, record_id)
+
     # Build daily record summary
     daily_record_summary = DailyRecordSummary(
         id=db_record.id,
@@ -572,7 +729,7 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
         closing_time=closing_time,
         events=events,
         usage_items=usage_items,
-        calculated_sales=[],  # Phase 4 feature
+        calculated_sales=calculated_sales,
         total_income_pln=db_record.total_income_pln or Decimal("0"),
         discrepancy_alerts=discrepancy_alerts,
     )
@@ -679,6 +836,9 @@ def edit_closed_day(
         InventorySnapshot.location == InventoryLocation.SHOP
     ).delete()
 
+    # Delete existing calculated sales (Phase 4)
+    _delete_calculated_sales(db, record_id)
+
     # Create new closing snapshots
     for item in data.closing_inventory:
         db_snapshot = InventorySnapshot(
@@ -696,6 +856,10 @@ def edit_closed_day(
 
     # Recalculate usage
     usage_summary = calculate_usage(db, record_id, data.closing_inventory)
+
+    # Recalculate and save derived sales (Phase 4)
+    total_income = calculate_and_save_sales(db, record_id, usage_summary)
+    db_record.total_income_pln = total_income
 
     db.commit()
     db.refresh(db_record)
