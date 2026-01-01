@@ -13,6 +13,17 @@ from app.schemas.product import (
     ProductIngredientUpdate,
     ProductIngredientResponse,
 )
+from app.schemas.product_variant import (
+    ProductVariantCreate,
+    ProductVariantUpdate,
+    ProductVariantResponse,
+    ProductVariantListResponse,
+    ProductVariantWithIngredientsResponse,
+    VariantIngredientCreate,
+    VariantIngredientUpdate,
+    VariantIngredientResponse,
+    VariantIngredientListResponse,
+)
 from app.schemas.expense_category import (
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
@@ -29,6 +40,14 @@ from app.schemas.inventory import (
     InventorySnapshotResponse,
     InventoryDiscrepancy,
     CurrentStock,
+)
+from app.schemas.storage import (
+    StorageInventoryCreate,
+    StorageInventoryResponse,
+    StorageInventoryListResponse,
+    StorageCountBulkCreate,
+    StorageCountBulkResponse,
+    StorageCurrentStatus,
 )
 from app.schemas.sales import (
     SalesItemCreate,
