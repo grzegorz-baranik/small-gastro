@@ -1,3 +1,10 @@
+# Dependencies
+node_modules/
+venv/
+.venv/
+env/
+.env/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,48 +26,83 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.venv/
-venv/
-ENV/
 
 # Environment files
 .env
 .env.local
 .env.*.local
 *.local.env
+*.local
 
-# Node.js
-node_modules/
+# Build outputs
+frontend/dist/
+frontend/build/
+frontend/.vite/
+*.js.map
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Frontend build
-frontend/dist/
-frontend/.vite/
-
-# IDE
+# IDE / Editor
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
 # Testing
 .coverage
 htmlcov/
-.pytest_cache/
 .tox/
 .nox/
+.pytest_cache/
+coverage.xml
+*.cover
+*.coverage
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# TypeScript build info
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Docker
+docker-compose.override.yml
 
 # Database
 *.db
 *.sqlite3
 
-# Logs
-*.log
-logs/
+# Alembic
+alembic/versions/__pycache__/
 
 # Local settings
 .claude/settings.local.json

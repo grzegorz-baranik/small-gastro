@@ -40,7 +40,7 @@ def get_sales_for_day(
     return summary
 
 
-@router.post("/", response_model=SalesItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SalesItemResponse, status_code=status.HTTP_201_CREATED)
 def create_sale(
     data: SalesItemCreate,
     db: Session = Depends(get_db),

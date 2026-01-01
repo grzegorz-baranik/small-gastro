@@ -13,7 +13,7 @@ from app.services import ingredient_service
 router = APIRouter()
 
 
-@router.get("/", response_model=IngredientListResponse)
+@router.get("", response_model=IngredientListResponse)
 def list_ingredients(
     skip: int = 0,
     limit: int = 100,
@@ -25,7 +25,7 @@ def list_ingredients(
     return IngredientListResponse(items=items, total=total)
 
 
-@router.post("/", response_model=IngredientResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=IngredientResponse, status_code=status.HTTP_201_CREATED)
 def create_ingredient(
     ingredient: IngredientCreate,
     db: Session = Depends(get_db),

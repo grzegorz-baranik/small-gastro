@@ -53,6 +53,15 @@ export interface ExpenseCategory {
   children?: ExpenseCategory[]
 }
 
+export interface LeafCategory {
+  id: number
+  name: string
+  parent_id: number | null
+  level: number
+  is_active: boolean
+  full_path: string  // e.g., "Koszty operacyjne > Skladniki > Warzywa"
+}
+
 // Daily record types
 export type DayStatus = 'open' | 'closed'
 
