@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import ingredients, products, categories, daily_records, inventory, sales, transactions, dashboard, storage, mid_day_operations
+from app.api.v1 import ingredients, products, categories, daily_records, inventory, sales, transactions, dashboard, storage, mid_day_operations, reports
 
 api_router = APIRouter()
 
@@ -13,3 +13,4 @@ api_router.include_router(mid_day_operations.router, prefix="", tags=["Operacje 
 api_router.include_router(sales.router, prefix="/sales", tags=["Sprzedaz"])
 api_router.include_router(transactions.router, prefix="/transactions", tags=["Transakcje"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Pulpit"])
+api_router.include_router(reports.router, prefix="/reports", tags=["Raporty"])

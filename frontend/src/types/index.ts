@@ -408,3 +408,77 @@ export interface SpoilageCreate {
   reason: SpoilageReason
   notes?: string
 }
+
+// Report types
+
+// Date range request for reports
+export interface DateRangeRequest {
+  start_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD
+}
+
+// Monthly trends report
+export interface MonthlyTrendItem {
+  date: string
+  income_pln: number
+  delivery_cost_pln: number
+  spoilage_cost_pln: number
+  profit_pln: number
+}
+
+export interface MonthlyTrendsResponse {
+  items: MonthlyTrendItem[]
+  total_income_pln: number
+  total_costs_pln: number
+  avg_daily_income_pln: number
+  best_day: { date: string; income_pln: number } | null
+  worst_day: { date: string; income_pln: number } | null
+}
+
+// Ingredient usage report
+export interface IngredientUsageItem {
+  date: string
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  opening_quantity: number
+  used_quantity: number
+  closing_quantity: number
+}
+
+export interface IngredientUsageResponse {
+  items: IngredientUsageItem[]
+  summary: {
+    ingredient_id: number
+    ingredient_name: string
+    unit_label: string
+    total_used: number
+  }[]
+}
+
+// Spoilage report
+export interface SpoilageReportItem {
+  date: string
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  reason: SpoilageReason
+  notes: string | null
+}
+
+export interface SpoilageReportResponse {
+  items: SpoilageReportItem[]
+  summary_by_reason: {
+    reason: SpoilageReason
+    count: number
+    total_quantity: number
+  }[]
+  summary_by_ingredient: {
+    ingredient_id: number
+    ingredient_name: string
+    unit_label: string
+    count: number
+    total_quantity: number
+  }[]
+}

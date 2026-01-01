@@ -6,6 +6,7 @@ import MenuPage from './pages/MenuPage'
 import DailyOperationsPage from './pages/DailyOperationsPage'
 import FinancesPage from './pages/FinancesPage'
 import InventoryPage from './pages/InventoryPage'
+import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <Route path="/operacje" element={<DailyOperationsPage />} />
             <Route path="/finanse" element={<FinancesPage />} />
             <Route path="/magazyn" element={<InventoryPage />} />
+            <Route path="/raporty" element={<ReportsPage />} />
             <Route path="/ustawienia" element={<SettingsPage />} />
           </Routes>
         </Layout>
