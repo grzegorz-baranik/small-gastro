@@ -4,7 +4,21 @@
       "Bash(npx tsc:*)",
       "Bash(findstr:*)",
       "Bash(npm run build:*)",
-      "Bash(./node_modules/.bin/tsc:*)"
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree:*)",
+      "mcp__MCP_DOCKER__API-get-self",
+      "mcp__MCP_DOCKER__mcp-config-set",
+      "mcp__MCP_DOCKER__mcp-add",
+      "mcp__MCP_DOCKER__API-post-search",
+      "mcp__MCP_DOCKER__mcp-exec",
+      "Bash(jq:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(curl:*)",
+      "Bash(docker logs:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
