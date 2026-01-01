@@ -180,3 +180,65 @@ export interface DiscrepancyWarning {
   discrepancy_percent: number
   severity: 'low' | 'medium' | 'high'
 }
+
+// Product Variant types
+export interface ProductVariant {
+  id: number
+  product_id: number
+  name: string
+  price: number
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductVariantCreate {
+  name: string
+  price: number
+  is_default?: boolean
+}
+
+export interface ProductVariantUpdate {
+  name?: string
+  price?: number
+  is_default?: boolean
+  is_active?: boolean
+}
+
+export interface ProductVariantListResponse {
+  items: ProductVariant[]
+  total: number
+}
+
+// Variant Ingredient (Recipe) types
+export interface VariantIngredient {
+  id: number
+  ingredient_id: number
+  quantity: number
+  is_primary: boolean
+  ingredient_name?: string
+  ingredient_unit_type?: string
+  ingredient_unit_label?: string
+}
+
+export interface VariantIngredientCreate {
+  ingredient_id: number
+  quantity: number
+  is_primary?: boolean
+}
+
+export interface VariantIngredientUpdate {
+  quantity?: number
+  is_primary?: boolean
+}
+
+export interface VariantIngredientListResponse {
+  items: VariantIngredient[]
+  total: number
+}
+
+// Extended variant with ingredients
+export interface ProductVariantWithIngredients extends ProductVariant {
+  ingredients: VariantIngredient[]
+}
