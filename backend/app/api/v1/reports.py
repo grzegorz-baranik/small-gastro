@@ -10,15 +10,15 @@ Provides endpoints for generating and exporting reports:
 Each report has both a JSON endpoint and an Excel export endpoint.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.schemas.reports import (
-    DateRangeRequest,
-    IngredientUsageRequest,
-    SpoilageReportRequest,
     DailySummaryReportResponse,
     MonthlyTrendsReportResponse,
     IngredientUsageReportResponse,
@@ -99,14 +99,15 @@ def export_daily_summary_report(
 # Monthly Trends Report
 # -----------------------------------------------------------------------------
 
-@router.post(
+@router.get(
     "/monthly-trends",
     response_model=MonthlyTrendsReportResponse,
     summary="Trendy miesieczne",
     description="Generuje raport trendow miesiecznych dla podanego zakresu dat.",
 )
 def get_monthly_trends_report(
-    request: DateRangeRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
     db: Session = Depends(get_db),
 ):
     """
@@ -119,19 +120,20 @@ def get_monthly_trends_report(
     """
     report = reports_service.get_monthly_trends_report(
         db,
-        request.start_date,
-        request.end_date
+        start_date,
+        end_date
     )
     return report
 
 
-@router.post(
+@router.get(
     "/monthly-trends/export",
     summary="Eksport trendow miesiecznych do Excel",
     description="Eksportuje raport trendow miesiecznych do pliku Excel.",
 )
 def export_monthly_trends_report(
-    request: DateRangeRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
     db: Session = Depends(get_db),
 ):
     """
@@ -141,12 +143,12 @@ def export_monthly_trends_report(
     """
     report = reports_service.get_monthly_trends_report(
         db,
-        request.start_date,
-        request.end_date
+        start_date,
+        end_date
     )
 
     excel_file = reports_service.export_monthly_trends_to_excel(report)
-    filename = f"trendy_{request.start_date}_do_{request.end_date}.xlsx"
+    filename = f"trendy_{start_date}_do_{end_date}.xlsx"
 
     return StreamingResponse(
         excel_file,
@@ -159,14 +161,29 @@ def export_monthly_trends_report(
 # Ingredient Usage Report
 # -----------------------------------------------------------------------------
 
-@router.post(
+def _parse_ingredient_ids(ingredient_ids: Optional[str]) -> Optional[list[int]]:
+    """Parse comma-separated ingredient IDs string into list of integers."""
+    if not ingredient_ids:
+        return None
+    try:
+        return [int(id.strip()) for id in ingredient_ids.split(",") if id.strip()]
+    except ValueError:
+        return None
+
+
+@router.get(
     "/ingredient-usage",
     response_model=IngredientUsageReportResponse,
     summary="Zuzycie skladnikow",
     description="Generuje raport zuzycia skladnikow dla podanego zakresu dat.",
 )
 def get_ingredient_usage_report(
-    request: IngredientUsageRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
+    ingredient_ids: Optional[str] = Query(
+        None,
+        description="Lista ID skladnikow do filtrowania (oddzielone przecinkami, np. '1,2,3')"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -178,22 +195,28 @@ def get_ingredient_usage_report(
     - Daily usage data for each ingredient
     - Summary with total and average usage per ingredient
     """
+    parsed_ids = _parse_ingredient_ids(ingredient_ids)
     report = reports_service.get_ingredient_usage_report(
         db,
-        request.start_date,
-        request.end_date,
-        request.ingredient_ids
+        start_date,
+        end_date,
+        parsed_ids
     )
     return report
 
 
-@router.post(
+@router.get(
     "/ingredient-usage/export",
     summary="Eksport zuzycia skladnikow do Excel",
     description="Eksportuje raport zuzycia skladnikow do pliku Excel.",
 )
 def export_ingredient_usage_report(
-    request: IngredientUsageRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
+    ingredient_ids: Optional[str] = Query(
+        None,
+        description="Lista ID skladnikow do filtrowania (oddzielone przecinkami, np. '1,2,3')"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -201,15 +224,16 @@ def export_ingredient_usage_report(
 
     Returns an Excel file (.xlsx) with the ingredient usage report.
     """
+    parsed_ids = _parse_ingredient_ids(ingredient_ids)
     report = reports_service.get_ingredient_usage_report(
         db,
-        request.start_date,
-        request.end_date,
-        request.ingredient_ids
+        start_date,
+        end_date,
+        parsed_ids
     )
 
     excel_file = reports_service.export_ingredient_usage_to_excel(report)
-    filename = f"zuzycie_skladnikow_{request.start_date}_do_{request.end_date}.xlsx"
+    filename = f"zuzycie_skladnikow_{start_date}_do_{end_date}.xlsx"
 
     return StreamingResponse(
         excel_file,
@@ -222,14 +246,22 @@ def export_ingredient_usage_report(
 # Spoilage Report
 # -----------------------------------------------------------------------------
 
-@router.post(
+ALLOWED_GROUP_BY_VALUES = {"ingredient", "reason", "date"}
+
+
+@router.get(
     "/spoilage",
     response_model=SpoilageReportResponse,
     summary="Raport strat",
     description="Generuje raport strat dla podanego zakresu dat.",
 )
 def get_spoilage_report(
-    request: SpoilageReportRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
+    group_by: str = Query(
+        "date",
+        description="Grupowanie: 'ingredient', 'reason', lub 'date'"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -245,22 +277,32 @@ def get_spoilage_report(
     - Summary by reason (count and quantity)
     - Summary by ingredient (count and quantity)
     """
+    if group_by not in ALLOWED_GROUP_BY_VALUES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nieprawidlowe grupowanie. Dozwolone: {', '.join(ALLOWED_GROUP_BY_VALUES)}"
+        )
     report = reports_service.get_spoilage_report(
         db,
-        request.start_date,
-        request.end_date,
-        request.group_by
+        start_date,
+        end_date,
+        group_by
     )
     return report
 
 
-@router.post(
+@router.get(
     "/spoilage/export",
     summary="Eksport raportu strat do Excel",
     description="Eksportuje raport strat do pliku Excel.",
 )
 def export_spoilage_report(
-    request: SpoilageReportRequest,
+    start_date: date = Query(..., description="Data poczatkowa zakresu"),
+    end_date: date = Query(..., description="Data koncowa zakresu"),
+    group_by: str = Query(
+        "date",
+        description="Grupowanie: 'ingredient', 'reason', lub 'date'"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -268,15 +310,20 @@ def export_spoilage_report(
 
     Returns an Excel file (.xlsx) with the spoilage report.
     """
+    if group_by not in ALLOWED_GROUP_BY_VALUES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nieprawidlowe grupowanie. Dozwolone: {', '.join(ALLOWED_GROUP_BY_VALUES)}"
+        )
     report = reports_service.get_spoilage_report(
         db,
-        request.start_date,
-        request.end_date,
-        request.group_by
+        start_date,
+        end_date,
+        group_by
     )
 
     excel_file = reports_service.export_spoilage_to_excel(report)
-    filename = f"straty_{request.start_date}_do_{request.end_date}.xlsx"
+    filename = f"straty_{start_date}_do_{end_date}.xlsx"
 
     return StreamingResponse(
         excel_file,

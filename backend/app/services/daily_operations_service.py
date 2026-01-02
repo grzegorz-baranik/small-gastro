@@ -720,9 +720,9 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
         updated_at=db_record.updated_at,
     )
 
-    # Format times as strings
-    opening_time = db_record.opened_at.strftime("%H:%M") if db_record.opened_at else None
-    closing_time = db_record.closed_at.strftime("%H:%M") if db_record.closed_at else None
+    # Format times as ISO strings for frontend Date parsing
+    opening_time = db_record.opened_at.isoformat() if db_record.opened_at else None
+    closing_time = db_record.closed_at.isoformat() if db_record.closed_at else None
 
     return DaySummaryResponse(
         daily_record=daily_record_summary,
