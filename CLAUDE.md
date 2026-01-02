@@ -116,6 +116,16 @@ docker compose logs -f                  # Follow logs
 - Main repo stays clean on main branch
 - Each feature has its own isolated working directory
 
+### Branch Workflow
+
+Before creating a PR:
+1. Run `git fetch origin && git rebase origin/main`
+2. Resolve any conflicts
+3. Run tests
+4. Push with `git push --force-with-lease`
+
+Never merge without rebasing first.
+
 ## Project Structure
 
 ```
