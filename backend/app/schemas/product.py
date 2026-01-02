@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -78,6 +78,7 @@ class ProductResponse(ProductBase):
     id: int
     has_variants: bool
     is_active: bool
+    sort_order: int
     variants: list[ProductVariantResponse] = []
     created_at: datetime
     updated_at: datetime
@@ -89,3 +90,21 @@ class ProductResponse(ProductBase):
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]
     total: int
+
+
+class ProductReorderRequest(BaseModel):
+    """Request to reorder products."""
+    product_ids: list[int] = Field(..., min_length=1, description="Lista ID produktow w nowej kolejnosci")
+
+    @field_validator('product_ids')
+    @classmethod
+    def validate_unique_ids(cls, v):
+        if len(v) != len(set(v)):
+            raise ValueError("Lista zawiera duplikaty ID")
+        return v
+
+
+class ProductReorderResponse(BaseModel):
+    """Response from reorder operation."""
+    message: str
+    updated_count: int
