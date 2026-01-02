@@ -97,6 +97,25 @@ def create_simple_product(
     return _product_to_response(created)
 
 
+@router.put("/reorder", response_model=ProductReorderResponse)
+def reorder_products(
+    request: ProductReorderRequest,
+    db: Session = Depends(get_db),
+):
+    """Zmien kolejnosc produktow w menu."""
+    try:
+        updated_count = product_service.reorder_products(db, request.product_ids)
+        return ProductReorderResponse(
+            message="Kolejnosc zaktualizowana",
+            updated_count=updated_count,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
     product_id: int,
@@ -126,25 +145,6 @@ def update_product(
             detail="Produkt nie znaleziony",
         )
     return _product_to_response(updated)
-
-
-@router.put("/reorder", response_model=ProductReorderResponse)
-def reorder_products(
-    request: ProductReorderRequest,
-    db: Session = Depends(get_db),
-):
-    """Zmien kolejnosc produktow w menu."""
-    try:
-        updated_count = product_service.reorder_products(db, request.product_ids)
-        return ProductReorderResponse(
-            message="Kolejnosc zaktualizowana",
-            updated_count=updated_count,
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
