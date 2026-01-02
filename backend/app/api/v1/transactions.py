@@ -28,7 +28,7 @@ def _to_response(t: Transaction) -> TransactionResponse:
         description=t.description,
         transaction_date=t.transaction_date,
         daily_record_id=t.daily_record_id,
-        category_name=t.category.name if t.category else None,
+        category_name=t.category.name if t.category_id and t.category else None,
         created_at=t.created_at,
     )
 
