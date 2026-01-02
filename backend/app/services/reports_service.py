@@ -16,7 +16,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -187,8 +187,10 @@ def get_daily_summary_report(
     if not record:
         return None
 
-    # Get opening snapshots
-    opening_snapshots = db.query(InventorySnapshot).filter(
+    # Get opening snapshots with eager loading for ingredient
+    opening_snapshots = db.query(InventorySnapshot).options(
+        joinedload(InventorySnapshot.ingredient)
+    ).filter(
         InventorySnapshot.daily_record_id == record_id,
         InventorySnapshot.snapshot_type == SnapshotType.OPEN,
         InventorySnapshot.location == InventoryLocation.SHOP
@@ -258,10 +260,13 @@ def get_daily_summary_report(
             discrepancy_level=discrepancy_level,
         ))
 
-    # Get calculated sales (products sold)
+    # Get calculated sales (products sold) with eager loading for product_variant and product
     products_sold: list[DailySummaryProductItem] = []
     if record.status == DayStatus.CLOSED:
-        sales = db.query(CalculatedSale).filter(
+        from app.models.product import ProductVariant
+        sales = db.query(CalculatedSale).options(
+            joinedload(CalculatedSale.product_variant).joinedload(ProductVariant.product)
+        ).filter(
             CalculatedSale.daily_record_id == record_id
         ).all()
 
@@ -635,8 +640,10 @@ def get_ingredient_usage_report(
     usage_totals: dict[int, dict] = {}  # ingredient_id -> {total_used, days, name, unit_label}
 
     for record in records:
-        # Get opening snapshots for this day
-        opening_query = db.query(InventorySnapshot).filter(
+        # Get opening snapshots for this day with eager loading for ingredient
+        opening_query = db.query(InventorySnapshot).options(
+            joinedload(InventorySnapshot.ingredient)
+        ).filter(
             InventorySnapshot.daily_record_id == record.id,
             InventorySnapshot.snapshot_type == SnapshotType.OPEN,
             InventorySnapshot.location == InventoryLocation.SHOP
@@ -819,9 +826,13 @@ def get_spoilage_report(
 
     group_by can be 'date', 'ingredient', or 'reason'.
     """
-    # Get all spoilage records in range via daily records
+    # Get all spoilage records in range via daily records with eager loading
     spoilages = (
         db.query(Spoilage)
+        .options(
+            joinedload(Spoilage.daily_record),
+            joinedload(Spoilage.ingredient)
+        )
         .join(DailyRecord)
         .filter(
             DailyRecord.date >= start_date,

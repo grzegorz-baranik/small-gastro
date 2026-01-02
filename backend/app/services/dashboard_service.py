@@ -36,31 +36,33 @@ def _get_period_dates(period: str) -> tuple[date, date]:
 
 def _calculate_income(db: Session, date_from: date, date_to: date) -> Decimal:
     # Sales income
-    sales = db.query(func.sum(SalesItem.total_price)).join(
+    sales_result = db.query(func.sum(SalesItem.total_price)).join(
         DailyRecord
     ).filter(
         DailyRecord.date >= date_from,
         DailyRecord.date <= date_to,
-    ).scalar() or Decimal("0")
+    ).scalar()
+    sales = Decimal(str(sales_result)) if sales_result is not None else Decimal("0")
 
     # Revenue transactions
-    revenue = db.query(func.sum(Transaction.amount)).filter(
+    revenue_result = db.query(func.sum(Transaction.amount)).filter(
         Transaction.type == TransactionType.REVENUE,
         Transaction.transaction_date >= date_from,
         Transaction.transaction_date <= date_to,
-    ).scalar() or Decimal("0")
+    ).scalar()
+    revenue = Decimal(str(revenue_result)) if revenue_result is not None else Decimal("0")
 
-    return Decimal(str(sales)) + Decimal(str(revenue))
+    return sales + revenue
 
 
 def _calculate_expenses(db: Session, date_from: date, date_to: date) -> Decimal:
-    expenses = db.query(func.sum(Transaction.amount)).filter(
+    expenses_result = db.query(func.sum(Transaction.amount)).filter(
         Transaction.type == TransactionType.EXPENSE,
         Transaction.transaction_date >= date_from,
         Transaction.transaction_date <= date_to,
-    ).scalar() or Decimal("0")
+    ).scalar()
 
-    return Decimal(str(expenses))
+    return Decimal(str(expenses_result)) if expenses_result is not None else Decimal("0")
 
 
 def get_dashboard_overview(db: Session) -> DashboardOverview:
@@ -114,25 +116,25 @@ def get_income_breakdown(db: Session, period: str) -> IncomeBreakdown:
     # By payment method
     by_payment = {}
     for method in PaymentMethod:
-        amount = db.query(func.sum(Transaction.amount)).filter(
+        amount_result = db.query(func.sum(Transaction.amount)).filter(
             Transaction.type == TransactionType.REVENUE,
             Transaction.payment_method == method,
             Transaction.transaction_date >= date_from,
             Transaction.transaction_date <= date_to,
-        ).scalar() or Decimal("0")
-        if amount > 0:
-            by_payment[method.value] = Decimal(str(amount))
+        ).scalar()
+        if amount_result is not None and amount_result > 0:
+            by_payment[method.value] = Decimal(str(amount_result))
 
     # Add sales (assuming cash for simplicity, could be tracked separately)
-    sales = db.query(func.sum(SalesItem.total_price)).join(
+    sales_result = db.query(func.sum(SalesItem.total_price)).join(
         DailyRecord
     ).filter(
         DailyRecord.date >= date_from,
         DailyRecord.date <= date_to,
-    ).scalar() or Decimal("0")
+    ).scalar()
 
-    if sales > 0:
-        by_payment["sprzedaz"] = Decimal(str(sales))
+    if sales_result is not None and sales_result > 0:
+        by_payment["sprzedaz"] = Decimal(str(sales_result))
 
     return IncomeBreakdown(
         period=period,
@@ -160,18 +162,19 @@ def get_expenses_breakdown(db: Session, period: str) -> ExpensesBreakdown:
     ).group_by(ExpenseCategory.name).all()
 
     for cat_name, amount in category_expenses:
-        by_category[cat_name] = Decimal(str(amount))
+        if amount is not None:
+            by_category[cat_name] = Decimal(str(amount))
 
     # Uncategorized
-    uncategorized = db.query(func.sum(Transaction.amount)).filter(
+    uncategorized_result = db.query(func.sum(Transaction.amount)).filter(
         Transaction.type == TransactionType.EXPENSE,
         Transaction.category_id == None,
         Transaction.transaction_date >= date_from,
         Transaction.transaction_date <= date_to,
-    ).scalar() or Decimal("0")
+    ).scalar()
 
-    if uncategorized > 0:
-        by_category["Bez kategorii"] = Decimal(str(uncategorized))
+    if uncategorized_result is not None and uncategorized_result > 0:
+        by_category["Bez kategorii"] = Decimal(str(uncategorized_result))
 
     return ExpensesBreakdown(
         period=period,
@@ -214,7 +217,11 @@ def get_discrepancy_warnings(db: Session, days_back: int = 7) -> list[Discrepanc
 
     warning_id = 0
     for record in records:
-        discrepancies = inventory_service.calculate_discrepancies(db, record.id)
+        try:
+            discrepancies = inventory_service.calculate_discrepancies(db, record.id)
+        except Exception:
+            # Skip records that fail discrepancy calculation
+            continue
 
         for disc in discrepancies:
             if disc.discrepancy_percent is None:
@@ -245,8 +252,8 @@ def get_discrepancy_warnings(db: Session, days_back: int = 7) -> list[Discrepanc
                 severity=severity,
             ))
 
-    # Sort by severity (high first)
+    # Sort by severity (high first), then by discrepancy percentage (highest first)
     severity_order = {"high": 0, "medium": 1, "low": 2}
-    warnings.sort(key=lambda w: (severity_order[w.severity], -abs(w.discrepancy_percent)))
+    warnings.sort(key=lambda w: (severity_order.get(w.severity, 3), -abs(w.discrepancy_percent)))
 
     return warnings

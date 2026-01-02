@@ -403,6 +403,7 @@ def open_day(
         date=target_date,
         status=DayStatus.OPEN,
         opened_at=datetime.now(),
+        notes=data.notes,
     )
     db.add(db_record)
     db.flush()  # Get the ID
@@ -934,6 +935,65 @@ def get_today_record(db: Session) -> Optional[DailyRecord]:
     """Get today's daily record if it exists."""
     today = date.today()
     return db.query(DailyRecord).filter(DailyRecord.date == today).first()
+
+
+def get_recent_records(db: Session, limit: int = 7) -> list[dict]:
+    """
+    Get recent daily records for history display.
+
+    Returns simplified records with alerts count for dashboard/history views.
+    """
+    records = db.query(DailyRecord).order_by(
+        desc(DailyRecord.date)
+    ).limit(limit).all()
+
+    result = []
+    for record in records:
+        # Count discrepancy alerts for closed days
+        alerts_count = 0
+        if record.status == DayStatus.CLOSED:
+            # Get usage items and count warnings/criticals
+            closing_snapshots = db.query(InventorySnapshot).filter(
+                InventorySnapshot.daily_record_id == record.id,
+                InventorySnapshot.snapshot_type == SnapshotType.CLOSE,
+                InventorySnapshot.location == InventoryLocation.SHOP
+            ).all()
+
+            if closing_snapshots:
+                closing_items = [
+                    InventorySnapshotItem(
+                        ingredient_id=s.ingredient_id,
+                        quantity=Decimal(str(s.quantity))
+                    )
+                    for s in closing_snapshots
+                ]
+                usage_items = calculate_usage(db, record.id, closing_items)
+
+                # Get ingredient lookup
+                ingredient_ids = [item.ingredient_id for item in usage_items]
+                ingredients = db.query(Ingredient).filter(
+                    Ingredient.id.in_(ingredient_ids)
+                ).all()
+                ingredient_map = {ing.id: ing for ing in ingredients}
+
+                for item in usage_items:
+                    ingredient = ingredient_map.get(item.ingredient_id)
+                    if ingredient:
+                        response_item = _build_usage_item_response(item, ingredient)
+                        if response_item.discrepancy_level in ("warning", "critical"):
+                            alerts_count += 1
+
+        result.append({
+            "id": record.id,
+            "date": record.date.isoformat(),
+            "status": record.status.value,
+            "total_income_pln": float(record.total_income_pln) if record.total_income_pln else None,
+            "alerts_count": alerts_count,
+            "opened_at": record.opened_at.isoformat() if record.opened_at else None,
+            "closed_at": record.closed_at.isoformat() if record.closed_at else None,
+        })
+
+    return result
 
 
 # -----------------------------------------------------------------------------

@@ -164,6 +164,43 @@ small-gastro/
 - **Pydantic schemas** - Separate Create/Update/Response schemas
 - **Polish error messages** - All API errors in Polish
 
+### CRITICAL: Enum Columns in SQLAlchemy
+
+**ALWAYS use `EnumColumn()` helper for enum columns, NEVER use raw `Enum()`!**
+
+```python
+# CORRECT - Always use EnumColumn from database.py
+from app.core.database import Base, EnumColumn
+
+class MyModel(Base):
+    status = Column(EnumColumn(MyStatusEnum), nullable=False)
+
+# WRONG - Never use raw Enum!
+from sqlalchemy import Enum as SQLEnum
+status = Column(SQLEnum(MyStatusEnum), nullable=False)  # DON'T DO THIS!
+```
+
+**Why:** PostgreSQL enums store lowercase values ('open', 'closed'), but SQLAlchemy's default `Enum()` sends uppercase names ('OPEN', 'CLOSED'). This causes cryptic errors like:
+```
+invalid input value for enum: "OPEN"
+```
+
+The `EnumColumn()` helper in `app/core/database.py` handles this automatically.
+
+### FastAPI Route Ordering
+
+**Static routes MUST come BEFORE path parameter routes!**
+
+```python
+# CORRECT order:
+@router.get("/status/open")     # Static route first
+@router.get("/{record_id}")     # Path param route after
+
+# WRONG order - causes 422 errors:
+@router.get("/{record_id}")     # This catches "/status/open" as record_id="status"
+@router.get("/status/open")     # Never reached!
+```
+
 ### Frontend
 - **React Query** - For data fetching and caching
 - **TailwindCSS** - Utility-first styling with custom `.btn`, `.input`, `.card` classes
