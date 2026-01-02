@@ -291,9 +291,9 @@ def get_daily_summary_report(
         net_profit_pln=net_profit,
     )
 
-    # Format times
-    opening_time = record.opened_at.strftime("%H:%M") if record.opened_at else None
-    closing_time = record.closed_at.strftime("%H:%M") if record.closed_at else None
+    # Format times as ISO strings for frontend Date parsing
+    opening_time = record.opened_at.isoformat() if record.opened_at else None
+    closing_time = record.closed_at.isoformat() if record.closed_at else None
 
     return DailySummaryReportResponse(
         record_id=record.id,
