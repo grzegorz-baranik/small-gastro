@@ -9,6 +9,8 @@ from app.schemas.product import (
     ProductListResponse,
     ProductVariantResponse,
     ProductIngredientResponse,
+    ProductReorderRequest,
+    ProductReorderResponse,
 )
 from app.services import product_service
 
@@ -43,6 +45,7 @@ def _product_to_response(product) -> ProductResponse:
         name=product.name,
         has_variants=product.has_variants,
         is_active=product.is_active,
+        sort_order=product.sort_order,
         variants=variant_responses,
         created_at=product.created_at,
         updated_at=product.updated_at,
@@ -123,6 +126,25 @@ def update_product(
             detail="Produkt nie znaleziony",
         )
     return _product_to_response(updated)
+
+
+@router.put("/reorder", response_model=ProductReorderResponse)
+def reorder_products(
+    request: ProductReorderRequest,
+    db: Session = Depends(get_db),
+):
+    """Zmien kolejnosc produktow w menu."""
+    try:
+        updated_count = product_service.reorder_products(db, request.product_ids)
+        return ProductReorderResponse(
+            message="Kolejnosc zaktualizowana",
+            updated_count=updated_count,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

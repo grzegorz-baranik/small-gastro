@@ -23,7 +23,7 @@ def get_products(db: Session, skip: int = 0, limit: int = 100, active_only: bool
     total = query.count()
     items = query.options(
         joinedload(Product.variants).joinedload(ProductVariant.ingredients).joinedload(ProductIngredient.ingredient)
-    ).offset(skip).limit(limit).all()
+    ).order_by(Product.sort_order.asc()).offset(skip).limit(limit).all()
     return items, total
 
 
@@ -38,9 +38,13 @@ def get_product_by_name(db: Session, name: str) -> Optional[Product]:
 
 
 def create_product(db: Session, product: ProductCreate) -> Product:
+    # Get max sort_order for new products to appear at the end
+    max_sort = db.query(func.max(Product.sort_order)).scalar() or 0
+
     db_product = Product(
         name=product.name,
         has_variants=product.has_variants,
+        sort_order=max_sort + 1,
     )
     db.add(db_product)
     db.flush()
@@ -72,9 +76,13 @@ def create_product(db: Session, product: ProductCreate) -> Product:
 
 def create_simple_product(db: Session, product: ProductSimpleCreate) -> Product:
     """Create a product with a single variant (no size variations)."""
+    # Get max sort_order for new products to appear at the end
+    max_sort = db.query(func.max(Product.sort_order)).scalar() or 0
+
     db_product = Product(
         name=product.name,
         has_variants=False,
+        sort_order=max_sort + 1,
     )
     db.add(db_product)
     db.flush()
@@ -245,3 +253,35 @@ def remove_variant_ingredient(db: Session, variant_id: int, ingredient_id: int) 
     db.delete(db_pi)
     db.commit()
     return True
+
+
+def reorder_products(db: Session, product_ids: list[int]) -> int:
+    """
+    Update the sort_order of products based on the order in product_ids.
+
+    Args:
+        db: Database session
+        product_ids: List of product IDs in the desired order
+
+    Returns:
+        Number of updated products
+
+    Raises:
+        ValueError: If any product ID doesn't exist
+    """
+    # Verify all products exist
+    existing_products = db.query(Product.id).filter(Product.id.in_(product_ids)).all()
+    existing_ids = {p.id for p in existing_products}
+
+    missing_ids = set(product_ids) - existing_ids
+    if missing_ids:
+        raise ValueError(f"Nie znaleziono produktow o ID: {missing_ids}")
+
+    # Update sort_order for each product
+    for index, product_id in enumerate(product_ids):
+        db.query(Product).filter(Product.id == product_id).update(
+            {"sort_order": index}
+        )
+
+    db.commit()
+    return len(product_ids)

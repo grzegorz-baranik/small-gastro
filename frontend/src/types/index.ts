@@ -42,9 +42,19 @@ export interface Product {
   name: string
   has_variants: boolean
   is_active: boolean
+  sort_order: number
   variants: ProductVariantInProduct[]
   created_at: string
   updated_at: string
+}
+
+export interface ProductReorderRequest {
+  product_ids: number[]
+}
+
+export interface ProductReorderResponse {
+  message: string
+  updated_count: number
 }
 
 export interface ProductCreate {
