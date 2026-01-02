@@ -11,6 +11,7 @@ class Product(Base):
     name = Column(String(255), nullable=False, unique=True)
     has_variants = Column(Boolean, nullable=False, server_default="false")  # True for products with size variants
     is_active = Column(Boolean, nullable=False, server_default="true")
+    sort_order = Column(Integer, nullable=False, server_default="0", index=True)  # For menu ordering
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

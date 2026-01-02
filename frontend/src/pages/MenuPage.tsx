@@ -1,13 +1,28 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getProducts, createProduct, deleteProduct } from '../api/products'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { getProducts, createProduct, deleteProduct, reorderProducts } from '../api/products'
 import { getIngredients, createIngredient, deleteIngredient } from '../api/ingredients'
-import { formatCurrency, formatQuantity } from '../utils/formatters'
-import { Plus, Trash2, Package, Scale, Layers, Star } from 'lucide-react'
+import { Plus, Trash2, Package, Scale } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import VariantManagementModal from '../components/products/VariantManagementModal'
-import type { Product, ProductCreate, IngredientCreate, ProductVariantInProduct } from '../types'
+import SortableProductCard from '../components/products/SortableProductCard'
+import type { Product, ProductCreate, IngredientCreate } from '../types'
 
 export default function MenuPage() {
   const [activeTab, setActiveTab] = useState<'products' | 'ingredients'>('products')
@@ -52,6 +67,50 @@ export default function MenuPage() {
     mutationFn: deleteIngredient,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }),
   })
+
+  const reorderProductsMutation = useMutation({
+    mutationFn: reorderProducts,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+    onError: () => {
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Minimum drag distance before activation
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id && productsData?.items) {
+      const oldIndex = productsData.items.findIndex((p) => p.id === active.id)
+      const newIndex = productsData.items.findIndex((p) => p.id === over.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(productsData.items, oldIndex, newIndex)
+        const productIds = newOrder.map((p) => p.id)
+
+        // Optimistic update
+        queryClient.setQueryData(['products'], {
+          ...productsData,
+          items: newOrder,
+        })
+
+        // Send to server
+        reorderProductsMutation.mutate(productIds)
+      }
+    }
+  }
 
   const handleDeleteProduct = (product: Product) => {
     if (window.confirm(`Czy na pewno chcesz dezaktywowac produkt "${product.name}"?`)) {
@@ -113,14 +172,25 @@ export default function MenuPage() {
               <p className="text-sm mt-1">Dodaj pierwszy produkt powyzej.</p>
             </div>
           ) : (
-            productsData?.items.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onManageVariants={() => setSelectedProductForVariants(product)}
-                onDelete={() => handleDeleteProduct(product)}
-              />
-            ))
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={productsData?.items.map((p) => p.id) || []}
+                strategy={verticalListSortingStrategy}
+              >
+                {productsData?.items.map((product) => (
+                  <SortableProductCard
+                    key={product.id}
+                    product={product}
+                    onManageVariants={() => setSelectedProductForVariants(product)}
+                    onDelete={() => handleDeleteProduct(product)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       )}
@@ -199,119 +269,6 @@ export default function MenuPage() {
           product={selectedProductForVariants}
         />
       )}
-    </div>
-  )
-}
-
-// Product Card Component with Variants
-function ProductCard({
-  product,
-  onManageVariants,
-  onDelete,
-}: {
-  product: Product
-  onManageVariants: () => void
-  onDelete: () => void
-}) {
-  const variants = product.variants || []
-  const hasVariants = variants.length > 1
-  const defaultVariant = variants[0]
-  const displayPrice = defaultVariant?.price_pln ?? 0
-
-  // Get ingredients from the first variant for display
-  const ingredients = defaultVariant?.ingredients || []
-
-  return (
-    <div className={`card ${!product.is_active ? 'opacity-50' : ''}`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-            {!product.is_active && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                Nieaktywny
-              </span>
-            )}
-            {hasVariants && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center gap-1">
-                <Layers className="w-3 h-3" />
-                {variants.length} {variants.length === 1 ? 'wariant' : variants.length < 5 ? 'warianty' : 'wariantow'}
-              </span>
-            )}
-          </div>
-
-          {/* Price display */}
-          {hasVariants ? (
-            <div className="mt-2">
-              <VariantPriceList variants={variants} />
-            </div>
-          ) : (
-            <p className="text-lg font-bold text-primary-600 mt-1">
-              {formatCurrency(displayPrice)}
-            </p>
-          )}
-
-          {/* Ingredients display from first variant */}
-          {ingredients.length > 0 && !hasVariants && (
-            <div className="mt-3 space-y-1">
-              <p className="text-sm text-gray-500">Skladniki:</p>
-              <div className="flex flex-wrap gap-2">
-                {ingredients.map((pi) => (
-                  <span
-                    key={pi.id}
-                    className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded"
-                  >
-                    {pi.ingredient_name}: {formatQuantity(pi.quantity, pi.ingredient_unit_type || 'weight')}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={onManageVariants}
-            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-            title="Zarzadzaj wariantami"
-          >
-            <Layers className="w-4 h-4 text-blue-600" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-            title="Dezaktywuj produkt"
-          >
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Component to display variant prices in a compact list
-function VariantPriceList({ variants }: { variants: ProductVariantInProduct[] }) {
-  const sortedVariants = [...variants].sort((a, b) => {
-    // Sort by price
-    return a.price_pln - b.price_pln
-  })
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {sortedVariants.map((variant, index) => (
-        <div
-          key={variant.id}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
-            index === 0
-              ? 'bg-primary-100 text-primary-700 font-medium'
-              : 'bg-gray-100 text-gray-700'
-          }`}
-        >
-          {index === 0 && <Star className="w-3 h-3 fill-current" />}
-          <span>{variant.name || 'Domyslny'}</span>
-          <span className="font-semibold">{formatCurrency(variant.price_pln)}</span>
-        </div>
-      ))}
     </div>
   )
 }
