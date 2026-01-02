@@ -114,6 +114,43 @@ def check_previous_day_status(
 
 
 # -----------------------------------------------------------------------------
+# Get Recent Days (MUST be before /{record_id} routes to avoid path conflicts)
+# -----------------------------------------------------------------------------
+
+@router.get("/recent")
+def get_recent_days(
+    limit: int = Query(7, ge=1, le=30, description="Liczba dni do zwrocenia"),
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz ostatnie rekordy dzienne (do wyswietlenia historii).
+
+    Zwraca uproszczone rekordy z liczba alertow.
+    """
+    return daily_operations_service.get_recent_records(db, limit)
+
+
+# -----------------------------------------------------------------------------
+# Get Open Day (MUST be before /{record_id} routes to avoid path conflicts)
+# -----------------------------------------------------------------------------
+
+@router.get("/status/open", response_model=Optional[DailyRecordDetailResponse])
+def get_open_day(
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz aktualnie otwarty dzien (jesli istnieje).
+
+    Uzywane do sprawdzenia czy jakis dzien jest aktualnie otwarty.
+    """
+    record = daily_operations_service.get_open_day(db)
+    if not record:
+        return None
+
+    return daily_operations_service.get_daily_record_detail(db, record.id)
+
+
+# -----------------------------------------------------------------------------
 # Open Day
 # -----------------------------------------------------------------------------
 
@@ -263,23 +300,3 @@ def edit_closed_day(
         )
 
     return response
-
-
-# -----------------------------------------------------------------------------
-# Get Open Day
-# -----------------------------------------------------------------------------
-
-@router.get("/status/open", response_model=Optional[DailyRecordDetailResponse])
-def get_open_day(
-    db: Session = Depends(get_db),
-):
-    """
-    Pobierz aktualnie otwarty dzien (jesli istnieje).
-
-    Uzywane do sprawdzenia czy jakis dzien jest aktualnie otwarty.
-    """
-    record = daily_operations_service.get_open_day(db)
-    if not record:
-        return None
-
-    return daily_operations_service.get_daily_record_detail(db, record.id)

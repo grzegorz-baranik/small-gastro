@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Numeric, Date, DateTime, Text, Enum as SQLEnum, Index
+from sqlalchemy import Column, Integer, String, Numeric, Date, DateTime, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from app.core.database import Base
+from app.core.database import Base, EnumColumn
 
 
 class DayStatus(str, enum.Enum):
@@ -15,7 +15,7 @@ class DailyRecord(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False, unique=True, index=True)  # Frequently filtered
-    status = Column(SQLEnum(DayStatus), nullable=False, default=DayStatus.OPEN)
+    status = Column(EnumColumn(DayStatus), nullable=False, default=DayStatus.OPEN)
 
     # Financial summary fields
     total_income_pln = Column(Numeric(10, 2), nullable=True)  # Calculated from sales

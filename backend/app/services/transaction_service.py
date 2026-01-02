@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
-from typing import Optional
+from typing import Optional, Union
 from datetime import date
 from decimal import Decimal
 from app.models.transaction import Transaction, TransactionType, PaymentMethod
@@ -32,20 +32,43 @@ def validate_leaf_category(db: Session, category_id: Optional[int]) -> None:
         )
 
 
+def _normalize_type_filter(
+    type_filter: Optional[Union[TransactionType, str]]
+) -> Optional[TransactionType]:
+    """Convert string type_filter to TransactionType enum if needed."""
+    if type_filter is None:
+        return None
+    if isinstance(type_filter, TransactionType):
+        return type_filter
+    # Handle string values
+    try:
+        return TransactionType(type_filter)
+    except ValueError:
+        # Try uppercase conversion for case-insensitive matching
+        try:
+            return TransactionType(type_filter.lower())
+        except ValueError:
+            return None
+
+
 def get_transactions(
     db: Session,
     skip: int = 0,
     limit: int = 100,
-    type_filter: Optional[TransactionType] = None,
+    type_filter: Optional[Union[TransactionType, str]] = None,
     category_id: Optional[int] = None,
     payment_method: Optional[PaymentMethod] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
 ) -> tuple[list[Transaction], int]:
-    query = db.query(Transaction)
+    # Eagerly load the category relationship to avoid N+1 queries
+    # and ensure the relationship is available after the query
+    query = db.query(Transaction).options(joinedload(Transaction.category))
 
-    if type_filter:
-        query = query.filter(Transaction.type == type_filter)
+    # Normalize type_filter to handle both enum and string values
+    normalized_type = _normalize_type_filter(type_filter)
+    if normalized_type is not None:
+        query = query.filter(Transaction.type == normalized_type)
     if category_id:
         query = query.filter(Transaction.category_id == category_id)
     if payment_method:
@@ -55,14 +78,32 @@ def get_transactions(
     if date_to:
         query = query.filter(Transaction.transaction_date <= date_to)
 
-    total = query.count()
+    # Count without the joinedload for efficiency
+    count_query = db.query(Transaction)
+    if normalized_type is not None:
+        count_query = count_query.filter(Transaction.type == normalized_type)
+    if category_id:
+        count_query = count_query.filter(Transaction.category_id == category_id)
+    if payment_method:
+        count_query = count_query.filter(Transaction.payment_method == payment_method)
+    if date_from:
+        count_query = count_query.filter(Transaction.transaction_date >= date_from)
+    if date_to:
+        count_query = count_query.filter(Transaction.transaction_date <= date_to)
+    total = count_query.count()
+
     items = query.order_by(Transaction.transaction_date.desc(), Transaction.id.desc()).offset(skip).limit(limit).all()
 
     return items, total
 
 
 def get_transaction(db: Session, transaction_id: int) -> Optional[Transaction]:
-    return db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    return (
+        db.query(Transaction)
+        .options(joinedload(Transaction.category))
+        .filter(Transaction.id == transaction_id)
+        .first()
+    )
 
 
 def create_transaction(db: Session, data: TransactionCreate) -> Transaction:
@@ -82,7 +123,9 @@ def create_transaction(db: Session, data: TransactionCreate) -> Transaction:
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
-    return db_transaction
+
+    # Re-fetch with eager loading to ensure category relationship is loaded
+    return get_transaction(db, db_transaction.id)
 
 
 def update_transaction(db: Session, transaction_id: int, data: TransactionUpdate) -> Optional[Transaction]:
@@ -99,8 +142,9 @@ def update_transaction(db: Session, transaction_id: int, data: TransactionUpdate
         setattr(db_transaction, field, value)
 
     db.commit()
-    db.refresh(db_transaction)
-    return db_transaction
+
+    # Re-fetch with eager loading to ensure category relationship is loaded
+    return get_transaction(db, transaction_id)
 
 
 def delete_transaction(db: Session, transaction_id: int) -> bool:

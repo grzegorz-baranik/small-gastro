@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.deps import get_db
 from app.schemas.reports import (
     DailySummaryReportResponse,
     MonthlyTrendsReportResponse,

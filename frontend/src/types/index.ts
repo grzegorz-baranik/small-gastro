@@ -487,27 +487,39 @@ export interface IngredientUsageResponse {
 
 // Spoilage report
 export interface SpoilageReportItem {
+  id: number
   date: string
+  day_of_week: string
   ingredient_id: number
   ingredient_name: string
   unit_label: string
   quantity: number
   reason: SpoilageReason
+  reason_label: string
   notes: string | null
 }
 
+export interface SpoilageByReasonSummary {
+  reason: SpoilageReason
+  reason_label: string
+  total_count: number
+  total_quantity: number
+}
+
+export interface SpoilageByIngredientSummary {
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  total_count: number
+  total_quantity: number
+}
+
 export interface SpoilageReportResponse {
+  start_date: string
+  end_date: string
+  group_by: string
   items: SpoilageReportItem[]
-  summary_by_reason: {
-    reason: SpoilageReason
-    count: number
-    total_quantity: number
-  }[]
-  summary_by_ingredient: {
-    ingredient_id: number
-    ingredient_name: string
-    unit_label: string
-    count: number
-    total_quantity: number
-  }[]
+  by_reason: SpoilageByReasonSummary[]
+  by_ingredient: SpoilageByIngredientSummary[]
+  total_count: number
 }

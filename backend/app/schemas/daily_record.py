@@ -21,10 +21,10 @@ class DailyRecordResponse(BaseModel):
     id: int
     date: date
     status: DayStatus
-    opened_at: datetime
+    opened_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     notes: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

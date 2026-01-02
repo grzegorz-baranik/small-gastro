@@ -138,7 +138,10 @@ def calculate_discrepancies(db: Session, daily_record_id: int) -> list[Inventory
         if not opening or not closing:
             continue
 
-        # Use unified quantity field
+        # Use unified quantity field with null safety
+        if opening.quantity is None or closing.quantity is None:
+            continue
+
         opening_qty = Decimal(str(opening.quantity))
         closing_qty = Decimal(str(closing.quantity))
 
@@ -165,7 +168,8 @@ def calculate_discrepancies(db: Session, daily_record_id: int) -> list[Inventory
         ).all()
 
         for sale in sales_with_ingredient:
-            expected_used += Decimal(str(sale.quantity_sold)) * Decimal(str(sale.quantity))
+            if sale.quantity_sold is not None and sale.quantity is not None:
+                expected_used += Decimal(str(sale.quantity_sold)) * Decimal(str(sale.quantity))
 
         discrepancy = actual_used - expected_used
 

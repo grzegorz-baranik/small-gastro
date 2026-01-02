@@ -413,14 +413,14 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
   return (
     <div className="space-y-6">
       {/* Summary by Reason */}
-      {data && data.summary_by_reason.length > 0 && (
+      {data && data.by_reason && data.by_reason.length > 0 && (
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Podsumowanie wg przyczyny</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {data.summary_by_reason.map((item) => (
+            {data.by_reason.map((item) => (
               <div key={item.reason} className="p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-gray-500">{SPOILAGE_REASON_LABELS[item.reason]}</p>
-                <p className="text-xl font-bold text-red-600">{item.count} pozycji</p>
+                <p className="text-sm text-gray-500">{item.reason_label || SPOILAGE_REASON_LABELS[item.reason]}</p>
+                <p className="text-xl font-bold text-red-600">{item.total_count} pozycji</p>
               </div>
             ))}
           </div>
@@ -428,17 +428,17 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
       )}
 
       {/* Summary by Ingredient */}
-      {data && data.summary_by_ingredient.length > 0 && (
+      {data && data.by_ingredient && data.by_ingredient.length > 0 && (
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Podsumowanie wg skladnika</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.summary_by_ingredient.map((item) => (
+            {data.by_ingredient.map((item) => (
               <div key={item.ingredient_id} className="p-4 bg-orange-50 rounded-lg">
                 <p className="text-sm text-gray-500">{item.ingredient_name}</p>
                 <p className="text-xl font-bold text-orange-600">
                   {item.total_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
                 </p>
-                <p className="text-sm text-gray-400">{item.count} przypadkow</p>
+                <p className="text-sm text-gray-400">{item.total_count} przypadkow</p>
               </div>
             ))}
           </div>
