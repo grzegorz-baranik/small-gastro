@@ -56,18 +56,12 @@ class InventorySnapshotResponse(BaseModel):
 
 class OpenDayRequest(BaseModel):
     """Request to open a new day with opening inventory counts."""
-    date: Optional[date] = None
+    date: date
     opening_inventory: list[InventorySnapshotItem] = Field(
         default_factory=list,
         description="Lista stanow poczatkowych skladnikow"
     )
-
-    @field_validator("date", mode="before")
-    @classmethod
-    def default_to_today(cls, v):
-        if v is None:
-            return date.today()
-        return v
+    notes: Optional[str] = Field(None, max_length=1000, description="Notatki do dnia")
 
 
 class PreviousDayWarning(BaseModel):
@@ -231,14 +225,14 @@ class DailyRecordSummary(BaseModel):
     id: int
     date: date
     status: DayStatus
-    opened_at: datetime
-    closed_at: Optional[datetime]
-    notes: Optional[str]
-    total_income_pln: Optional[Decimal]
-    total_delivery_cost_pln: Optional[Decimal]
-    total_spoilage_cost_pln: Optional[Decimal]
-    created_at: datetime
-    updated_at: datetime
+    opened_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    total_income_pln: Optional[Decimal] = None
+    total_delivery_cost_pln: Optional[Decimal] = None
+    total_spoilage_cost_pln: Optional[Decimal] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -339,14 +333,14 @@ class DailyRecordDetailResponse(BaseModel):
     id: int
     date: date
     status: DayStatus
-    opened_at: datetime
-    closed_at: Optional[datetime]
-    notes: Optional[str]
-    total_income_pln: Optional[Decimal]
-    total_delivery_cost_pln: Decimal
-    total_spoilage_cost_pln: Decimal
-    created_at: datetime
-    updated_at: datetime
+    opened_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    total_income_pln: Optional[Decimal] = None
+    total_delivery_cost_pln: Optional[Decimal] = None
+    total_spoilage_cost_pln: Optional[Decimal] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     # Related data
     opening_snapshots: list[InventorySnapshotResponse] = []
