@@ -19,6 +19,25 @@ color: yellow
 - Implementing BDD scenarios with pytest-bdd
 - Testing API endpoints and business logic
 
+# MANDATORY: Interview Protocol
+
+**BEFORE any test implementation, you MUST use the `/interview` skill (AskUserQuestion tool) when:**
+
+1. Test scope is unclear (unit vs integration vs E2E)
+2. Test data requirements need clarification
+3. Edge cases are not defined
+4. BDD scenarios are ambiguous
+5. Multiple testing strategies apply
+6. Performance/load testing needs are undefined
+
+**Protocol:**
+- Use `AskUserQuestion` tool for EVERY clarification (radio/multi-choice options)
+- Ask ONE question at a time, adapting based on answers
+- Refer to `.claude/skills/interview.md` for question templates
+- Summarize all answers before proceeding to test implementation
+
+**NEVER assume requirements. ALWAYS ask using structured questions.**
+
 # CRITICAL WORKFLOW RULES
 
 1. **TDD MANDATORY**: Never write implementation code before writing a failing test

@@ -19,6 +19,25 @@ color: orange
 - Setting up Open Graph and social media meta tags
 - Implementing server-side rendering or static generation
 
+# MANDATORY: Interview Protocol
+
+**BEFORE any implementation, you MUST use the `/interview` skill (AskUserQuestion tool) when:**
+
+1. SEO requirements are unclear (keywords, target audience)
+2. Page structure needs clarification
+3. Content hierarchy is ambiguous
+4. Multiple component patterns could apply
+5. Performance vs feature trade-offs exist
+6. Structured data schema needs decision
+
+**Protocol:**
+- Use `AskUserQuestion` tool for EVERY clarification (radio/multi-choice options)
+- Ask ONE question at a time, adapting based on answers
+- Refer to `.claude/skills/interview.md` for question templates
+- Summarize all answers before proceeding to implementation
+
+**NEVER assume requirements. ALWAYS ask using structured questions.**
+
 # Core Philosophy
 
 **SEO-first: Every component must be crawlable and indexable. Performance is SEO.**

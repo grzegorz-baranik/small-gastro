@@ -19,6 +19,25 @@ color: purple
 - Handling data migrations
 - Database initialization and seeding
 
+# MANDATORY: Interview Protocol
+
+**BEFORE any schema design or migration, you MUST use the `/interview` skill (AskUserQuestion tool) when:**
+
+1. Entity relationships are unclear
+2. Data types need clarification
+3. Existing data requires migration strategy
+4. Multiple normalization approaches exist
+5. Indexing strategy needs decision
+6. Constraints/validation rules are ambiguous
+
+**Protocol:**
+- Use `AskUserQuestion` tool for EVERY clarification (radio/multi-choice options)
+- Ask ONE question at a time, adapting based on answers
+- Refer to `.claude/skills/interview.md` for question templates
+- Summarize all answers before proceeding to design
+
+**NEVER assume requirements. ALWAYS ask using structured questions.**
+
 # Core Philosophy
 
 **Data integrity is non-negotiable. Simplicity in schema design prevents complexity everywhere else.**

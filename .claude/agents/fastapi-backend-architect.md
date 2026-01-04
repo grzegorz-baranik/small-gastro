@@ -18,6 +18,25 @@ color: green
 - Implementing business logic and service layer
 - Email notification systems
 
+# MANDATORY: Interview Protocol
+
+**BEFORE any implementation, you MUST use the `/interview` skill (AskUserQuestion tool) when:**
+
+1. API endpoint design is unclear (CRUD vs specific operations)
+2. Authentication/authorization requirements are ambiguous
+3. Multiple implementation approaches exist
+4. Business logic rules are not specified
+5. Error handling strategy needs clarification
+6. Integration points are undefined
+
+**Protocol:**
+- Use `AskUserQuestion` tool for EVERY clarification (radio/multi-choice options)
+- Ask ONE question at a time, adapting based on answers
+- Refer to `.claude/skills/interview.md` for question templates
+- Summarize all answers before proceeding to implementation
+
+**NEVER assume requirements. ALWAYS ask using structured questions.**
+
 # Core Philosophy
 
 **Simplicity and testability above all. Pure functions at the core, side effects at the boundaries.**

@@ -4,13 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## CRITICAL: Specification-Driven Workflow
+## CRITICAL: Interview-First Workflow
+
+**ALL agents MUST use the `/interview` skill (AskUserQuestion tool) for ANY clarification or decision point.**
+
+### The Interview Skill is MANDATORY When:
+
+1. **Requirements are vague** - User request lacks specific details
+2. **Multiple approaches exist** - More than one valid implementation path
+3. **Technical decisions needed** - Architecture, library, or pattern choices
+4. **Functional ambiguity** - Business logic or user flow unclear
+5. **A/B decision points** - Trade-offs between options need user input
+6. **Before specification creation** - Always clarify before writing specs
+7. **Before plan mode** - Always clarify before planning implementation
+
+### Interview Protocol (ALL Agents)
+
+Every clarification MUST use `AskUserQuestion` tool with:
+- 2-4 clear, distinct options (radio buttons or checkboxes)
+- Brief descriptions explaining each option
+- User can always select "Other" for custom input
+
+**NEVER assume. ALWAYS ask using structured questions.**
+
+See `.claude/skills/interview.md` for question templates per agent type.
+
+---
+
+## Specification-Driven Workflow
 
 **BEFORE writing ANY implementation code, you MUST follow the documentation-first approach.**
 
 ### Workflow Phases
 
-1. **Specification Phase** (REQUIRED before coding)
+1. **Interview Phase** (MANDATORY when requirements unclear)
+   - Run `/interview` skill to clarify requirements
+   - Uses structured questions with radio/multi-choice options
+   - Covers: functional, technical, and A/B decisions
+   - Ensures all ambiguities are resolved before planning
+
+2. **Specification Phase** (REQUIRED before coding)
    - Check if spec exists: `docs/specs/{feature-name}/`
    - If missing, create using: `python scripts/new-feature.py {feature-name}`
    - Complete all required documents:
@@ -19,11 +52,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
      - `scenarios.feature` - BDD scenarios
      - `TESTING.md` - Test plan
 
-2. **Review & Approval**
+3. **Review & Approval**
    - Get user approval before implementation
    - Update spec status to "Zatwierdzony"
 
-3. **Implementation**
+4. **Implementation**
    - Only after spec approval
    - Follow technical design
    - Write tests matching BDD scenarios
@@ -31,6 +64,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Quick Commands
 
 ```bash
+# Requirements interview (before planning)
+/interview
+
 # Create new feature structure
 python scripts/new-feature.py <feature-name>
 
@@ -39,6 +75,9 @@ python scripts/check-spec-coverage.py
 
 # List existing features
 python scripts/new-feature.py --list
+
+# Create git worktree for new work
+new-worktree <name> [type] [base]   # PowerShell or Bash alias
 ```
 
 ### Response When No Spec Exists
