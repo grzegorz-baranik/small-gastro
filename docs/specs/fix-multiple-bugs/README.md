@@ -1,111 +1,111 @@
-# Specyfikacja: Naprawa Wielokrotnych Błędów
+# Specification: Fix Multiple Bugs
 
-**Status:** W trakcie realizacji
-**Data:** 2026-01-02
-**Wersja:** 1.0
+**Status:** In Progress
+**Date:** 2026-01-02
+**Version:** 1.0
 
-## Przegląd
+## Overview
 
-Dokument opisuje trzy błędy znalezione w aplikacji small-gastro oraz planowane rozwiązania.
+This document describes three bugs found in the small-gastro application and their planned solutions.
 
 ---
 
-## Błąd 1: RangeError przy przeglądaniu szczegółów dnia
+## Bug 1: RangeError When Viewing Day Details
 
-### Opis problemu
-Po kliknięciu na otwarty dzień w celu wyświetlenia szczegółów, pojawia się biały ekran z błędem konsoli:
+### Problem Description
+After clicking on an open day to view details, a white screen appears with console error:
 - `RangeError: invalid time value`
 - `Uncaught RangeError: invalid time value`
 
-### Przyczyna źródłowa
-**Niezgodność formatu daty** między backendem a frontendem:
+### Root Cause
+**Date format mismatch** between backend and frontend:
 
-| Komponent | Format | Przykład |
-|-----------|--------|----------|
-| Backend wysyła | `%H:%M` (krótki czas) | `"14:30"` |
-| Frontend oczekuje | ISO 8601 datetime | `"2026-01-02T14:30:00"` |
+| Component | Format | Example |
+|-----------|--------|---------|
+| Backend sends | `%H:%M` (short time) | `"14:30"` |
+| Frontend expects | ISO 8601 datetime | `"2026-01-02T14:30:00"` |
 
-**Lokalizacja kodu:**
-- Backend: `backend/app/services/daily_operations_service.py` (linie 724-725)
+**Code Location:**
+- Backend: `backend/app/services/daily_operations_service.py` (lines 724-725)
   ```python
   opening_time = db_record.opened_at.strftime("%H:%M")
   ```
-- Frontend: `frontend/src/components/daily/DaySummary.tsx` (linie 110-111, 122-123)
+- Frontend: `frontend/src/components/daily/DaySummary.tsx` (lines 110-111, 122-123)
   ```javascript
   formatDateTime(summary.opening_time)
   ```
-- Formatter: `frontend/src/utils/formatters.ts` (linie 14-21)
+- Formatter: `frontend/src/utils/formatters.ts` (lines 14-21)
   ```javascript
-  new Date(dateString)  // Nie parsuje "14:30" poprawnie
+  new Date(dateString)  // Doesn't parse "14:30" correctly
   ```
 
-### Rozwiązanie
-Zmienić backend aby wysyłał pełne ISO datetime zamiast skróconego formatu czasu.
+### Solution
+Change backend to send full ISO datetime instead of short time format.
 
-### Pliki do modyfikacji
+### Files to Modify
 1. `backend/app/services/daily_operations_service.py`
-2. `backend/app/schemas/daily_operations.py` (opcjonalnie - zmiana typu na datetime)
+2. `backend/app/schemas/daily_operations.py` (optionally - change type to datetime)
 
 ---
 
-## Błąd 2: Internal Server Error przy dodawaniu transakcji
+## Bug 2: Internal Server Error When Adding Transaction
 
-### Opis problemu
-Przy próbie dodania transakcji (z podaniem: kwoty, metody płatności, kategorii, daty i opcjonalnego opisu) pojawia się błąd 500 Internal Server Error.
+### Problem Description
+When attempting to add a transaction (with: amount, payment method, category, date, and optional description) a 500 Internal Server Error occurs.
 
-### Przyczyna źródłowa
-**Niebezpieczny dostęp do relacji** w funkcji `_to_response()`:
+### Root Cause
+**Unsafe relationship access** in `_to_response()` function:
 
 ```python
-category_name=t.category.name if t.category else None,  # Linia 31
+category_name=t.category.name if t.category else None,  # Line 31
 ```
 
-Gdy `category_id` jest `None` (dla transakcji przychodowych lub bez kategorii), dostęp do `t.category` może wywołać wyjątek.
+When `category_id` is `None` (for revenue transactions or those without category), accessing `t.category` may throw an exception.
 
-**Lokalizacja kodu:**
-- API: `backend/app/api/v1/transactions.py` (linia 31)
+**Code Location:**
+- API: `backend/app/api/v1/transactions.py` (line 31)
 - Service: `backend/app/services/transaction_service.py`
 - Model: `backend/app/models/transaction.py`
 
-### Rozwiązanie
-Bezpieczny dostęp do relacji poprzez sprawdzenie `category_id` przed dostępem do `category.name`.
+### Solution
+Safe relationship access by checking `category_id` before accessing `category.name`.
 
-### Pliki do modyfikacji
+### Files to Modify
 1. `backend/app/api/v1/transactions.py`
 
 ---
 
-## Błąd 3: 405 Method Not Allowed w Raportach
+## Bug 3: 405 Method Not Allowed in Reports
 
-### Opis problemu
-Przy próbie wyświetlenia raportów (trendy miesięczne, zużycie składników, straty) pojawia się:
-- Komunikat: "Błąd ładowania raportu"
-- Konsola: `405 Method Not Allowed`
+### Problem Description
+When attempting to view reports (monthly trends, ingredient usage, spoilage) the following occurs:
+- Message: "Błąd ładowania raportu" (Report loading error)
+- Console: `405 Method Not Allowed`
 
-### Przyczyna źródłowa
-**Niezgodność metod HTTP**:
+### Root Cause
+**HTTP method mismatch**:
 
-| Komponent | Metoda HTTP | Oczekiwane |
-|-----------|-------------|------------|
-| Frontend | GET z query params | - |
-| Backend | POST z body | - |
+| Component | HTTP Method | Expected |
+|-----------|-------------|----------|
+| Frontend | GET with query params | - |
+| Backend | POST with body | - |
 
-**Lokalizacja kodu:**
-- Frontend: `frontend/src/api/reports.ts` (linie 46, 56, 70, 86, 100, 110)
+**Code Location:**
+- Frontend: `frontend/src/api/reports.ts` (lines 46, 56, 70, 86, 100, 110)
   ```typescript
   client.get<MonthlyTrendsResponse>('/reports/monthly-trends', { params: range })
   ```
-- Backend: `backend/app/api/v1/reports.py` (linie 102, 128, 162, 190, 225, 257)
+- Backend: `backend/app/api/v1/reports.py` (lines 102, 128, 162, 190, 225, 257)
   ```python
   @router.post("/monthly-trends", ...)
   ```
 
-### Rozwiązanie
-Zmienić endpointy backendu z POST na GET i przyjmować parametry jako query params zamiast body.
+### Solution
+Change backend endpoints from POST to GET and accept parameters as query params instead of body.
 
-### Endpointy do naprawy
-| Endpoint | Obecna metoda | Docelowa metoda |
-|----------|---------------|-----------------|
+### Endpoints to Fix
+| Endpoint | Current Method | Target Method |
+|----------|---------------|---------------|
 | `/reports/monthly-trends` | POST | GET |
 | `/reports/monthly-trends/export` | POST | GET |
 | `/reports/ingredient-usage` | POST | GET |
@@ -113,34 +113,34 @@ Zmienić endpointy backendu z POST na GET i przyjmować parametry jako query par
 | `/reports/spoilage` | POST | GET |
 | `/reports/spoilage/export` | POST | GET |
 
-### Pliki do modyfikacji
+### Files to Modify
 1. `backend/app/api/v1/reports.py`
 
 ---
 
-## Plan testów
+## Test Plan
 
-### Błąd 1 - Testy
-- Otworzyć dzień
-- Zamknąć dzień
-- Kliknąć "Zobacz szczegóły"
-- Sprawdzić czy czasy otwarcia/zamknięcia wyświetlają się poprawnie
+### Bug 1 - Tests
+- Open a day
+- Close the day
+- Click "View details"
+- Verify opening/closing times display correctly
 
-### Błąd 2 - Testy
-- Dodać transakcję przychodową (bez kategorii)
-- Dodać transakcję wydatkową (z kategorią)
-- Sprawdzić czy obie zapisują się poprawnie
+### Bug 2 - Tests
+- Add a revenue transaction (without category)
+- Add an expense transaction (with category)
+- Verify both save correctly
 
-### Błąd 3 - Testy
-- Otworzyć raport "Trendy miesięczne"
-- Otworzyć raport "Zużycie składników"
-- Otworzyć raport "Straty"
-- Sprawdzić czy wszystkie ładują się poprawnie
+### Bug 3 - Tests
+- Open "Monthly trends" report
+- Open "Ingredient usage" report
+- Open "Spoilage" report
+- Verify all load correctly
 
 ---
 
-## Priorytet naprawy
+## Fix Priority
 
-1. **Błąd 3** (405) - Całkowicie blokuje funkcjonalność raportów
-2. **Błąd 2** (500) - Blokuje dodawanie transakcji
-3. **Błąd 1** (RangeError) - Blokuje podgląd szczegółów dnia
+1. **Bug 3** (405) - Completely blocks reports functionality
+2. **Bug 2** (500) - Blocks adding transactions
+3. **Bug 1** (RangeError) - Blocks viewing day details

@@ -1,20 +1,20 @@
-# Specyfikacja Techniczna: Sortowanie Menu
+# Technical Specification: Menu Sorting
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Autor** | Claude AI |
-| **Data utworzenia** | 2026-01-02 |
-| **Wersja** | 1.0 |
+| Field | Value |
+|-------|-------|
+| **Author** | Claude AI |
+| **Created** | 2026-01-02 |
+| **Version** | 1.0 |
 | **Status** | Draft |
-| **Specyfikacja funkcjonalna** | [Link](./README.md) |
+| **Functional Specification** | [Link](./README.md) |
 
 ---
 
-## 1. Przegląd architektury
+## 1. Architecture Overview
 
-### 1.1 Diagram komponentów
+### 1.1 Component Diagram
 ```
 +-------------------------------------------------------------+
 |                      Frontend                                |
@@ -41,21 +41,21 @@
                  +-------------------+
 ```
 
-### 1.2 Komponenty do modyfikacji
-- `backend/app/models/product.py` - dodanie pola `sort_order`
-- `backend/app/api/v1/products.py` - nowy endpoint do aktualizacji kolejności
-- `backend/app/services/product_service.py` - logika sortowania
-- `frontend/src/pages/MenuPage.tsx` - implementacja drag-and-drop
-- `frontend/src/api/products.ts` - funkcja API do aktualizacji kolejności
+### 1.2 Components to Modify
+- `backend/app/models/product.py` - add `sort_order` field
+- `backend/app/api/v1/products.py` - new endpoint for order update
+- `backend/app/services/product_service.py` - sorting logic
+- `frontend/src/pages/MenuPage.tsx` - drag-and-drop implementation
+- `frontend/src/api/products.ts` - API function for order update
 
-### 1.3 Nowe zależności
+### 1.3 New Dependencies
 - Frontend: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
 
 ---
 
 ## 2. API Endpoints
 
-### 2.1 Aktualizacja kolejności produktów
+### 2.1 Update Product Order
 
 ```http
 PUT /api/v1/products/reorder
@@ -68,7 +68,7 @@ PUT /api/v1/products/reorder
 }
 ```
 
-**Opis:** Tablica `product_ids` zawiera ID produktów w nowej kolejności. Indeks w tablicy odpowiada wartości `sort_order` (0 = pierwszy, 1 = drugi, itd.).
+**Description:** The `product_ids` array contains product IDs in the new order. The index in the array corresponds to the `sort_order` value (0 = first, 1 = second, etc.).
 
 **Response (200):**
 ```json
@@ -87,11 +87,11 @@ PUT /api/v1/products/reorder
 
 ---
 
-### 2.2 Modyfikacja istniejących endpointów
+### 2.2 Modification of Existing Endpoints
 
 #### GET /api/v1/products
 
-Dodanie domyślnego sortowania po `sort_order`:
+Add default sorting by `sort_order`:
 
 ```python
 products = db.query(Product).order_by(Product.sort_order.asc()).all()
@@ -99,22 +99,22 @@ products = db.query(Product).order_by(Product.sort_order.asc()).all()
 
 ---
 
-## 3. Schemat bazy danych
+## 3. Database Schema
 
-### 3.1 Modyfikacje istniejącej tabeli
+### 3.1 Modifications to Existing Table
 
 ```sql
 ALTER TABLE products
 ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
 
--- Ustawienie początkowych wartości na podstawie ID
+-- Set initial values based on ID
 UPDATE products SET sort_order = id;
 
--- Utworzenie indeksu dla wydajnego sortowania
+-- Create index for efficient sorting
 CREATE INDEX idx_products_sort_order ON products(sort_order);
 ```
 
-### 3.2 Diagram ERD (fragment)
+### 3.2 ERD Diagram (fragment)
 ```
 +------------------+
 |    products      |
@@ -129,7 +129,7 @@ CREATE INDEX idx_products_sort_order ON products(sort_order);
 +------------------+
 ```
 
-### 3.3 Migracja Alembic
+### 3.3 Alembic Migration
 
 ```python
 # alembic/versions/xxx_add_product_sort_order.py
@@ -149,9 +149,9 @@ def downgrade():
 
 ---
 
-## 4. Modele SQLAlchemy
+## 4. SQLAlchemy Models
 
-### 4.1 Modyfikacja Product
+### 4.1 Product Modification
 
 ```python
 class Product(Base):
@@ -171,13 +171,13 @@ class Product(Base):
 
 ---
 
-## 5. Schematy Pydantic
+## 5. Pydantic Schemas
 
 ### 5.1 ProductReorderRequest
 
 ```python
 class ProductReorderRequest(BaseModel):
-    product_ids: list[int] = Field(..., min_length=1, description="Lista ID produktów w nowej kolejności")
+    product_ids: list[int] = Field(..., min_length=1, description="List of product IDs in new order")
 
     @field_validator('product_ids')
     @classmethod
@@ -195,7 +195,7 @@ class ProductReorderResponse(BaseModel):
     updated_count: int
 ```
 
-### 5.3 Modyfikacja ProductResponse
+### 5.3 ProductResponse Modification
 
 ```python
 class ProductResponse(BaseModel):
@@ -212,25 +212,25 @@ class ProductResponse(BaseModel):
 
 ---
 
-## 6. Warstwa serwisów
+## 6. Service Layer
 
-### 6.1 ProductService - nowa metoda
+### 6.1 ProductService - new method
 
 ```python
 def reorder_products(self, product_ids: list[int]) -> int:
     """
-    Aktualizuje kolejność produktów.
+    Updates product order.
 
     Args:
-        product_ids: Lista ID produktów w nowej kolejności
+        product_ids: List of product IDs in new order
 
     Returns:
-        Liczba zaktualizowanych produktów
+        Number of updated products
 
     Raises:
-        ValueError: Gdy lista zawiera nieistniejące ID
+        ValueError: When list contains non-existent IDs
     """
-    # Weryfikacja że wszystkie ID istnieją
+    # Verify all IDs exist
     existing_ids = {p.id for p in self.db.query(Product.id).filter(
         Product.id.in_(product_ids)
     ).all()}
@@ -249,25 +249,25 @@ def reorder_products(self, product_ids: list[int]) -> int:
     return len(product_ids)
 ```
 
-### 6.2 ProductService - modyfikacja create
+### 6.2 ProductService - create modification
 
 ```python
 def create_product(self, data: ProductCreate) -> Product:
-    # Pobranie maksymalnego sort_order
+    # Get maximum sort_order
     max_sort = self.db.query(func.max(Product.sort_order)).scalar() or 0
 
     product = Product(
         name=data.name,
         sort_order=max_sort + 1
     )
-    # ... reszta logiki
+    # ... rest of logic
 ```
 
 ---
 
-## 7. Komponenty Frontend
+## 7. Frontend Components
 
-### 7.1 Struktura plików
+### 7.1 File Structure
 
 ```
 frontend/src/
@@ -280,7 +280,7 @@ frontend/src/
     └── MenuPage.tsx          # + drag-drop integration
 ```
 
-### 7.2 Interfejsy TypeScript
+### 7.2 TypeScript Interfaces
 
 ```typescript
 // types/index.ts
@@ -341,7 +341,7 @@ export function useReorderProducts() {
 }
 ```
 
-### 7.5 Komponent SortableProductCard
+### 7.5 SortableProductCard Component
 
 ```typescript
 // components/products/SortableProductCard.tsx
@@ -388,7 +388,7 @@ export function SortableProductCard({ product, onManageVariants, onDelete }: Sor
 }
 ```
 
-### 7.6 Integracja w MenuPage
+### 7.6 MenuPage Integration
 
 ```typescript
 // pages/MenuPage.tsx (fragment)
@@ -448,48 +448,48 @@ function ProductsList({ products, onReorder }) {
 
 ---
 
-## 8. Wydajność
+## 8. Performance
 
-### 8.1 Indeksy bazy danych
+### 8.1 Database Indexes
 ```sql
 CREATE INDEX idx_products_sort_order ON products(sort_order);
 ```
 
-### 8.2 Optymalizacje
-- Bulk update w jednej transakcji zamiast osobnych UPDATE dla każdego produktu
-- Optimistic update w UI - natychmiastowa zmiana kolejności przed potwierdzeniem z API
+### 8.2 Optimizations
+- Bulk update in a single transaction instead of separate UPDATEs for each product
+- Optimistic update in UI - immediate order change before API confirmation
 
 ---
 
-## 9. Testowanie
+## 9. Testing
 
-### 9.1 Testy jednostkowe
-- [ ] ProductService.reorder_products() - poprawna aktualizacja
-- [ ] ProductService.reorder_products() - błąd przy nieistniejącym ID
-- [ ] ProductService.create_product() - prawidłowy sort_order dla nowego produktu
+### 9.1 Unit Tests
+- [ ] ProductService.reorder_products() - correct update
+- [ ] ProductService.reorder_products() - error on non-existent ID
+- [ ] ProductService.create_product() - correct sort_order for new product
 
-### 9.2 Testy integracyjne
-- [ ] PUT /api/v1/products/reorder - sukces
-- [ ] PUT /api/v1/products/reorder - błąd walidacji
-- [ ] GET /api/v1/products - sortowanie po sort_order
+### 9.2 Integration Tests
+- [ ] PUT /api/v1/products/reorder - success
+- [ ] PUT /api/v1/products/reorder - validation error
+- [ ] GET /api/v1/products - sorted by sort_order
 
-### 9.3 Testy E2E
-- [ ] Drag-and-drop produktu i weryfikacja nowej kolejności
+### 9.3 E2E Tests
+- [ ] Drag-and-drop product and verify new order
 
 ---
 
-## 10. Plan wdrożenia
+## 10. Deployment Plan
 
-### 10.1 Migracja bazy danych
+### 10.1 Database Migration
 ```bash
 cd backend
 alembic upgrade head
 ```
 
-### 10.2 Kroki wdrożenia
-1. Deploy backend z nową migracją
-2. Deploy frontend z nową zależnością @dnd-kit
-3. Weryfikacja sortowania na produkcji
+### 10.2 Deployment Steps
+1. Deploy backend with new migration
+2. Deploy frontend with new @dnd-kit dependency
+3. Verify sorting in production
 
 ### 10.3 Rollback
 ```bash
@@ -498,8 +498,8 @@ alembic downgrade -1
 
 ---
 
-## Historia zmian
+## Change History
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | 2026-01-02 | Claude AI | Wersja początkowa |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-01-02 | Claude AI | Initial version |

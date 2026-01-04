@@ -1,67 +1,67 @@
-# Plan Testów: {Nazwa Funkcjonalności}
+# Test Plan: {Feature Name}
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Autor** | {imię i nazwisko} |
-| **Data utworzenia** | {YYYY-MM-DD} |
-| **Wersja** | 1.0 |
-| **Specyfikacja funkcjonalna** | [Link](./README.md) |
-| **Specyfikacja techniczna** | [Link](./TECHNICAL.md) |
-| **Scenariusze BDD** | [Link](./scenarios.feature) |
-
----
-
-## 1. Zakres testów
-
-### 1.1 Cele testowania
-- {cel 1}
-- {cel 2}
-- {cel 3}
-
-### 1.2 W zakresie
-- [ ] {element do przetestowania 1}
-- [ ] {element do przetestowania 2}
-
-### 1.3 Poza zakresem
-- {element poza zakresem}
+| Field | Value |
+|-------|-------|
+| **Author** | {author} |
+| **Created** | {YYYY-MM-DD} |
+| **Version** | 1.0 |
+| **Functional Specification** | [Link](./README.md) |
+| **Technical Specification** | [Link](./TECHNICAL.md) |
+| **BDD Scenarios** | [Link](./scenarios.feature) |
 
 ---
 
-## 2. Strategia testowania
+## 1. Test Scope
 
-### 2.1 Poziomy testów
+### 1.1 Testing Objectives
+- {objective 1}
+- {objective 2}
+- {objective 3}
 
-| Poziom | Pokrycie | Narzędzia |
-|--------|----------|-----------|
+### 1.2 In Scope
+- [ ] {item to test 1}
+- [ ] {item to test 2}
+
+### 1.3 Out of Scope
+- {item out of scope}
+
+---
+
+## 2. Testing Strategy
+
+### 2.1 Test Levels
+
+| Level | Coverage | Tools |
+|-------|----------|-------|
 | Unit | {%} | pytest, vitest |
-| Integracyjne | {%} | pytest, TestClient |
+| Integration | {%} | pytest, TestClient |
 | E2E | {%} | Playwright / Cypress |
-| Manualne | {%} | - |
+| Manual | {%} | - |
 
-### 2.2 Kryteria wejścia
-- [ ] Specyfikacja zatwierdzona
-- [ ] Środowisko testowe skonfigurowane
-- [ ] Dane testowe przygotowane
+### 2.2 Entry Criteria
+- [ ] Specification approved
+- [ ] Test environment configured
+- [ ] Test data prepared
 
-### 2.3 Kryteria wyjścia
-- [ ] Wszystkie testy krytyczne zaliczone
-- [ ] Pokrycie kodu >= {X}%
-- [ ] Brak błędów krytycznych i wysokich
+### 2.3 Exit Criteria
+- [ ] All critical tests passed
+- [ ] Code coverage >= {X}%
+- [ ] No critical or high bugs
 
 ---
 
-## 3. Przypadki testowe
+## 3. Test Cases
 
-### 3.1 Testy jednostkowe (Backend)
+### 3.1 Unit Tests (Backend)
 
-#### TC-UNIT-001: {Nazwa testu}
-**Komponent:** `{nazwa_serwisu}`
-**Metoda:** `{nazwa_metody}`
-**Opis:** {Co testujemy}
+#### TC-UNIT-001: {Test Name}
+**Component:** `{service_name}`
+**Method:** `{method_name}`
+**Description:** {What we're testing}
 
-**Dane wejściowe:**
+**Input Data:**
 ```python
 {
     "field1": "value1",
@@ -69,7 +69,7 @@
 }
 ```
 
-**Oczekiwany rezultat:**
+**Expected Result:**
 ```python
 {
     "id": 1,
@@ -78,9 +78,9 @@
 }
 ```
 
-**Kod testu:**
+**Test Code:**
 ```python
-def test_{nazwa_testu}():
+def test_{test_name}():
     # Arrange
     service = {Name}Service(db_session)
     data = {Name}Create(field1="value1", field2=123)
@@ -96,23 +96,23 @@ def test_{nazwa_testu}():
 
 ---
 
-#### TC-UNIT-002: {Nazwa testu - walidacja błędu}
-**Komponent:** `{nazwa_serwisu}`
-**Metoda:** `{nazwa_metody}`
-**Opis:** Walidacja błędu dla {przypadek}
+#### TC-UNIT-002: {Test Name - error validation}
+**Component:** `{service_name}`
+**Method:** `{method_name}`
+**Description:** Error validation for {case}
 
-**Dane wejściowe:**
+**Input Data:**
 ```python
 {
-    "field1": "",  # Puste pole - powinno wywołać błąd
+    "field1": "",  # Empty field - should cause error
 }
 ```
 
-**Oczekiwany rezultat:** `ValidationError` z komunikatem "{komunikat}"
+**Expected Result:** `ValidationError` with message "{message}"
 
-**Kod testu:**
+**Test Code:**
 ```python
-def test_{nazwa_testu}_validation_error():
+def test_{test_name}_validation_error():
     with pytest.raises(ValidationError) as exc_info:
         {Name}Create(field1="")
 
@@ -121,30 +121,30 @@ def test_{nazwa_testu}_validation_error():
 
 ---
 
-### 3.2 Testy jednostkowe (Frontend)
+### 3.2 Unit Tests (Frontend)
 
-#### TC-UNIT-FE-001: {Nazwa testu komponentu}
-**Komponent:** `{NazwaKomponentu}`
-**Opis:** {Co testujemy}
+#### TC-UNIT-FE-001: {Component Test Name}
+**Component:** `{ComponentName}`
+**Description:** {What we're testing}
 
-**Kod testu:**
+**Test Code:**
 ```typescript
-describe('{NazwaKomponentu}', () => {
-  it('{opis testu}', () => {
-    render(<{NazwaKomponentu} prop1="value" />);
+describe('{ComponentName}', () => {
+  it('{test description}', () => {
+    render(<{ComponentName} prop1="value" />);
 
-    expect(screen.getByText('{tekst}')).toBeInTheDocument();
+    expect(screen.getByText('{text}')).toBeInTheDocument();
   });
 });
 ```
 
 ---
 
-### 3.3 Testy integracyjne (API)
+### 3.3 Integration Tests (API)
 
-#### TC-INT-001: POST /api/v1/{resource} - Sukces
+#### TC-INT-001: POST /api/v1/{resource} - Success
 **Endpoint:** `POST /api/v1/{resource}`
-**Opis:** Tworzenie nowego {obiektu}
+**Description:** Creating a new {object}
 
 **Request:**
 ```http
@@ -167,7 +167,7 @@ Content-Type: application/json
 }
 ```
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_create_{resource}_success(client: TestClient):
     response = client.post(
@@ -184,9 +184,9 @@ def test_create_{resource}_success(client: TestClient):
 
 ---
 
-#### TC-INT-002: POST /api/v1/{resource} - Błąd walidacji
+#### TC-INT-002: POST /api/v1/{resource} - Validation Error
 **Endpoint:** `POST /api/v1/{resource}`
-**Opis:** Błąd przy nieprawidłowych danych
+**Description:** Error with invalid data
 
 **Request:**
 ```http
@@ -211,11 +211,11 @@ Content-Type: application/json
 
 ---
 
-#### TC-INT-003: GET /api/v1/{resource}/{id} - Sukces
+#### TC-INT-003: GET /api/v1/{resource}/{id} - Success
 **Endpoint:** `GET /api/v1/{resource}/{id}`
-**Opis:** Pobieranie {obiektu} po ID
+**Description:** Getting {object} by ID
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_get_{resource}_by_id(client: TestClient, sample_{resource}):
     response = client.get(f"/api/v1/{resource}/{sample_{resource}.id}")
@@ -227,9 +227,9 @@ def test_get_{resource}_by_id(client: TestClient, sample_{resource}):
 
 ---
 
-#### TC-INT-004: GET /api/v1/{resource}/{id} - Nie znaleziono
+#### TC-INT-004: GET /api/v1/{resource}/{id} - Not Found
 **Endpoint:** `GET /api/v1/{resource}/99999`
-**Opis:** 404 dla nieistniejącego ID
+**Description:** 404 for non-existent ID
 
 **Expected Response (404):**
 ```json
@@ -240,23 +240,23 @@ def test_get_{resource}_by_id(client: TestClient, sample_{resource}):
 
 ---
 
-### 3.4 Testy E2E
+### 3.4 E2E Tests
 
-#### TC-E2E-001: {Pełny przepływ użytkownika}
-**Opis:** {Opis scenariusza end-to-end}
+#### TC-E2E-001: {Full User Flow}
+**Description:** {End-to-end scenario description}
 
-**Kroki:**
-1. Otwórz stronę {URL}
-2. Kliknij przycisk "{nazwa}"
-3. Wypełnij formularz:
-   - Pole "{pole1}": "{wartość1}"
-   - Pole "{pole2}": "{wartość2}"
-4. Kliknij "Zapisz"
-5. Zweryfikuj że {obiekt} pojawił się na liście
+**Steps:**
+1. Open page {URL}
+2. Click button "{name}"
+3. Fill out form:
+   - Field "{field1}": "{value1}"
+   - Field "{field2}": "{value2}"
+4. Click "Save"
+5. Verify that {object} appears in the list
 
-**Kod testu (Playwright):**
+**Test Code (Playwright):**
 ```typescript
-test('{nazwa testu}', async ({ page }) => {
+test('{test name}', async ({ page }) => {
   await page.goto('/api/v1/{resource}');
 
   await page.click('button:has-text("Dodaj")');
@@ -269,14 +269,14 @@ test('{nazwa testu}', async ({ page }) => {
 
 ---
 
-## 4. Dane testowe
+## 4. Test Data
 
 ### 4.1 Fixtures
 
 ```python
 @pytest.fixture
 def sample_{resource}(db_session):
-    """Tworzy przykładowy {obiekt} do testów."""
+    """Creates a sample {object} for tests."""
     {resource} = {Model}(
         field1="Test",
         field2=123
@@ -286,38 +286,38 @@ def sample_{resource}(db_session):
     return {resource}
 ```
 
-### 4.2 Dane testowe
+### 4.2 Test Data
 
-| ID | field1 | field2 | Cel testu |
-|----|--------|--------|-----------|
-| 1 | "Test 1" | 100 | Standardowy przypadek |
-| 2 | "Test 2" | 0 | Wartość brzegowa |
-| 3 | "A" * 255 | 999999 | Maksymalne wartości |
-
----
-
-## 5. Przypadki brzegowe
-
-| ID | Przypadek | Oczekiwane zachowanie | Status |
-|----|-----------|----------------------|--------|
-| EC-001 | Puste dane | Komunikat walidacji | [ ] |
-| EC-002 | Bardzo długi tekst | Obcięcie lub błąd | [ ] |
-| EC-003 | Znaki specjalne | Poprawne zapisanie | [ ] |
-| EC-004 | Równoczesna edycja | Konflikt lub merge | [ ] |
+| ID | field1 | field2 | Test Purpose |
+|----|--------|--------|--------------|
+| 1 | "Test 1" | 100 | Standard case |
+| 2 | "Test 2" | 0 | Edge value |
+| 3 | "A" * 255 | 999999 | Maximum values |
 
 ---
 
-## 6. Testy wydajnościowe
+## 5. Edge Cases
 
-### 6.1 Scenariusze
+| ID | Case | Expected Behavior | Status |
+|----|------|------------------|--------|
+| EC-001 | Empty data | Validation message | [ ] |
+| EC-002 | Very long text | Truncation or error | [ ] |
+| EC-003 | Special characters | Correct save | [ ] |
+| EC-004 | Concurrent editing | Conflict or merge | [ ] |
 
-| Scenariusz | Oczekiwany czas | Limit |
-|------------|-----------------|-------|
-| Lista 100 {obiektów} | < 500ms | 1s |
-| Tworzenie {obiektu} | < 200ms | 500ms |
-| Wyszukiwanie | < 300ms | 1s |
+---
 
-### 6.2 Testy obciążeniowe
+## 6. Performance Tests
+
+### 6.1 Scenarios
+
+| Scenario | Expected Time | Limit |
+|----------|---------------|-------|
+| List of 100 {objects} | < 500ms | 1s |
+| Creating {object} | < 200ms | 500ms |
+| Search | < 300ms | 1s |
+
+### 6.2 Load Tests
 
 ```python
 def test_list_{resources}_performance(client: TestClient, benchmark):
@@ -332,20 +332,20 @@ def test_list_{resources}_performance(client: TestClient, benchmark):
 
 ---
 
-## 7. Testy bezpieczeństwa
+## 7. Security Tests
 
-| Test | Opis | Status |
-|------|------|--------|
+| Test | Description | Status |
+|------|-------------|--------|
 | SEC-001 | SQL Injection | [ ] |
 | SEC-002 | XSS | [ ] |
 | SEC-003 | CSRF | [ ] |
-| SEC-004 | Autoryzacja | [ ] |
+| SEC-004 | Authorization | [ ] |
 
 ---
 
-## 8. Środowisko testowe
+## 8. Test Environment
 
-### 8.1 Konfiguracja
+### 8.1 Configuration
 
 ```yaml
 # docker-compose.test.yml
@@ -358,7 +358,7 @@ services:
       POSTGRES_PASSWORD: test
 ```
 
-### 8.2 Uruchomienie testów
+### 8.2 Running Tests
 
 ```bash
 # Backend
@@ -376,27 +376,27 @@ npm run test:e2e
 
 ---
 
-## 9. Raportowanie
+## 9. Reporting
 
-### 9.1 Format raportu
+### 9.1 Report Format
 
-| Metryka | Wartość |
-|---------|---------|
-| Testy wykonane | {X} |
-| Testy zaliczone | {Y} |
-| Testy niezaliczone | {Z} |
-| Pokrycie kodu | {%} |
+| Metric | Value |
+|--------|-------|
+| Tests executed | {X} |
+| Tests passed | {Y} |
+| Tests failed | {Z} |
+| Code coverage | {%} |
 
-### 9.2 Znalezione błędy
+### 9.2 Found Bugs
 
-| ID | Opis | Priorytet | Status |
-|----|------|-----------|--------|
-| BUG-001 | {opis} | Krytyczny/Wysoki/Średni/Niski | Otwarty/Naprawiony |
+| ID | Description | Priority | Status |
+|----|-------------|----------|--------|
+| BUG-001 | {description} | Critical/High/Medium/Low | Open/Fixed |
 
 ---
 
-## Historia zmian
+## Change History
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | {data} | {autor} | Wersja początkowa |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | {date} | {author} | Initial version |

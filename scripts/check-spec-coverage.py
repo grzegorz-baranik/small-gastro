@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Skrypt do sprawdzania pokrycia specyfikacji w projekcie.
-Analizuje katalogi z kodem i sprawdza czy istnieją odpowiednie specyfikacje.
+Script for checking specification coverage in the project.
+Analyzes code directories and checks if corresponding specifications exist.
 
-Użycie:
+Usage:
     python scripts/check-spec-coverage.py
     python scripts/check-spec-coverage.py --verbose
     python scripts/check-spec-coverage.py --json
 
-Funkcjonalności:
-- Sprawdzanie kompletności specyfikacji
-- Wykrywanie nieudokumentowanych modułów
-- Raportowanie statusu dokumentacji
+Features:
+- Checking specification completeness
+- Detecting undocumented modules
+- Reporting documentation status
 """
 
 import argparse
@@ -26,7 +26,7 @@ from typing import Dict, List, Optional, Set
 
 @dataclass
 class SpecStatus:
-    """Status specyfikacji dla funkcjonalności."""
+    """Specification status for a feature."""
     name: str
     path: Path
     has_readme: bool = False
@@ -38,7 +38,7 @@ class SpecStatus:
 
     @property
     def completeness(self) -> float:
-        """Oblicza procent kompletności specyfikacji."""
+        """Calculate specification completeness percentage."""
         checks = [
             self.has_readme,
             self.has_technical,
@@ -49,7 +49,7 @@ class SpecStatus:
 
     @property
     def is_complete(self) -> bool:
-        """Sprawdza czy specyfikacja jest kompletna."""
+        """Check if specification is complete."""
         return all([
             self.has_readme,
             self.has_technical,
@@ -60,7 +60,7 @@ class SpecStatus:
 
 @dataclass
 class CoverageReport:
-    """Raport pokrycia specyfikacji."""
+    """Specification coverage report."""
     specs: List[SpecStatus] = field(default_factory=list)
     undocumented_modules: List[str] = field(default_factory=list)
     orphaned_specs: List[str] = field(default_factory=list)
@@ -85,7 +85,7 @@ class CoverageReport:
 
 
 def get_project_root() -> Path:
-    """Znajdź katalog główny projektu."""
+    """Find the project root directory."""
     current = Path(__file__).resolve().parent
     while current != current.parent:
         if (current / ".clinerules").exists() or (current / "CLAUDE.md").exists():
@@ -95,12 +95,12 @@ def get_project_root() -> Path:
 
 
 def check_spec_approval(readme_path: Path) -> bool:
-    """Sprawdza czy specyfikacja została zatwierdzona."""
+    """Check if specification has been approved."""
     if not readme_path.exists():
         return False
 
     content = readme_path.read_text(encoding="utf-8")
-    # Szukaj statusu "Zatwierdzony" lub "Approved"
+    # Search for "Approved" status (English or Polish "Zatwierdzony")
     patterns = [
         r"\*\*Status\*\*.*?Zatwierdzony",
         r"\*\*Status\*\*.*?Approved",
@@ -114,18 +114,18 @@ def check_spec_approval(readme_path: Path) -> bool:
 
 
 def get_readme_sections(readme_path: Path) -> List[str]:
-    """Pobiera listę sekcji z README."""
+    """Get list of sections from README."""
     if not readme_path.exists():
         return []
 
     content = readme_path.read_text(encoding="utf-8")
-    # Znajdź wszystkie nagłówki ##
+    # Find all ## headings
     sections = re.findall(r"^##\s+(.+)$", content, re.MULTILINE)
     return sections
 
 
 def analyze_spec_directory(spec_dir: Path) -> SpecStatus:
-    """Analizuje katalog specyfikacji."""
+    """Analyze a specification directory."""
     status = SpecStatus(
         name=spec_dir.name,
         path=spec_dir
@@ -145,19 +145,19 @@ def analyze_spec_directory(spec_dir: Path) -> SpecStatus:
 
 
 def find_backend_modules(project_root: Path) -> Set[str]:
-    """Znajduje moduły backendowe w projekcie."""
+    """Find backend modules in the project."""
     modules = set()
 
-    # Sprawdź routery API
+    # Check API routers
     api_dir = project_root / "backend" / "app" / "api" / "v1"
     if api_dir.exists():
         for file in api_dir.glob("*.py"):
             if file.name not in ("__init__.py", "deps.py"):
                 module_name = file.stem
-                # Konwertuj snake_case na kebab-case
+                # Convert snake_case to kebab-case
                 modules.add(module_name.replace("_", "-"))
 
-    # Sprawdź serwisy
+    # Check services
     services_dir = project_root / "backend" / "app" / "services"
     if services_dir.exists():
         for file in services_dir.glob("*.py"):
@@ -169,17 +169,17 @@ def find_backend_modules(project_root: Path) -> Set[str]:
 
 
 def find_frontend_modules(project_root: Path) -> Set[str]:
-    """Znajduje moduły frontendowe w projekcie."""
+    """Find frontend modules in the project."""
     modules = set()
 
-    # Sprawdź strony
+    # Check pages
     pages_dir = project_root / "frontend" / "src" / "pages"
     if pages_dir.exists():
         for file in pages_dir.glob("*.tsx"):
             if file.name not in ("index.tsx",):
-                # Usuń "Page" z nazwy
+                # Remove "Page" from name
                 page_name = file.stem.replace("Page", "")
-                # Konwertuj PascalCase na kebab-case
+                # Convert PascalCase to kebab-case
                 kebab = re.sub(r"(?<!^)(?=[A-Z])", "-", page_name).lower()
                 modules.add(kebab)
 
@@ -187,124 +187,124 @@ def find_frontend_modules(project_root: Path) -> Set[str]:
 
 
 def generate_report(project_root: Path) -> CoverageReport:
-    """Generuje raport pokrycia specyfikacji."""
+    """Generate specification coverage report."""
     report = CoverageReport()
 
     specs_dir = project_root / "docs" / "specs"
 
-    # Analizuj istniejące specyfikacje
+    # Analyze existing specifications
     if specs_dir.exists():
         for spec_dir in specs_dir.iterdir():
             if spec_dir.is_dir():
                 status = analyze_spec_directory(spec_dir)
                 report.specs.append(status)
 
-    # Znajdź moduły w kodzie
+    # Find modules in code
     backend_modules = find_backend_modules(project_root)
     frontend_modules = find_frontend_modules(project_root)
     all_modules = backend_modules | frontend_modules
 
-    # Znajdź nazwy specyfikacji
+    # Get specification names
     spec_names = {s.name for s in report.specs}
 
-    # Znajdź nieudokumentowane moduły
+    # Find undocumented modules
     report.undocumented_modules = sorted(all_modules - spec_names)
 
-    # Znajdź osierocone specyfikacje (bez kodu)
-    # (Pomijamy - specyfikacje mogą być napisane przed kodem)
+    # Find orphaned specifications (without code)
+    # (Skipping - specs can be written before code)
 
     return report
 
 
 def print_report(report: CoverageReport, verbose: bool = False) -> None:
-    """Wyświetla raport w formacie tekstowym."""
+    """Print report in text format."""
     print()
     print("=" * 70)
-    print("📊 RAPORT POKRYCIA SPECYFIKACJI")
+    print("SPECIFICATION COVERAGE REPORT")
     print("=" * 70)
     print()
 
-    # Podsumowanie
-    print("📈 PODSUMOWANIE:")
-    print(f"   Łączna liczba specyfikacji: {report.total_specs}")
-    print(f"   Kompletne specyfikacje:     {report.complete_specs}")
-    print(f"   Zatwierdzone specyfikacje:  {report.approved_specs}")
-    print(f"   Średnie pokrycie:           {report.coverage_percentage:.1f}%")
+    # Summary
+    print("SUMMARY:")
+    print(f"   Total specifications:    {report.total_specs}")
+    print(f"   Complete specifications: {report.complete_specs}")
+    print(f"   Approved specifications: {report.approved_specs}")
+    print(f"   Average coverage:        {report.coverage_percentage:.1f}%")
     print()
 
-    # Status specyfikacji
+    # Specification status
     if report.specs:
-        print("📋 STATUS SPECYFIKACJI:")
+        print("SPECIFICATION STATUS:")
         print()
-        print(f"{'Funkcjonalność':<30} {'README':<8} {'TECH':<8} {'TEST':<8} {'BDD':<8} {'Status':<12}")
-        print("-" * 82)
+        print(f"{'Feature':<30} {'README':<8} {'TECH':<8} {'TEST':<8} {'BDD':<8} {'Status':<15}")
+        print("-" * 85)
 
         for spec in sorted(report.specs, key=lambda s: s.name):
-            readme = "✅" if spec.has_readme else "❌"
-            tech = "✅" if spec.has_technical else "❌"
-            test = "✅" if spec.has_testing else "❌"
-            bdd = "✅" if spec.has_bdd else "❌"
+            readme = "[OK]" if spec.has_readme else "[X]"
+            tech = "[OK]" if spec.has_technical else "[X]"
+            test = "[OK]" if spec.has_testing else "[X]"
+            bdd = "[OK]" if spec.has_bdd else "[X]"
 
             if spec.is_complete and spec.is_approved:
-                status = "🟢 Gotowe"
+                status = "Ready"
             elif spec.is_complete:
-                status = "🟡 Do zatwierdzenia"
+                status = "Pending approval"
             else:
-                status = f"🔴 {spec.completeness:.0f}%"
+                status = f"{spec.completeness:.0f}% complete"
 
-            print(f"{spec.name:<30} {readme:<8} {tech:<8} {test:<8} {bdd:<8} {status:<12}")
+            print(f"{spec.name:<30} {readme:<8} {tech:<8} {test:<8} {bdd:<8} {status:<15}")
 
         print()
 
-    # Nieudokumentowane moduły
+    # Undocumented modules
     if report.undocumented_modules:
-        print("⚠️ NIEUDOKUMENTOWANE MODUŁY:")
-        print("   Następujące moduły nie mają specyfikacji:")
+        print("UNDOCUMENTED MODULES:")
+        print("   The following modules have no specifications:")
         print()
         for module in report.undocumented_modules:
-            print(f"   • {module}")
+            print(f"   - {module}")
         print()
-        print("   Użyj: python scripts/new-feature.py <nazwa>")
+        print("   Use: python scripts/new-feature.py <name>")
         print()
 
-    # Szczegóły (verbose)
+    # Details (verbose)
     if verbose and report.specs:
-        print("📝 SZCZEGÓŁY SPECYFIKACJI:")
+        print("SPECIFICATION DETAILS:")
         print()
         for spec in sorted(report.specs, key=lambda s: s.name):
             print(f"   {spec.name}:")
-            print(f"      Ścieżka: {spec.path}")
-            print(f"      Kompletność: {spec.completeness:.0f}%")
+            print(f"      Path: {spec.path}")
+            print(f"      Completeness: {spec.completeness:.0f}%")
             if spec.readme_sections:
-                print(f"      Sekcje README: {', '.join(spec.readme_sections[:5])}")
+                print(f"      README sections: {', '.join(spec.readme_sections[:5])}")
                 if len(spec.readme_sections) > 5:
-                    print(f"                     ... i {len(spec.readme_sections) - 5} więcej")
+                    print(f"                       ... and {len(spec.readme_sections) - 5} more")
             print()
 
-    # Rekomendacje
-    print("💡 REKOMENDACJE:")
+    # Recommendations
+    print("RECOMMENDATIONS:")
     print()
 
     incomplete = [s for s in report.specs if not s.is_complete]
     if incomplete:
-        print(f"   1. Uzupełnij brakujące dokumenty dla {len(incomplete)} specyfikacji")
+        print(f"   1. Complete missing documents for {len(incomplete)} specifications")
 
     unapproved = [s for s in report.specs if s.is_complete and not s.is_approved]
     if unapproved:
-        print(f"   2. Zatwierdź {len(unapproved)} kompletnych specyfikacji")
+        print(f"   2. Approve {len(unapproved)} complete specifications")
 
     if report.undocumented_modules:
-        print(f"   3. Utwórz specyfikacje dla {len(report.undocumented_modules)} nieudokumentowanych modułów")
+        print(f"   3. Create specifications for {len(report.undocumented_modules)} undocumented modules")
 
     if not incomplete and not unapproved and not report.undocumented_modules:
-        print("   ✨ Wszystko w porządku! Dokumentacja jest kompletna.")
+        print("   All good! Documentation is complete.")
 
     print()
     print("=" * 70)
 
 
 def print_json_report(report: CoverageReport) -> None:
-    """Wyświetla raport w formacie JSON."""
+    """Print report in JSON format."""
     output = {
         "summary": {
             "total_specs": report.total_specs,
@@ -332,7 +332,7 @@ def print_json_report(report: CoverageReport) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Sprawdzanie pokrycia specyfikacji w projekcie",
+        description="Check specification coverage in the project",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -340,20 +340,20 @@ def main():
         "--verbose",
         "-v",
         action="store_true",
-        help="Wyświetl szczegółowy raport",
+        help="Display detailed report",
     )
 
     parser.add_argument(
         "--json",
         "-j",
         action="store_true",
-        help="Wyświetl raport w formacie JSON",
+        help="Display report in JSON format",
     )
 
     parser.add_argument(
         "--fail-incomplete",
         action="store_true",
-        help="Zwróć kod błędu jeśli są niekompletne specyfikacje",
+        help="Return error code if there are incomplete specifications",
     )
 
     args = parser.parse_args()
@@ -366,7 +366,7 @@ def main():
     else:
         print_report(report, verbose=args.verbose)
 
-    # Zwróć kod błędu jeśli wymagane
+    # Return error code if required
     if args.fail_incomplete:
         if report.complete_specs < report.total_specs:
             sys.exit(1)

@@ -1,204 +1,204 @@
-# ADR-{NNN}: {Tytuł decyzji architektonicznej}
+# ADR-{NNN}: {Architecture Decision Title}
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Status** | Proponowany / Zaakceptowany / Odrzucony / Przestarzały |
-| **Data** | {YYYY-MM-DD} |
-| **Autor** | {imię i nazwisko} |
-| **Decydenci** | {lista osób podejmujących decyzję} |
-| **Powiązane ADR** | [ADR-XXX](./ADR-XXX-nazwa.md) |
-| **Powiązana funkcjonalność** | [Link do spec](../specs/{feature}/README.md) |
+| Field | Value |
+|-------|-------|
+| **Status** | Proposed / Accepted / Rejected / Deprecated |
+| **Date** | {YYYY-MM-DD} |
+| **Author** | {author} |
+| **Decision Makers** | {list of decision makers} |
+| **Related ADR** | [ADR-XXX](./ADR-XXX-name.md) |
+| **Related Feature** | [Link to spec](../specs/{feature}/README.md) |
 
 ---
 
-## Kontekst
+## Context
 
 ### Problem
-{Opisz problem lub potrzebę, która wymaga podjęcia decyzji architektonicznej.}
+{Describe the problem or need that requires an architectural decision.}
 
-### Tło
-{Podaj dodatkowy kontekst:
-- Obecny stan systemu
-- Ograniczenia techniczne
-- Wymagania biznesowe
-- Presja czasowa lub zasobowa}
+### Background
+{Provide additional context:
+- Current system state
+- Technical constraints
+- Business requirements
+- Time or resource pressure}
 
-### Wymagania
-- {Wymaganie 1}
-- {Wymaganie 2}
-- {Wymaganie 3}
+### Requirements
+- {Requirement 1}
+- {Requirement 2}
+- {Requirement 3}
 
-### Ograniczenia
-- {Ograniczenie 1}
-- {Ograniczenie 2}
-
----
-
-## Rozważane opcje
-
-### Opcja 1: {Nazwa opcji}
-
-**Opis:**
-{Szczegółowy opis rozwiązania}
-
-**Zalety:**
-- {Zaleta 1}
-- {Zaleta 2}
-
-**Wady:**
-- {Wada 1}
-- {Wada 2}
-
-**Szacowany koszt implementacji:**
-- Nakład pracy: {niski/średni/wysoki}
-- Ryzyko: {niskie/średnie/wysokie}
+### Constraints
+- {Constraint 1}
+- {Constraint 2}
 
 ---
 
-### Opcja 2: {Nazwa opcji}
+## Considered Options
 
-**Opis:**
-{Szczegółowy opis rozwiązania}
+### Option 1: {Option Name}
 
-**Zalety:**
-- {Zaleta 1}
-- {Zaleta 2}
+**Description:**
+{Detailed solution description}
 
-**Wady:**
-- {Wada 1}
-- {Wada 2}
+**Pros:**
+- {Pro 1}
+- {Pro 2}
 
-**Szacowany koszt implementacji:**
-- Nakład pracy: {niski/średni/wysoki}
-- Ryzyko: {niskie/średnie/wysokie}
+**Cons:**
+- {Con 1}
+- {Con 2}
 
----
-
-### Opcja 3: {Nazwa opcji} (opcjonalnie)
-
-**Opis:**
-{Szczegółowy opis rozwiązania}
-
-**Zalety:**
-- {Zaleta 1}
-- {Zaleta 2}
-
-**Wady:**
-- {Wada 1}
-- {Wada 2}
+**Estimated Implementation Cost:**
+- Effort: {low/medium/high}
+- Risk: {low/medium/high}
 
 ---
 
-## Porównanie opcji
+### Option 2: {Option Name}
 
-| Kryterium | Opcja 1 | Opcja 2 | Opcja 3 |
-|-----------|---------|---------|---------|
-| Złożoność implementacji | {+/-} | {+/-} | {+/-} |
-| Skalowalność | {+/-} | {+/-} | {+/-} |
-| Wydajność | {+/-} | {+/-} | {+/-} |
-| Łatwość utrzymania | {+/-} | {+/-} | {+/-} |
-| Zgodność z istniejącą architekturą | {+/-} | {+/-} | {+/-} |
-| Koszt | {+/-} | {+/-} | {+/-} |
+**Description:**
+{Detailed solution description}
 
-**Legenda:** + (korzystne), - (niekorzystne), 0 (neutralne)
+**Pros:**
+- {Pro 1}
+- {Pro 2}
 
----
+**Cons:**
+- {Con 1}
+- {Con 2}
 
-## Decyzja
-
-**Wybrana opcja:** Opcja {X} - {Nazwa}
-
-### Uzasadnienie
-{Wyjaśnij dlaczego ta opcja została wybrana:
-- Które zalety były decydujące?
-- Jak radzisz sobie z wadami?
-- Jakie czynniki przesądziły o wyborze?}
+**Estimated Implementation Cost:**
+- Effort: {low/medium/high}
+- Risk: {low/medium/high}
 
 ---
 
-## Konsekwencje
+### Option 3: {Option Name} (optional)
 
-### Pozytywne
-- {Pozytywna konsekwencja 1}
-- {Pozytywna konsekwencja 2}
+**Description:**
+{Detailed solution description}
 
-### Negatywne
-- {Negatywna konsekwencja 1}
-- {Negatywna konsekwencja 2}
+**Pros:**
+- {Pro 1}
+- {Pro 2}
 
-### Neutralne
-- {Neutralna konsekwencja}
-
----
-
-## Plan implementacji
-
-### Kroki
-1. {Krok 1}
-2. {Krok 2}
-3. {Krok 3}
-
-### Zmiany w kodzie
-- `{ścieżka/do/pliku1}` - {opis zmiany}
-- `{ścieżka/do/pliku2}` - {opis zmiany}
-
-### Migracja danych
-{Opis migracji jeśli wymagana, lub "Nie dotyczy"}
-
-### Testy
-- [ ] Testy jednostkowe
-- [ ] Testy integracyjne
-- [ ] Testy wydajnościowe
+**Cons:**
+- {Con 1}
+- {Con 2}
 
 ---
 
-## Ryzyka i ich mitygacja
+## Option Comparison
 
-| Ryzyko | Prawdopodobieństwo | Wpływ | Mitygacja |
-|--------|-------------------|-------|-----------|
-| {Ryzyko 1} | Niskie/Średnie/Wysokie | Niski/Średni/Wysoki | {Sposób mitygacji} |
-| {Ryzyko 2} | Niskie/Średnie/Wysokie | Niski/Średni/Wysoki | {Sposób mitygacji} |
+| Criterion | Option 1 | Option 2 | Option 3 |
+|-----------|----------|----------|----------|
+| Implementation complexity | {+/-} | {+/-} | {+/-} |
+| Scalability | {+/-} | {+/-} | {+/-} |
+| Performance | {+/-} | {+/-} | {+/-} |
+| Maintainability | {+/-} | {+/-} | {+/-} |
+| Alignment with existing architecture | {+/-} | {+/-} | {+/-} |
+| Cost | {+/-} | {+/-} | {+/-} |
 
----
-
-## Alternatywy odrzucone
-
-### {Nazwa odrzuconej alternatywy}
-**Powód odrzucenia:** {Dlaczego ta opcja została odrzucona}
-
----
-
-## Powiązane dokumenty
-
-- [Specyfikacja funkcjonalna](../specs/{feature}/README.md)
-- [Specyfikacja techniczna](../specs/{feature}/TECHNICAL.md)
-- [ADR-{XXX}](./ADR-XXX-nazwa.md) - powiązana decyzja
+**Legend:** + (favorable), - (unfavorable), 0 (neutral)
 
 ---
 
-## Notatki
+## Decision
 
-{Dodatkowe notatki, uwagi, lub informacje, które mogą być przydatne w przyszłości}
+**Selected Option:** Option {X} - {Name}
 
----
-
-## Historia zmian
-
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | {data} | {autor} | Wersja początkowa |
-| 1.1 | {data} | {autor} | {Opis zmian} |
+### Justification
+{Explain why this option was selected:
+- Which pros were decisive?
+- How do you handle the cons?
+- What factors determined the choice?}
 
 ---
 
-## Przegląd i aktualizacja
+## Consequences
 
-**Data ostatniego przeglądu:** {YYYY-MM-DD}
-**Następny przegląd:** {YYYY-MM-DD}
+### Positive
+- {Positive consequence 1}
+- {Positive consequence 2}
 
-Ta decyzja powinna być przeglądana:
-- [ ] Przy znaczących zmianach w architekturze
-- [ ] Przy aktualizacji zależności
-- [ ] Co {X} miesięcy
+### Negative
+- {Negative consequence 1}
+- {Negative consequence 2}
+
+### Neutral
+- {Neutral consequence}
+
+---
+
+## Implementation Plan
+
+### Steps
+1. {Step 1}
+2. {Step 2}
+3. {Step 3}
+
+### Code Changes
+- `{path/to/file1}` - {change description}
+- `{path/to/file2}` - {change description}
+
+### Data Migration
+{Migration description if required, or "Not applicable"}
+
+### Tests
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] Performance tests
+
+---
+
+## Risks and Mitigation
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| {Risk 1} | Low/Medium/High | Low/Medium/High | {Mitigation approach} |
+| {Risk 2} | Low/Medium/High | Low/Medium/High | {Mitigation approach} |
+
+---
+
+## Rejected Alternatives
+
+### {Rejected Alternative Name}
+**Reason for rejection:** {Why this option was rejected}
+
+---
+
+## Related Documents
+
+- [Functional Specification](../specs/{feature}/README.md)
+- [Technical Specification](../specs/{feature}/TECHNICAL.md)
+- [ADR-{XXX}](./ADR-XXX-name.md) - related decision
+
+---
+
+## Notes
+
+{Additional notes, comments, or information that may be useful in the future}
+
+---
+
+## Change History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | {date} | {author} | Initial version |
+| 1.1 | {date} | {author} | {Change description} |
+
+---
+
+## Review and Update
+
+**Last Review Date:** {YYYY-MM-DD}
+**Next Review:** {YYYY-MM-DD}
+
+This decision should be reviewed:
+- [ ] When significant architecture changes occur
+- [ ] When dependencies are updated
+- [ ] Every {X} months

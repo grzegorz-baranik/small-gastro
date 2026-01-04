@@ -1,6 +1,9 @@
 # language: pl
 # encoding: utf-8
 
+# BDD Scenarios for Menu Sorting feature
+# Polish Gherkin is used as this represents user-facing behavior
+
 @menu-sort-order
 Funkcja: Sortowanie produktow w menu
   Jako wlasciciel lokalu gastronomicznego
@@ -17,7 +20,7 @@ Funkcja: Sortowanie produktow w menu
       | Napoj          | 5.00   |
 
   # ============================================
-  # SCENARIUSZE POZYTYWNE (Happy Path)
+  # POSITIVE SCENARIOS (Happy Path)
   # ============================================
 
   @happy-path @smoke
@@ -48,7 +51,7 @@ Funkcja: Sortowanie produktow w menu
     Wtedy produkty sa wyswietlane w kolejnosci: Burger, Kebab, Frytki
 
   # ============================================
-  # INTERAKCJE DRAG-AND-DROP
+  # DRAG-AND-DROP INTERACTIONS
   # ============================================
 
   @drag-drop
@@ -71,7 +74,7 @@ Funkcja: Sortowanie produktow w menu
     Wtedy produkty sa wyswietlane w kolejnosci: Burger, Frytki, Napoj, Kebab
 
   # ============================================
-  # SCENARIUSZE BLEDOW
+  # ERROR SCENARIOS
   # ============================================
 
   @error-handling
@@ -83,7 +86,7 @@ Funkcja: Sortowanie produktow w menu
     I produkty wracaja do poprzedniej kolejnosci
 
   # ============================================
-  # API
+  # API SCENARIOS
   # ============================================
 
   @api
@@ -130,7 +133,7 @@ Funkcja: Sortowanie produktow w menu
     Wtedy produkty sa zwrocone w kolejnosci: Burger, Frytki, Kebab
 
   # ============================================
-  # PRZYPADKI BRZEGOWE
+  # EDGE CASES
   # ============================================
 
   @edge-case

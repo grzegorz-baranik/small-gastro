@@ -1,158 +1,160 @@
-# Specyfikacja Funkcjonalna: {Nazwa Funkcjonalności}
+# Functional Specification: {Feature Name}
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Autor** | {imię i nazwisko} |
-| **Data utworzenia** | {YYYY-MM-DD} |
-| **Wersja** | 1.0 |
-| **Status** | Draft / W recenzji / Zatwierdzony |
-| **Zatwierdził** | {imię i nazwisko, data} |
-
----
-
-## 1. Przegląd
-
-### 1.1 Cel
-{Krótki opis celu funkcjonalności - 2-3 zdania}
-
-### 1.2 Kontekst biznesowy
-{Dlaczego ta funkcjonalność jest potrzebna? Jaki problem rozwiązuje?}
-
-### 1.3 Zakres
-**W zakresie:**
-- {element 1}
-- {element 2}
-
-**Poza zakresem:**
-- {element 1}
-- {element 2}
+| Field | Value |
+|-------|-------|
+| **Author** | {author} |
+| **Created** | {YYYY-MM-DD} |
+| **Version** | 1.0 |
+| **Status** | Draft / In Review / Approved |
+| **Approved by** | {name, date} |
 
 ---
 
-## 2. Historie użytkownika
+## 1. Overview
 
-### US-001: {Tytuł historii}
-**Jako** {rola użytkownika}
-**Chcę** {akcja/funkcjonalność}
-**Aby** {korzyść/cel}
+### 1.1 Purpose
+{Brief description of the feature's purpose - 2-3 sentences}
 
-**Kryteria akceptacji:**
-- [ ] {kryterium 1}
-- [ ] {kryterium 2}
-- [ ] {kryterium 3}
+### 1.2 Business Context
+{Why is this feature needed? What problem does it solve?}
 
-**Priorytet:** Wysoki / Średni / Niski
+### 1.3 Scope
+**In scope:**
+- {item 1}
+- {item 2}
 
----
-
-### US-002: {Tytuł historii}
-**Jako** {rola użytkownika}
-**Chcę** {akcja/funkcjonalność}
-**Aby** {korzyść/cel}
-
-**Kryteria akceptacji:**
-- [ ] {kryterium 1}
-- [ ] {kryterium 2}
-
-**Priorytet:** Wysoki / Średni / Niski
+**Out of scope:**
+- {item 1}
+- {item 2}
 
 ---
 
-## 3. Wymagania funkcjonalne
+## 2. User Stories
 
-### 3.1 {Nazwa wymagania}
+### US-001: {Story Title}
+**As a** {user role}
+**I want** {action/functionality}
+**So that** {benefit/goal}
+
+**Acceptance Criteria:**
+- [ ] {criterion 1}
+- [ ] {criterion 2}
+- [ ] {criterion 3}
+
+**Priority:** High / Medium / Low
+
+---
+
+### US-002: {Story Title}
+**As a** {user role}
+**I want** {action/functionality}
+**So that** {benefit/goal}
+
+**Acceptance Criteria:**
+- [ ] {criterion 1}
+- [ ] {criterion 2}
+
+**Priority:** High / Medium / Low
+
+---
+
+## 3. Functional Requirements
+
+### 3.1 {Requirement Name}
 **ID:** FR-001
-**Opis:** {Szczegółowy opis wymagania}
-**Priorytet:** Wysoki / Średni / Niski
+**Description:** {Detailed requirement description}
+**Priority:** High / Medium / Low
 
-### 3.2 {Nazwa wymagania}
+### 3.2 {Requirement Name}
 **ID:** FR-002
-**Opis:** {Szczegółowy opis wymagania}
-**Priorytet:** Wysoki / Średni / Niski
+**Description:** {Detailed requirement description}
+**Priority:** High / Medium / Low
 
 ---
 
-## 4. Interfejs użytkownika
+## 4. User Interface
 
-### 4.1 Makiety/Szkice
-{Opis lub link do makiet UI}
+### 4.1 Mockups/Sketches
+{Description or link to UI mockups}
 
-### 4.2 Przepływ użytkownika
+### 4.2 User Flow
 ```
-[Ekran 1] -> [Akcja] -> [Ekran 2] -> [Akcja] -> [Ekran 3]
+[Screen 1] -> [Action] -> [Screen 2] -> [Action] -> [Screen 3]
 ```
 
-### 4.3 Elementy UI
-| Element | Typ | Opis |
-|---------|-----|------|
-| {nazwa} | Button/Input/Table/... | {opis działania} |
+### 4.3 UI Elements
+| Element | Type | Description |
+|---------|------|-------------|
+| {name} | Button/Input/Table/... | {behavior description} |
+
+**Note:** All UI labels and text should be in Polish.
 
 ---
 
-## 5. Przypadki brzegowe
+## 5. Edge Cases
 
-### 5.1 {Nazwa przypadku}
-**Scenariusz:** {Opis sytuacji}
-**Oczekiwane zachowanie:** {Jak system powinien zareagować}
+### 5.1 {Case Name}
+**Scenario:** {Situation description}
+**Expected behavior:** {How the system should react}
 
-### 5.2 {Nazwa przypadku}
-**Scenariusz:** {Opis sytuacji}
-**Oczekiwane zachowanie:** {Jak system powinien zareagować}
-
----
-
-## 6. Obsługa błędów
-
-| Błąd | Komunikat (PL) | Akcja |
-|------|----------------|-------|
-| {typ błędu} | "{komunikat po polsku}" | {co użytkownik powinien zrobić} |
+### 5.2 {Case Name}
+**Scenario:** {Situation description}
+**Expected behavior:** {How the system should react}
 
 ---
 
-## 7. Wymagania niefunkcjonalne
+## 6. Error Handling
 
-### 7.1 Wydajność
-- {wymaganie wydajnościowe}
-
-### 7.2 Bezpieczeństwo
-- {wymaganie bezpieczeństwa}
-
-### 7.3 Dostępność
-- {wymaganie dostępności}
+| Error | Message (Polish) | Action |
+|-------|------------------|--------|
+| {error type} | "{Polish error message}" | {what user should do} |
 
 ---
 
-## 8. Zależności
+## 7. Non-Functional Requirements
 
-### 8.1 Wymagane funkcjonalności
-- {funkcjonalność 1}
-- {funkcjonalność 2}
+### 7.1 Performance
+- {performance requirement}
 
-### 8.2 Powiązane modele danych
+### 7.2 Security
+- {security requirement}
+
+### 7.3 Accessibility
+- {accessibility requirement}
+
+---
+
+## 8. Dependencies
+
+### 8.1 Required Features
+- {feature 1}
+- {feature 2}
+
+### 8.2 Related Data Models
 - {Model 1}
 - {Model 2}
 
 ---
 
-## 9. Metryki sukcesu
+## 9. Success Metrics
 
-| Metryka | Cel | Sposób pomiaru |
-|---------|-----|----------------|
-| {nazwa metryki} | {wartość docelowa} | {jak będzie mierzona} |
-
----
-
-## 10. Pytania otwarte
-
-- [ ] {Pytanie 1}
-- [ ] {Pytanie 2}
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| {metric name} | {target value} | {how it will be measured} |
 
 ---
 
-## Historia zmian
+## 10. Open Questions
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | {data} | {autor} | Wersja początkowa |
+- [ ] {Question 1}
+- [ ] {Question 2}
+
+---
+
+## Change History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | {date} | {author} | Initial version |

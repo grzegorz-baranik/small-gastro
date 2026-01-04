@@ -1,129 +1,130 @@
 # language: pl
 # encoding: utf-8
 
-# Szablon scenariuszy BDD dla projektu small-gastro
-# Użyj tego szablonu jako podstawy dla nowych funkcjonalności
+# BDD Scenario Template for the small-gastro project
+# Use this template as a basis for new features
+# Note: Polish Gherkin keywords are used as this represents user-facing behavior
 
-@{tag-funkcjonalności}
-Funkcja: {Nazwa funkcjonalności}
-  Jako {rola użytkownika}
-  Chcę {akcja/możliwość}
-  Aby {korzyść/cel biznesowy}
+@{feature-tag}
+Funkcja: {Feature Name}
+  Jako {user role}
+  Chcę {action/capability}
+  Aby {benefit/business goal}
 
   Założenia:
-    # Wspólne kroki dla wszystkich scenariuszy w tej funkcji
+    # Common steps for all scenarios in this feature
     Zakładając że baza danych jest pusta
-    I jestem zalogowany jako "{rola}"
+    I jestem zalogowany jako "{role}"
 
   # ============================================
-  # SCENARIUSZE POZYTYWNE (Happy Path)
+  # POSITIVE SCENARIOS (Happy Path)
   # ============================================
 
   @happy-path @smoke
-  Scenariusz: {Podstawowy scenariusz sukcesu}
-    Zakładając że {warunek wstępny}
-    Gdy {akcja użytkownika}
-    Wtedy {oczekiwany rezultat}
-    I {dodatkowa weryfikacja}
+  Scenariusz: {Basic success scenario}
+    Zakładając że {precondition}
+    Gdy {user action}
+    Wtedy {expected result}
+    I {additional verification}
 
   @happy-path
-  Scenariusz: {Drugi scenariusz sukcesu}
-    Zakładając że {warunek wstępny}
-    Gdy {akcja użytkownika}
-    Wtedy {oczekiwany rezultat}
+  Scenariusz: {Second success scenario}
+    Zakładając że {precondition}
+    Gdy {user action}
+    Wtedy {expected result}
 
   # ============================================
-  # SCENARIUSZE Z DANYMI (Scenario Outline)
+  # DATA-DRIVEN SCENARIOS (Scenario Outline)
   # ============================================
 
   @parametrized
-  Szablon scenariusza: {Nazwa z parametrami}
-    Zakładając że istnieje {obiekt} o nazwie "<nazwa>"
-    Gdy zmieniam {pole} na "<nowa_wartość>"
-    Wtedy {pole} powinno mieć wartość "<nowa_wartość>"
+  Szablon scenariusza: {Name with parameters}
+    Zakładając że istnieje {object} o nazwie "<nazwa>"
+    Gdy zmieniam {field} na "<nowa_wartość>"
+    Wtedy {field} powinno mieć wartość "<nowa_wartość>"
 
     Przykłady:
       | nazwa     | nowa_wartość |
-      | Przykład1 | Wartość1     |
-      | Przykład2 | Wartość2     |
-      | Przykład3 | Wartość3     |
+      | Example1  | Value1       |
+      | Example2  | Value2       |
+      | Example3  | Value3       |
 
   # ============================================
-  # SCENARIUSZE BŁĘDÓW
+  # ERROR SCENARIOS
   # ============================================
 
   @error-handling
-  Scenariusz: Błąd walidacji - {opis błędu}
-    Zakładając że jestem na stronie {nazwa strony}
-    Gdy próbuję utworzyć {obiekt} z pustym polem "{pole}"
-    Wtedy powinienem zobaczyć komunikat błędu "{Pole jest wymagane}"
-    I {obiekt} nie powinien zostać utworzony
+  Scenariusz: Validation error - {error description}
+    Zakładając że jestem na stronie {page name}
+    Gdy próbuję utworzyć {object} z pustym polem "{field}"
+    Wtedy powinienem zobaczyć komunikat błędu "{Field is required}"
+    I {object} nie powinien zostać utworzony
 
   @error-handling
-  Scenariusz: Błąd walidacji - nieprawidłowy format
-    Zakładając że jestem na stronie {nazwa strony}
-    Gdy wprowadzam "{nieprawidłowa_wartość}" w polu "{pole}"
-    Wtedy powinienem zobaczyć komunikat błędu "{Nieprawidłowy format}"
+  Scenariusz: Validation error - invalid format
+    Zakładając że jestem na stronie {page name}
+    Gdy wprowadzam "{invalid_value}" w polu "{field}"
+    Wtedy powinienem zobaczyć komunikat błędu "{Invalid format}"
 
   @error-handling @404
-  Scenariusz: Próba dostępu do nieistniejącego zasobu
-    Gdy próbuję wyświetlić {obiekt} o ID 99999
+  Scenariusz: Attempt to access non-existent resource
+    Gdy próbuję wyświetlić {object} o ID 99999
     Wtedy powinienem zobaczyć komunikat "Nie znaleziono"
-    I zostanę przekierowany na {strona główna/lista}
+    I zostanę przekierowany na {main page/list}
 
   # ============================================
-  # PRZYPADKI BRZEGOWE
+  # EDGE CASES
   # ============================================
 
   @edge-case
-  Scenariusz: {Nazwa przypadku brzegowego}
-    Zakładając że {warunek specjalny}
-    Gdy {akcja}
-    Wtedy {oczekiwane zachowanie w tym przypadku}
+  Scenariusz: {Edge case name}
+    Zakładając że {special condition}
+    Gdy {action}
+    Wtedy {expected behavior in this case}
 
   @edge-case @concurrent
-  Scenariusz: Równoczesna modyfikacja tego samego zasobu
-    Zakładając że dwóch użytkowników edytuje ten sam {obiekt}
+  Scenariusz: Concurrent modification of the same resource
+    Zakładając że dwóch użytkowników edytuje ten sam {object}
     Gdy pierwszy użytkownik zapisuje zmiany
     I drugi użytkownik próbuje zapisać swoje zmiany
     Wtedy drugi użytkownik powinien zobaczyć komunikat o konflikcie
 
   # ============================================
-  # WYDAJNOŚĆ
+  # PERFORMANCE
   # ============================================
 
   @performance
-  Scenariusz: Wydajność ładowania listy
-    Zakładając że w bazie jest 1000 {obiektów}
-    Gdy otwieram stronę z listą {obiektów}
+  Scenariusz: List loading performance
+    Zakładając że w bazie jest 1000 {objects}
+    Gdy otwieram stronę z listą {objects}
     Wtedy strona powinna załadować się w mniej niż 2 sekundy
     I powinienem zobaczyć paginację
 
   # ============================================
-  # BEZPIECZEŃSTWO
+  # SECURITY
   # ============================================
 
   @security
-  Scenariusz: Próba dostępu bez uprawnień
+  Scenariusz: Access attempt without permissions
     Zakładając że jestem zalogowany jako użytkownik bez uprawnień
-    Gdy próbuję uzyskać dostęp do {chronionej funkcji}
+    Gdy próbuję uzyskać dostęp do {protected function}
     Wtedy powinienem zobaczyć komunikat "Brak uprawnień"
-    I nie powinienem zobaczyć {chronionych danych}
+    I nie powinienem zobaczyć {protected data}
 
 # ============================================
-# PRZYKŁADY DLA PROJEKTU SMALL-GASTRO
+# EXAMPLES FOR SMALL-GASTRO PROJECT
 # ============================================
 
-# Poniżej przykładowe scenariusze specyficzne dla small-gastro
+# Below are example scenarios specific to small-gastro
 
-@skladniki
-Funkcja: Zarządzanie składnikami
+@ingredients
+Funkcja: Ingredient Management
   Jako właściciel lokalu gastronomicznego
   Chcę zarządzać listą składników
   Aby móc kontrolować stany magazynowe
 
   @happy-path @smoke
-  Scenariusz: Dodanie nowego składnika wagowego
+  Scenariusz: Adding a new weight-based ingredient
     Zakładając że jestem na stronie "Składniki"
     Gdy klikam przycisk "Dodaj składnik"
     I wprowadzam nazwę "Sałata lodowa"
@@ -133,7 +134,7 @@ Funkcja: Zarządzanie składnikami
     I powinien mieć jednostkę "kg"
 
   @happy-path
-  Scenariusz: Dodanie nowego składnika sztukowego
+  Scenariusz: Adding a new count-based ingredient
     Zakładając że jestem na stronie "Składniki"
     Gdy klikam przycisk "Dodaj składnik"
     I wprowadzam nazwę "Bułka burger"
@@ -143,20 +144,20 @@ Funkcja: Zarządzanie składnikami
     I powinien mieć jednostkę "szt"
 
   @error-handling
-  Scenariusz: Błąd - próba dodania składnika o istniejącej nazwie
+  Scenariusz: Error - attempt to add ingredient with existing name
     Zakładając że istnieje składnik "Pomidor"
     Gdy próbuję dodać składnik o nazwie "Pomidor"
     Wtedy powinienem zobaczyć komunikat "Składnik o tej nazwie już istnieje"
     I nowy składnik nie powinien zostać utworzony
 
-@produkty
-Funkcja: Zarządzanie produktami
+@products
+Funkcja: Product Management
   Jako właściciel lokalu gastronomicznego
   Chcę tworzyć produkty z przypisanymi składnikami
   Aby móc śledzić zużycie składników przy sprzedaży
 
   @happy-path
-  Scenariusz: Tworzenie produktu z przypisanymi składnikami
+  Scenariusz: Creating a product with assigned ingredients
     Zakładając że istnieją składniki:
       | nazwa       | jednostka |
       | Bułka burger| szt       |
@@ -171,14 +172,14 @@ Funkcja: Zarządzanie produktami
     Wtedy produkt "Burger Classic" powinien zostać utworzony
     I powinien mieć 3 przypisane składniki
 
-@dzienny-raport
-Funkcja: Otwarcie i zamknięcie dnia
+@daily-report
+Funkcja: Day Open and Close
   Jako pracownik lokalu
   Chcę otwierać i zamykać dzień pracy
   Aby śledzić stany magazynowe na początku i końcu dnia
 
   @happy-path @smoke
-  Scenariusz: Otwarcie nowego dnia
+  Scenariusz: Opening a new day
     Zakładając że poprzedni dzień został zamknięty
     Gdy otwieram nowy dzień
     I wprowadzam stany początkowe składników
@@ -186,7 +187,7 @@ Funkcja: Otwarcie i zamknięcie dnia
     I stany początkowe powinny zostać zapisane
 
   @edge-case
-  Scenariusz: Próba otwarcia dnia gdy poprzedni nie jest zamknięty
+  Scenariusz: Attempt to open day when previous is not closed
     Zakładając że poprzedni dzień nie został zamknięty
     Gdy próbuję otworzyć nowy dzień
     Wtedy powinienem zobaczyć komunikat "Najpierw zamknij poprzedni dzień"

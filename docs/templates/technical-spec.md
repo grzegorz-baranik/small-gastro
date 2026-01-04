@@ -1,20 +1,20 @@
-# Specyfikacja Techniczna: {Nazwa Funkcjonalności}
+# Technical Specification: {Feature Name}
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Autor** | {imię i nazwisko} |
-| **Data utworzenia** | {YYYY-MM-DD} |
-| **Wersja** | 1.0 |
-| **Status** | Draft / W recenzji / Zatwierdzony |
-| **Specyfikacja funkcjonalna** | [Link](./README.md) |
+| Field | Value |
+|-------|-------|
+| **Author** | {author} |
+| **Created** | {YYYY-MM-DD} |
+| **Version** | 1.0 |
+| **Status** | Draft / In Review / Approved |
+| **Functional Specification** | [Link](./README.md) |
 
 ---
 
-## 1. Przegląd architektury
+## 1. Architecture Overview
 
-### 1.1 Diagram komponentów
+### 1.1 Component Diagram
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      Frontend                            │
@@ -37,18 +37,18 @@
                  └─────────────────┘
 ```
 
-### 1.2 Komponenty do modyfikacji
-- {komponent 1} - {opis zmian}
-- {komponent 2} - {opis zmian}
+### 1.2 Components to Modify
+- {component 1} - {change description}
+- {component 2} - {change description}
 
-### 1.3 Nowe komponenty
-- {nowy komponent} - {opis}
+### 1.3 New Components
+- {new component} - {description}
 
 ---
 
 ## 2. API Endpoints
 
-### 2.1 {Nazwa endpointu}
+### 2.1 {Endpoint Name}
 
 ```http
 POST /api/v1/{resource}
@@ -75,29 +75,29 @@ POST /api/v1/{resource}
 **Response (400):**
 ```json
 {
-  "detail": "Błąd walidacji: {opis błędu}"
+  "detail": "Validation error: {error description in Polish}"
 }
 ```
 
 **Response (404):**
 ```json
 {
-  "detail": "Nie znaleziono zasobu"
+  "detail": "Nie znaleziono"
 }
 ```
 
 ---
 
-### 2.2 {Nazwa endpointu}
+### 2.2 {Endpoint Name}
 
 ```http
 GET /api/v1/{resource}/{id}
 ```
 
 **Parameters:**
-| Nazwa | Typ | Wymagany | Opis |
-|-------|-----|----------|------|
-| id | integer | Tak | ID zasobu |
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| id | integer | Yes | Resource ID |
 
 **Response (200):**
 ```json
@@ -109,9 +109,9 @@ GET /api/v1/{resource}/{id}
 
 ---
 
-## 3. Schemat bazy danych
+## 3. Database Schema
 
-### 3.1 Nowe tabele
+### 3.1 New Tables
 
 ```sql
 CREATE TABLE {table_name} (
@@ -123,14 +123,14 @@ CREATE TABLE {table_name} (
 );
 ```
 
-### 3.2 Modyfikacje istniejących tabel
+### 3.2 Modifications to Existing Tables
 
 ```sql
 ALTER TABLE {existing_table}
 ADD COLUMN {new_column} VARCHAR(100);
 ```
 
-### 3.3 Diagram ERD
+### 3.3 ERD Diagram
 ```
 ┌──────────────┐       ┌──────────────┐
 │   Table1     │       │   Table2     │
@@ -141,7 +141,7 @@ ADD COLUMN {new_column} VARCHAR(100);
 └──────────────┘       └──────────────┘
 ```
 
-### 3.4 Migracja Alembic
+### 3.4 Alembic Migration
 
 ```python
 # alembic/versions/{revision}_add_{feature}.py
@@ -160,9 +160,9 @@ def downgrade():
 
 ---
 
-## 4. Modele SQLAlchemy
+## 4. SQLAlchemy Models
 
-### 4.1 {Nazwa modelu}
+### 4.1 {Model Name}
 
 ```python
 class {ModelName}(Base):
@@ -182,9 +182,9 @@ class {ModelName}(Base):
 
 ---
 
-## 5. Schematy Pydantic
+## 5. Pydantic Schemas
 
-### 5.1 {Nazwa}Create
+### 5.1 {Name}Create
 
 ```python
 class {Name}Create(BaseModel):
@@ -194,13 +194,13 @@ class {Name}Create(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "field1": "przykład",
+                "field1": "example",
                 "field2": 123
             }
         }
 ```
 
-### 5.2 {Nazwa}Response
+### 5.2 {Name}Response
 
 ```python
 class {Name}Response(BaseModel):
@@ -215,9 +215,9 @@ class {Name}Response(BaseModel):
 
 ---
 
-## 6. Warstwa serwisów
+## 6. Service Layer
 
-### 6.1 {Nazwa}Service
+### 6.1 {Name}Service
 
 ```python
 class {Name}Service:
@@ -226,30 +226,30 @@ class {Name}Service:
 
     def create(self, data: {Name}Create) -> {Name}:
         """
-        Tworzy nowy {obiekt}.
+        Creates a new {object}.
 
         Args:
-            data: Dane do utworzenia
+            data: Data for creation
 
         Returns:
-            Utworzony obiekt
+            Created object
 
         Raises:
-            ValueError: Gdy dane są nieprawidłowe
+            ValueError: When data is invalid
         """
-        # Implementacja
+        # Implementation
         pass
 
     def get_by_id(self, id: int) -> Optional[{Name}]:
-        """Pobiera obiekt po ID."""
+        """Gets object by ID."""
         pass
 ```
 
 ---
 
-## 7. Komponenty Frontend
+## 7. Frontend Components
 
-### 7.1 Struktura plików
+### 7.1 File Structure
 
 ```
 frontend/src/
@@ -265,7 +265,7 @@ frontend/src/
     └── {feature}.ts           # TypeScript interfaces
 ```
 
-### 7.2 Interfejsy TypeScript
+### 7.2 TypeScript Interfaces
 
 ```typescript
 export interface {Name} {
@@ -325,63 +325,63 @@ export function useCreate{Name}() {
 
 ---
 
-## 8. Bezpieczeństwo
+## 8. Security
 
-### 8.1 Walidacja danych
-- {opis walidacji}
+### 8.1 Data Validation
+- {validation description}
 
-### 8.2 Autoryzacja
-- {opis autoryzacji}
+### 8.2 Authorization
+- {authorization description}
 
-### 8.3 Potencjalne zagrożenia
-| Zagrożenie | Mitygacja |
-|------------|-----------|
-| {zagrożenie} | {rozwiązanie} |
+### 8.3 Potential Threats
+| Threat | Mitigation |
+|--------|------------|
+| {threat} | {solution} |
 
 ---
 
-## 9. Wydajność
+## 9. Performance
 
-### 9.1 Indeksy bazy danych
+### 9.1 Database Indexes
 ```sql
 CREATE INDEX idx_{table}_{column} ON {table}({column});
 ```
 
 ### 9.2 Caching
-- {strategia cache}
+- {cache strategy}
 
-### 9.3 Optymalizacje zapytań
-- {optymalizacja}
+### 9.3 Query Optimizations
+- {optimization}
 
 ---
 
-## 10. Testowanie
+## 10. Testing
 
-### 10.1 Testy jednostkowe
+### 10.1 Unit Tests
 - [ ] {Name}Service.create()
 - [ ] {Name}Service.get_by_id()
-- [ ] Walidacja schematów Pydantic
+- [ ] Pydantic schema validation
 
-### 10.2 Testy integracyjne
+### 10.2 Integration Tests
 - [ ] POST /api/v1/{resource}
 - [ ] GET /api/v1/{resource}/{id}
 
-### 10.3 Testy E2E
-- [ ] Pełny przepływ tworzenia {obiektu}
+### 10.3 E2E Tests
+- [ ] Full {object} creation flow
 
 ---
 
-## 11. Plan wdrożenia
+## 11. Deployment Plan
 
-### 11.1 Migracja bazy danych
+### 11.1 Database Migration
 ```bash
 alembic upgrade head
 ```
 
-### 11.2 Kroki wdrożenia
-1. {krok 1}
-2. {krok 2}
-3. {krok 3}
+### 11.2 Deployment Steps
+1. {step 1}
+2. {step 2}
+3. {step 3}
 
 ### 11.3 Rollback
 ```bash
@@ -392,16 +392,16 @@ alembic downgrade -{n}
 
 ## 12. Monitoring
 
-### 12.1 Logi
-- {co logujemy}
+### 12.1 Logs
+- {what we log}
 
-### 12.2 Metryki
-- {metryki do śledzenia}
+### 12.2 Metrics
+- {metrics to track}
 
 ---
 
-## Historia zmian
+## Change History
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | {data} | {autor} | Wersja początkowa |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | {date} | {author} | Initial version |

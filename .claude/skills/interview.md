@@ -44,33 +44,33 @@ After gathering answers, present a clear summary for confirmation before moving 
 
 **Scope & Priority:**
 ```
-Question: "Jaki jest zakres tej zmiany?"
-Header: "Zakres"
+Question: "What is the scope of this change?"
+Header: "Scope"
 Options:
-  - label: "Mała (1-2 pliki)"
-    description: "Drobna zmiana w istniejącym kodzie"
-  - label: "Średnia (3-5 plików)"
-    description: "Nowa funkcjonalność lub większa modyfikacja"
-  - label: "Duża (6+ plików)"
-    description: "Znacząca zmiana architekturalna"
-  - label: "Nie wiem jeszcze"
-    description: "Wymaga dalszej analizy"
+  - label: "Small (1-2 files)"
+    description: "Minor change in existing code"
+  - label: "Medium (3-5 files)"
+    description: "New functionality or larger modification"
+  - label: "Large (6+ files)"
+    description: "Significant architectural change"
+  - label: "Not sure yet"
+    description: "Requires further analysis"
 multiSelect: false
 ```
 
 **Priority:**
 ```
-Question: "Jaki jest priorytet tej zmiany?"
-Header: "Priorytet"
+Question: "What is the priority of this change?"
+Header: "Priority"
 Options:
-  - label: "Krytyczny"
-    description: "Blokuje inne prace lub produkcję"
-  - label: "Wysoki"
-    description: "Potrzebne wkrótce"
-  - label: "Średni"
-    description: "Zaplanowane do realizacji"
-  - label: "Niski"
-    description: "Miło mieć, nie pilne"
+  - label: "Critical"
+    description: "Blocks other work or production"
+  - label: "High"
+    description: "Needed soon"
+  - label: "Medium"
+    description: "Scheduled for implementation"
+  - label: "Low"
+    description: "Nice to have, not urgent"
 multiSelect: false
 ```
 
@@ -78,49 +78,49 @@ multiSelect: false
 
 **Feature Type:**
 ```
-Question: "Jakiego typu jest ta funkcjonalność?"
-Header: "Typ"
+Question: "What type of feature is this?"
+Header: "Type"
 Options:
-  - label: "Nowa funkcjonalność"
-    description: "Zupełnie nowa możliwość w systemie"
-  - label: "Rozszerzenie istniejącej"
-    description: "Dodanie do już działającej funkcji"
-  - label: "Naprawa błędu"
-    description: "Korekta nieprawidłowego działania"
-  - label: "Refaktoryzacja"
-    description: "Poprawa kodu bez zmiany zachowania"
+  - label: "New functionality"
+    description: "Completely new capability in the system"
+  - label: "Extension of existing"
+    description: "Addition to an already working feature"
+  - label: "Bug fix"
+    description: "Correction of incorrect behavior"
+  - label: "Refactoring"
+    description: "Code improvement without behavior change"
 multiSelect: false
 ```
 
 **User Personas:**
 ```
-Question: "Kto będzie używał tej funkcjonalności?"
-Header: "Użytkownicy"
+Question: "Who will use this functionality?"
+Header: "Users"
 Options:
-  - label: "Właściciel/Manager"
-    description: "Osoba zarządzająca lokalem"
-  - label: "Pracownik"
-    description: "Osoba obsługująca klientów"
-  - label: "System automatyczny"
-    description: "Zadania wykonywane automatycznie"
-  - label: "Wielu użytkowników"
-    description: "Różne role z różnym dostępem"
+  - label: "Owner/Manager"
+    description: "Person managing the establishment"
+  - label: "Employee"
+    description: "Person serving customers"
+  - label: "Automated system"
+    description: "Tasks performed automatically"
+  - label: "Multiple users"
+    description: "Different roles with different access"
 multiSelect: true
 ```
 
 **Success Criteria:**
 ```
-Question: "Jak poznamy, że funkcjonalność działa poprawnie?"
-Header: "Kryteria"
+Question: "How will we know the functionality works correctly?"
+Header: "Criteria"
 Options:
-  - label: "Konkretny wynik/output"
-    description: "System zwraca określone dane"
-  - label: "Zmiana stanu"
-    description: "Dane w systemie się zmieniają"
-  - label: "Powiadomienie użytkownika"
-    description: "Użytkownik otrzymuje informację zwrotną"
-  - label: "Metryka wydajności"
-    description: "Mierzalna poprawa (czas, ilość, etc.)"
+  - label: "Specific result/output"
+    description: "System returns specific data"
+  - label: "State change"
+    description: "Data in the system changes"
+  - label: "User notification"
+    description: "User receives feedback"
+  - label: "Performance metric"
+    description: "Measurable improvement (time, quantity, etc.)"
 multiSelect: true
 ```
 
@@ -128,33 +128,33 @@ multiSelect: true
 
 **Schema Changes:**
 ```
-Question: "Jakie zmiany w bazie danych są potrzebne?"
-Header: "Schemat"
+Question: "What database changes are needed?"
+Header: "Schema"
 Options:
-  - label: "Nowa tabela"
-    description: "Utworzenie nowej encji"
-  - label: "Modyfikacja istniejącej"
-    description: "Dodanie/zmiana kolumn"
-  - label: "Nowe relacje"
-    description: "Połączenia między tabelami"
-  - label: "Brak zmian"
-    description: "Obecny schemat wystarcza"
+  - label: "New table"
+    description: "Creating a new entity"
+  - label: "Modify existing"
+    description: "Adding/changing columns"
+  - label: "New relations"
+    description: "Connections between tables"
+  - label: "No changes"
+    description: "Current schema is sufficient"
 multiSelect: true
 ```
 
 **Data Migration:**
 ```
-Question: "Czy istniejące dane wymagają migracji?"
-Header: "Migracja"
+Question: "Does existing data require migration?"
+Header: "Migration"
 Options:
-  - label: "Tak, z transformacją"
-    description: "Dane muszą być przekształcone"
-  - label: "Tak, proste przeniesienie"
-    description: "Dane tylko przemieszczone"
-  - label: "Nie, nowe dane"
-    description: "Funkcja dotyczy tylko nowych rekordów"
-  - label: "Do ustalenia"
-    description: "Wymaga analizy istniejących danych"
+  - label: "Yes, with transformation"
+    description: "Data must be transformed"
+  - label: "Yes, simple transfer"
+    description: "Data only moved"
+  - label: "No, new data only"
+    description: "Feature only applies to new records"
+  - label: "To be determined"
+    description: "Requires analysis of existing data"
 multiSelect: false
 ```
 
@@ -162,33 +162,33 @@ multiSelect: false
 
 **API Design:**
 ```
-Question: "Jakie endpointy API są potrzebne?"
+Question: "What API endpoints are needed?"
 Header: "API"
 Options:
   - label: "CRUD (Create/Read/Update/Delete)"
-    description: "Pełny zestaw operacji na zasobie"
-  - label: "Tylko odczyt"
+    description: "Full set of operations on a resource"
+  - label: "Read only"
     description: "GET endpoints"
-  - label: "Akcja/Operacja"
-    description: "POST endpoint wykonujący akcję"
-  - label: "Integracja zewnętrzna"
-    description: "Połączenie z zewnętrznym API"
+  - label: "Action/Operation"
+    description: "POST endpoint performing an action"
+  - label: "External integration"
+    description: "Connection to external API"
 multiSelect: true
 ```
 
 **Authentication:**
 ```
-Question: "Jakie wymagania autoryzacyjne?"
-Header: "Autoryzacja"
+Question: "What authorization requirements?"
+Header: "Auth"
 Options:
-  - label: "Publiczny endpoint"
-    description: "Dostępny bez logowania"
-  - label: "Zalogowany użytkownik"
-    description: "Wymaga aktywnej sesji"
-  - label: "Określona rola"
-    description: "Tylko dla admin/manager/etc."
-  - label: "Właściciel zasobu"
-    description: "Tylko dla twórcy/właściciela danych"
+  - label: "Public endpoint"
+    description: "Accessible without login"
+  - label: "Logged-in user"
+    description: "Requires active session"
+  - label: "Specific role"
+    description: "Only for admin/manager/etc."
+  - label: "Resource owner"
+    description: "Only for creator/owner of data"
 multiSelect: false
 ```
 
@@ -196,33 +196,33 @@ multiSelect: false
 
 **UI Components:**
 ```
-Question: "Jakie komponenty UI są potrzebne?"
-Header: "Komponenty"
+Question: "What UI components are needed?"
+Header: "Components"
 Options:
-  - label: "Nowa strona"
-    description: "Całkowicie nowy widok"
+  - label: "New page"
+    description: "Completely new view"
   - label: "Modal/Dialog"
-    description: "Okno modalne"
-  - label: "Formularz"
-    description: "Wprowadzanie danych"
-  - label: "Lista/Tabela"
-    description: "Wyświetlanie wielu elementów"
+    description: "Modal window"
+  - label: "Form"
+    description: "Data input"
+  - label: "List/Table"
+    description: "Displaying multiple elements"
 multiSelect: true
 ```
 
 **State Management:**
 ```
-Question: "Jak zarządzać stanem dla tej funkcji?"
-Header: "Stan"
+Question: "How to manage state for this feature?"
+Header: "State"
 Options:
-  - label: "Lokalny (useState)"
-    description: "Stan tylko w komponencie"
+  - label: "Local (useState)"
+    description: "State only in component"
   - label: "Context"
-    description: "Stan współdzielony między komponentami"
+    description: "State shared between components"
   - label: "React Query"
-    description: "Stan serwerowy z cache"
-  - label: "Do ustalenia"
-    description: "Wymaga analizy wymagań"
+    description: "Server state with cache"
+  - label: "To be determined"
+    description: "Requires requirements analysis"
 multiSelect: false
 ```
 
@@ -230,33 +230,33 @@ multiSelect: false
 
 **Test Scope:**
 ```
-Question: "Jaki zakres testów jest potrzebny?"
-Header: "Testy"
+Question: "What test scope is needed?"
+Header: "Tests"
 Options:
-  - label: "Unit testy"
-    description: "Izolowane testy funkcji/komponentów"
-  - label: "Integration testy"
-    description: "Testy współpracy modułów"
-  - label: "E2E testy"
-    description: "Testy całego flow użytkownika"
-  - label: "Wszystkie poziomy"
-    description: "Pełna piramida testów"
+  - label: "Unit tests"
+    description: "Isolated function/component tests"
+  - label: "Integration tests"
+    description: "Tests of module cooperation"
+  - label: "E2E tests"
+    description: "Tests of entire user flow"
+  - label: "All levels"
+    description: "Full test pyramid"
 multiSelect: true
 ```
 
 **Test Data:**
 ```
-Question: "Jakie dane testowe są potrzebne?"
-Header: "Dane"
+Question: "What test data is needed?"
+Header: "Data"
 Options:
-  - label: "Nowe buildery"
-    description: "Nowe fabryki danych testowych"
-  - label: "Istniejące buildery"
-    description: "Użycie obecnych fabryk"
-  - label: "Fixtures z plików"
-    description: "Dane z JSON/CSV"
+  - label: "New builders"
+    description: "New test data factories"
+  - label: "Existing builders"
+    description: "Use existing factories"
+  - label: "Fixtures from files"
+    description: "Data from JSON/CSV"
   - label: "Property-based"
-    description: "Generowane przez Hypothesis"
+    description: "Generated by Hypothesis"
 multiSelect: true
 ```
 
@@ -264,17 +264,17 @@ multiSelect: true
 
 **Deployment Target:**
 ```
-Question: "Gdzie deployować tę zmianę?"
-Header: "Środowisko"
+Question: "Where to deploy this change?"
+Header: "Environment"
 Options:
-  - label: "Tylko lokalne Docker"
-    description: "Testowanie lokalne"
+  - label: "Local Docker only"
+    description: "Local testing"
   - label: "VPS staging"
-    description: "Środowisko testowe na serwerze"
-  - label: "VPS produkcja"
-    description: "Środowisko produkcyjne"
-  - label: "Wszystkie środowiska"
-    description: "Pełny pipeline CI/CD"
+    description: "Test environment on server"
+  - label: "VPS production"
+    description: "Production environment"
+  - label: "All environments"
+    description: "Full CI/CD pipeline"
 multiSelect: true
 ```
 
@@ -285,17 +285,17 @@ multiSelect: true
 When multiple valid approaches exist:
 
 ```
-Question: "Który z podejść preferujesz dla [konkretny problem]?"
-Header: "Podejście"
+Question: "Which approach do you prefer for [specific problem]?"
+Header: "Approach"
 Options:
-  - label: "Opcja A: [nazwa]"
-    description: "[Zalety i wady opcji A]"
-  - label: "Opcja B: [nazwa]"
-    description: "[Zalety i wady opcji B]"
-  - label: "Opcja C: [nazwa]" (opcjonalnie)
-    description: "[Zalety i wady opcji C]"
-  - label: "Potrzebuję więcej informacji"
-    description: "Wyjaśnij szczegóły każdej opcji"
+  - label: "Option A: [name]"
+    description: "[Pros and cons of option A]"
+  - label: "Option B: [name]"
+    description: "[Pros and cons of option B]"
+  - label: "Option C: [name]" (optional)
+    description: "[Pros and cons of option C]"
+  - label: "I need more information"
+    description: "Explain details of each option"
 multiSelect: false
 ```
 
@@ -306,17 +306,17 @@ multiSelect: false
 When implementation involves trade-offs:
 
 ```
-Question: "Co jest najważniejsze dla tej funkcjonalności?"
-Header: "Priorytet"
+Question: "What is most important for this functionality?"
+Header: "Priority"
 Options:
-  - label: "Szybkość implementacji"
-    description: "Jak najszybciej działające rozwiązanie"
-  - label: "Wydajność"
-    description: "Optymalne działanie pod obciążeniem"
-  - label: "Łatwość utrzymania"
-    description: "Czysty kod, łatwe przyszłe zmiany"
-  - label: "Doświadczenie użytkownika"
-    description: "Najlepsza ergonomia i UX"
+  - label: "Implementation speed"
+    description: "Working solution as quickly as possible"
+  - label: "Performance"
+    description: "Optimal operation under load"
+  - label: "Maintainability"
+    description: "Clean code, easy future changes"
+  - label: "User experience"
+    description: "Best ergonomics and UX"
 multiSelect: false
 ```
 
@@ -327,30 +327,30 @@ multiSelect: false
 After completing the interview, summarize:
 
 ```markdown
-## Podsumowanie wywiadu
+## Interview Summary
 
-### Ustalenia:
-- **Zakres**: [odpowiedź]
-- **Priorytet**: [odpowiedź]
-- **Typ**: [odpowiedź]
-- [inne kluczowe ustalenia]
+### Findings:
+- **Scope**: [answer]
+- **Priority**: [answer]
+- **Type**: [answer]
+- [other key findings]
 
-### Decyzje techniczne:
-- [decyzja 1]
-- [decyzja 2]
+### Technical Decisions:
+- [decision 1]
+- [decision 2]
 
-### Zidentyfikowane ryzyka:
-- [ryzyko 1, jeśli jakieś]
+### Identified Risks:
+- [risk 1, if any]
 
-### Następne kroki:
-1. [krok 1]
-2. [krok 2]
+### Next Steps:
+1. [step 1]
+2. [step 2]
 
-Czy powyższe podsumowanie jest poprawne? Jeśli tak, przechodzę do [planowania/implementacji].
+Is the above summary correct? If so, I'll proceed to [planning/implementation].
 ```
 
 ---
 
 ## Language
 
-Conduct the interview in Polish (the project's primary language) unless the user explicitly uses English.
+Conduct the interview in English. For UI-facing elements that will be shown to end users in the application, use Polish (the project's primary UI language).

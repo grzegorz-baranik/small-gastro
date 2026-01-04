@@ -83,10 +83,10 @@ Only after approval:
 ### Functional Specification (README.md)
 
 Must include:
-- Feature overview (Polish)
+- Feature overview
 - User stories
 - Acceptance criteria
-- UI mockups/descriptions
+- UI mockups/descriptions (UI text in Polish)
 - Edge cases
 - Success metrics
 
@@ -106,9 +106,9 @@ Must include:
 - Happy path scenarios
 - Error scenarios
 - Edge case scenarios
-- Polish language descriptions
+- Polish language for Gherkin keywords and user-facing descriptions
 
-Example:
+Example (Polish Gherkin for user-facing content):
 ```gherkin
 # language: pl
 Funkcja: Zarządzanie składnikami
@@ -229,36 +229,36 @@ python scripts/new-feature.py {feature-name}
 ### When No Specification Exists
 
 ```
-Nie znalazłem specyfikacji dla tej funkcjonalności.
+I couldn't find a specification for this feature.
 
-Zanim zacznę implementację, muszę utworzyć dokumentację:
-1. Specyfikacja funkcjonalna (README.md)
-2. Specyfikacja techniczna (TECHNICAL.md)
-3. Scenariusze BDD (scenarios.feature)
-4. Plan testów (TESTING.md)
+Before I start implementation, I need to create documentation:
+1. Functional specification (README.md)
+2. Technical specification (TECHNICAL.md)
+3. BDD scenarios (scenarios.feature)
+4. Test plan (TESTING.md)
 
-Czy chcesz, żebym rozpoczął od utworzenia specyfikacji?
+Would you like me to start by creating a specification?
 ```
 
 ### When Specification Incomplete
 
 ```
-Znalazłem specyfikację, ale brakuje następujących sekcji:
-- [lista brakujących sekcji]
+I found the specification, but the following sections are missing:
+- [list of missing sections]
 
-Czy chcesz, żebym uzupełnił brakujące elementy przed implementacją?
+Would you like me to complete the missing elements before implementation?
 ```
 
 ### When Ready to Implement
 
 ```
-Specyfikacja jest kompletna i zatwierdzona.
+The specification is complete and approved.
 
-Rozpoczynam implementację zgodnie z:
+Starting implementation according to:
 - docs/specs/{feature}/README.md
 - docs/specs/{feature}/TECHNICAL.md
 
-Czy mogę kontynuować?
+May I proceed?
 ```
 
 ---

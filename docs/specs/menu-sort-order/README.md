@@ -1,182 +1,182 @@
-# Specyfikacja Funkcjonalna: Sortowanie Menu
+# Functional Specification: Menu Sorting
 
-## Metadane
+## Metadata
 
-| Pole | Wartość |
-|------|---------|
-| **Autor** | Claude AI |
-| **Data utworzenia** | 2026-01-02 |
-| **Wersja** | 1.0 |
-| **Status** | Zatwierdzony |
-| **Zatwierdził** | - |
-
----
-
-## 1. Przegląd
-
-### 1.1 Cel
-Umożliwienie użytkownikom definiowania kolejności wyświetlania produktów w menu za pomocą funkcjonalności drag-and-drop. Zdefiniowana kolejność będzie stosowana we wszystkich miejscach aplikacji, gdzie wyświetlana jest lista produktów.
-
-### 1.2 Kontekst biznesowy
-W lokalach gastronomicznych kolejność produktów w menu ma znaczenie - popularne/promowane produkty powinny być wyświetlane jako pierwsze. Obecnie produkty są wyświetlane w kolejności utworzenia, co nie odpowiada potrzebom biznesowym.
-
-### 1.3 Zakres
-**W zakresie:**
-- Dodanie pola `sort_order` do modelu Product
-- Implementacja drag-and-drop na liście produktów w MenuPage
-- Zastosowanie sortowania we wszystkich widokach wyświetlających produkty
-- Endpoint API do aktualizacji kolejności produktów
-
-**Poza zakresem:**
-- Sortowanie składników (ingredients)
-- Sortowanie wariantów produktów
-- Grupowanie produktów w kategorie
+| Field | Value |
+|-------|-------|
+| **Author** | Claude AI |
+| **Created** | 2026-01-02 |
+| **Version** | 1.0 |
+| **Status** | Approved |
+| **Approved by** | - |
 
 ---
 
-## 2. Historie użytkownika
+## 1. Overview
 
-### US-001: Zmiana kolejności produktów
-**Jako** właściciel lokalu gastronomicznego
-**Chcę** przeciągać produkty na liście menu aby zmienić ich kolejność
-**Aby** najpopularniejsze produkty były wyświetlane jako pierwsze
+### 1.1 Purpose
+Enable users to define the display order of products in the menu using drag-and-drop functionality. The defined order will be applied in all places in the application where the product list is displayed.
 
-**Kryteria akceptacji:**
-- [ ] Mogę przeciągnąć produkt w górę lub w dół listy
-- [ ] Kolejność jest zapisywana automatycznie po przeciągnięciu
-- [ ] Nowa kolejność jest zachowana po odświeżeniu strony
-- [ ] Widzę wizualne wskazanie podczas przeciągania
+### 1.2 Business Context
+In food service establishments, the order of products in the menu matters - popular/promoted products should be displayed first. Currently, products are displayed in the order of creation, which does not meet business needs.
 
-**Priorytet:** Wysoki
+### 1.3 Scope
+**In scope:**
+- Adding `sort_order` field to the Product model
+- Implementing drag-and-drop on the product list in MenuPage
+- Applying sorting in all views displaying products
+- API endpoint for updating product order
 
----
-
-### US-002: Spójna kolejność w całej aplikacji
-**Jako** użytkownik systemu
-**Chcę** widzieć produkty w tej samej kolejności we wszystkich widokach
-**Aby** łatwiej znajdować produkty
-
-**Kryteria akceptacji:**
-- [ ] Lista produktów w MenuPage jest posortowana według `sort_order`
-- [ ] Lista produktów w DailyOperationsPage jest posortowana według `sort_order`
-- [ ] Każdy nowy produkt otrzymuje najwyższy `sort_order` (pojawia się na końcu listy)
-
-**Priorytet:** Wysoki
+**Out of scope:**
+- Sorting ingredients
+- Sorting product variants
+- Grouping products into categories
 
 ---
 
-## 3. Wymagania funkcjonalne
+## 2. User Stories
 
-### 3.1 Drag-and-drop sortowanie
+### US-001: Change Product Order
+**As a** food establishment owner
+**I want** to drag products on the menu list to change their order
+**So that** the most popular products are displayed first
+
+**Acceptance Criteria:**
+- [ ] I can drag a product up or down the list
+- [ ] The order is saved automatically after dragging
+- [ ] The new order is preserved after page refresh
+- [ ] I see visual indication during dragging
+
+**Priority:** High
+
+---
+
+### US-002: Consistent Order Across Application
+**As a** system user
+**I want** to see products in the same order in all views
+**So that** I can find products more easily
+
+**Acceptance Criteria:**
+- [ ] Product list in MenuPage is sorted by `sort_order`
+- [ ] Product list in DailyOperationsPage is sorted by `sort_order`
+- [ ] Each new product receives the highest `sort_order` (appears at the end of the list)
+
+**Priority:** High
+
+---
+
+## 3. Functional Requirements
+
+### 3.1 Drag-and-drop Sorting
 **ID:** FR-001
-**Opis:** Lista produktów w zakładce "Produkty" na stronie Menu umożliwia zmianę kolejności metodą drag-and-drop. Po przeciągnięciu produktu w nowe miejsce, kolejność jest automatycznie zapisywana do bazy danych.
-**Priorytet:** Wysoki
+**Description:** The product list in the "Products" tab on the Menu page allows changing the order using drag-and-drop. After dragging a product to a new position, the order is automatically saved to the database.
+**Priority:** High
 
-### 3.2 Persystencja kolejności
+### 3.2 Order Persistence
 **ID:** FR-002
-**Opis:** Kolejność produktów jest przechowywana w polu `sort_order` (INTEGER) w tabeli `products`. Niższe wartości oznaczają wyższą pozycję na liście.
-**Priorytet:** Wysoki
+**Description:** Product order is stored in the `sort_order` field (INTEGER) in the `products` table. Lower values mean higher position on the list.
+**Priority:** High
 
-### 3.3 Domyślna kolejność nowych produktów
+### 3.3 Default Order for New Products
 **ID:** FR-003
-**Opis:** Nowo utworzony produkt otrzymuje wartość `sort_order` równą MAX(sort_order) + 1, co powoduje dodanie go na końcu listy.
-**Priorytet:** Średni
+**Description:** A newly created product receives a `sort_order` value equal to MAX(sort_order) + 1, adding it to the end of the list.
+**Priority:** Medium
 
-### 3.4 Globalny porządek sortowania
+### 3.4 Global Sort Order
 **ID:** FR-004
-**Opis:** Wszystkie endpointy API zwracające listę produktów domyślnie sortują po polu `sort_order` rosnąco.
-**Priorytet:** Wysoki
+**Description:** All API endpoints returning product lists sort by `sort_order` ascending by default.
+**Priority:** High
 
 ---
 
-## 4. Interfejs użytkownika
+## 4. User Interface
 
-### 4.1 Przepływ użytkownika
+### 4.1 User Flow
 ```
-[MenuPage - zakładka Produkty] -> [Kliknij i przytrzymaj produkt] -> [Przeciągnij w nowe miejsce] -> [Upuść] -> [Automatyczny zapis]
+[MenuPage - Products tab] -> [Click and hold product] -> [Drag to new position] -> [Drop] -> [Auto save]
 ```
 
-### 4.2 Elementy UI
-| Element | Typ | Opis |
-|---------|-----|------|
-| Uchwyt przeciągania | Icon (GripVertical) | Ikona po lewej stronie karty produktu wskazująca możliwość przeciągania |
-| Wizualne wskazanie celu | Border/Shadow | Podświetlenie miejsca, gdzie produkt zostanie upuszczony |
-| Karta produktu | Draggable card | Cała karta produktu jest elementem przeciąganym |
+### 4.2 UI Elements
+| Element | Type | Description |
+|---------|------|-------------|
+| Drag handle | Icon (GripVertical) | Icon on the left side of product card indicating drag capability |
+| Drop target indicator | Border/Shadow | Highlighting where product will be dropped |
+| Product card | Draggable card | Entire product card is the draggable element |
 
-### 4.3 Stany wizualne
-- **Normalny**: Ikona uchwytu w kolorze szarym
-- **Hover na uchwycie**: Kursor zmienia się na "grab", ikona podświetlona
-- **Podczas przeciągania**: Karta z cieniem, przezroczystość 0.8
-- **Cel upuszczenia**: Niebieska linia wskazująca miejsce docelowe
-
----
-
-## 5. Przypadki brzegowe
-
-### 5.1 Jednoczesna edycja
-**Scenariusz:** Dwóch użytkowników zmienia kolejność w tym samym czasie
-**Oczekiwane zachowanie:** Ostatni zapis wygrywa (optimistic update). Brak blokowania.
-
-### 5.2 Usunięcie produktu
-**Scenariusz:** Produkt w środku listy zostaje usunięty
-**Oczekiwane zachowanie:** Luka w `sort_order` nie wpływa na działanie sortowania (ORDER BY nadal działa poprawnie)
-
-### 5.3 Filtrowanie produktów
-**Scenariusz:** Lista produktów jest przefiltrowana (np. tylko aktywne)
-**Oczekiwane zachowanie:** Drag-and-drop działa tylko na widocznych produktach, kolejność jest aktualizowana poprawnie
+### 4.3 Visual States
+- **Normal**: Drag handle icon in gray
+- **Hover on handle**: Cursor changes to "grab", icon highlighted
+- **During drag**: Card with shadow, opacity 0.8
+- **Drop target**: Blue line indicating target position
 
 ---
 
-## 6. Obsługa błędów
+## 5. Edge Cases
 
-| Błąd | Komunikat (PL) | Akcja |
-|------|----------------|-------|
-| Błąd zapisu kolejności | "Nie udało się zapisać kolejności. Spróbuj ponownie." | Toast z błędem, przywrócenie poprzedniej kolejności |
-| Błąd sieciowy | "Błąd połączenia. Sprawdź połączenie z internetem." | Toast z błędem, przywrócenie poprzedniej kolejności |
+### 5.1 Concurrent Editing
+**Scenario:** Two users change the order at the same time
+**Expected behavior:** Last save wins (optimistic update). No locking.
+
+### 5.2 Product Deletion
+**Scenario:** Product in the middle of the list is deleted
+**Expected behavior:** Gap in `sort_order` does not affect sorting (ORDER BY still works correctly)
+
+### 5.3 Product Filtering
+**Scenario:** Product list is filtered (e.g., only active products)
+**Expected behavior:** Drag-and-drop works only on visible products, order is updated correctly
 
 ---
 
-## 7. Wymagania niefunkcjonalne
+## 6. Error Handling
 
-### 7.1 Wydajność
-- Aktualizacja kolejności powinna być wykonana w jednym zapytaniu do bazy danych (bulk update)
-- Odpowiedź API w czasie < 500ms
+| Error | Message (Polish) | Action |
+|-------|------------------|--------|
+| Order save error | "Nie udało się zapisać kolejności. Spróbuj ponownie." | Error toast, restore previous order |
+| Network error | "Błąd połączenia. Sprawdź połączenie z internetem." | Error toast, restore previous order |
+
+---
+
+## 7. Non-Functional Requirements
+
+### 7.1 Performance
+- Order update should be executed in a single database query (bulk update)
+- API response in < 500ms
 
 ### 7.2 UX
-- Animacja drag-and-drop powinna być płynna (60 FPS)
-- Feedback wizualny natychmiast po rozpoczęciu przeciągania
+- Drag-and-drop animation should be smooth (60 FPS)
+- Visual feedback immediately after starting to drag
 
 ---
 
-## 8. Zależności
+## 8. Dependencies
 
-### 8.1 Wymagane funkcjonalności
-- Istniejąca lista produktów (MenuPage)
-- Istniejący model Product
+### 8.1 Required Features
+- Existing product list (MenuPage)
+- Existing Product model
 
-### 8.2 Powiązane modele danych
-- `Product` - dodanie pola `sort_order`
-
----
-
-## 9. Metryki sukcesu
-
-| Metryka | Cel | Sposób pomiaru |
-|---------|-----|----------------|
-| Czas zapisu kolejności | < 500ms | Monitoring API |
-| Płynność animacji | 60 FPS | Developer tools |
+### 8.2 Related Data Models
+- `Product` - adding `sort_order` field
 
 ---
 
-## 10. Pytania otwarte
+## 9. Success Metrics
 
-- [x] Czy sortowanie ma dotyczyć również składników? **Odpowiedź: Nie, tylko produktów**
-- [ ] Czy chcemy pokazywać numer pozycji obok produktu?
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Order save time | < 500ms | API monitoring |
+| Animation smoothness | 60 FPS | Developer tools |
 
 ---
 
-## Historia zmian
+## 10. Open Questions
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | 2026-01-02 | Claude AI | Wersja początkowa |
+- [x] Should sorting also apply to ingredients? **Answer: No, only products**
+- [ ] Do we want to show position number next to the product?
+
+---
+
+## Change History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-01-02 | Claude AI | Initial version |

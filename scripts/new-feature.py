@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Skrypt do tworzenia struktury nowej funkcjonalności.
-Tworzy katalogi i pliki szablonowe dla specyfikacji.
+Script for creating new feature structure.
+Creates directories and template files for specifications.
 
-Użycie:
-    python scripts/new-feature.py <nazwa-funkcjonalnosci>
+Usage:
+    python scripts/new-feature.py <feature-name>
 
-Przykład:
+Example:
     python scripts/new-feature.py user-authentication
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 
 
 def get_project_root() -> Path:
-    """Znajdź katalog główny projektu."""
+    """Find the project root directory."""
     current = Path(__file__).resolve().parent
     while current != current.parent:
         if (current / ".clinerules").exists() or (current / "CLAUDE.md").exists():
@@ -30,43 +30,43 @@ def get_project_root() -> Path:
 
 def create_feature_structure(feature_name: str, author: str = "AI Assistant") -> None:
     """
-    Tworzy pełną strukturę katalogów i plików dla nowej funkcjonalności.
+    Creates the full directory and file structure for a new feature.
 
     Args:
-        feature_name: Nazwa funkcjonalności (np. 'user-authentication')
-        author: Imię autora specyfikacji
+        feature_name: Name of the feature (e.g., 'user-authentication')
+        author: Name of the specification author
     """
     project_root = get_project_root()
     feature_dir = project_root / "docs" / "specs" / feature_name
     templates_dir = project_root / "docs" / "templates"
     bdd_dir = project_root / "tests" / "features"
 
-    # Sprawdź czy funkcjonalność już istnieje
+    # Check if feature already exists
     if feature_dir.exists():
-        print(f"❌ Błąd: Funkcjonalność '{feature_name}' już istnieje w {feature_dir}")
+        print(f"Error: Feature '{feature_name}' already exists at {feature_dir}")
         sys.exit(1)
 
-    # Sprawdź czy szablony istnieją
+    # Check if templates exist
     if not templates_dir.exists():
-        print(f"❌ Błąd: Katalog szablonów nie istnieje: {templates_dir}")
-        print("Upewnij się, że projekt jest poprawnie skonfigurowany.")
+        print(f"Error: Templates directory does not exist: {templates_dir}")
+        print("Make sure the project is properly configured.")
         sys.exit(1)
 
-    print(f"📁 Tworzenie struktury dla funkcjonalności: {feature_name}")
-    print(f"   Lokalizacja: {feature_dir}")
+    print(f"Creating structure for feature: {feature_name}")
+    print(f"   Location: {feature_dir}")
     print()
 
-    # Utwórz katalog funkcjonalności
+    # Create feature directory
     feature_dir.mkdir(parents=True, exist_ok=True)
-    print(f"✅ Utworzono katalog: {feature_dir}")
+    print(f"Created directory: {feature_dir}")
 
-    # Utwórz katalog dla testów BDD
+    # Create BDD tests directory
     bdd_dir.mkdir(parents=True, exist_ok=True)
 
-    # Data utworzenia
+    # Creation date
     today = date.today().isoformat()
 
-    # Skopiuj i dostosuj szablony
+    # Copy and customize templates
     templates = [
         ("functional-spec.md", "README.md"),
         ("technical-spec.md", "TECHNICAL.md"),
@@ -79,92 +79,91 @@ def create_feature_structure(feature_name: str, author: str = "AI Assistant") ->
 
         if template_path.exists():
             content = template_path.read_text(encoding="utf-8")
-            # Zamień placeholdery
-            content = content.replace("{Nazwa Funkcjonalności}", feature_name.replace("-", " ").title())
-            content = content.replace("{imię i nazwisko}", author)
+            # Replace placeholders
+            content = content.replace("{Feature Name}", feature_name.replace("-", " ").title())
+            content = content.replace("{author}", author)
             content = content.replace("{YYYY-MM-DD}", today)
-            content = content.replace("{data}", today)
-            content = content.replace("{autor}", author)
+            content = content.replace("{date}", today)
 
             output_path.write_text(content, encoding="utf-8")
-            print(f"✅ Utworzono: {output_path.name}")
+            print(f"Created: {output_path.name}")
         else:
-            print(f"⚠️ Pominięto (brak szablonu): {template_name}")
+            print(f"Skipped (no template): {template_name}")
 
-    # Skopiuj szablon BDD
+    # Copy BDD template
     bdd_template = templates_dir / "bdd-scenarios.feature"
     bdd_output = feature_dir / "scenarios.feature"
     bdd_tests_output = bdd_dir / f"{feature_name}.feature"
 
     if bdd_template.exists():
         content = bdd_template.read_text(encoding="utf-8")
-        # Zamień placeholdery
-        content = content.replace("{Nazwa funkcjonalności}", feature_name.replace("-", " ").title())
-        content = content.replace("{tag-funkcjonalności}", feature_name.replace("-", "_"))
+        # Replace placeholders
+        content = content.replace("{Feature Name}", feature_name.replace("-", " ").title())
+        content = content.replace("{feature-tag}", feature_name.replace("-", "_"))
 
-        # Zapisz w katalogu specyfikacji
+        # Save in spec directory
         bdd_output.write_text(content, encoding="utf-8")
-        print(f"✅ Utworzono: scenarios.feature")
+        print(f"Created: scenarios.feature")
 
-        # Zapisz też w katalogu testów
+        # Save in tests directory too
         bdd_tests_output.write_text(content, encoding="utf-8")
-        print(f"✅ Utworzono: tests/features/{feature_name}.feature")
+        print(f"Created: tests/features/{feature_name}.feature")
 
     print()
     print("=" * 60)
-    print("🎉 Struktura funkcjonalności została utworzona!")
+    print("Feature structure created successfully!")
     print("=" * 60)
     print()
-    print("📋 Następne kroki:")
+    print("Next steps:")
     print()
-    print(f"1. Uzupełnij specyfikację funkcjonalną:")
+    print(f"1. Complete the functional specification:")
     print(f"   {feature_dir / 'README.md'}")
     print()
-    print(f"2. Uzupełnij specyfikację techniczną:")
+    print(f"2. Complete the technical specification:")
     print(f"   {feature_dir / 'TECHNICAL.md'}")
     print()
-    print(f"3. Napisz scenariusze BDD:")
+    print(f"3. Write BDD scenarios:")
     print(f"   {feature_dir / 'scenarios.feature'}")
     print()
-    print(f"4. Uzupełnij plan testów:")
+    print(f"4. Complete the test plan:")
     print(f"   {feature_dir / 'TESTING.md'}")
     print()
-    print("⚠️ PAMIĘTAJ: Nie rozpoczynaj implementacji przed zatwierdzeniem specyfikacji!")
+    print("IMPORTANT: Do not start implementation before the specification is approved!")
     print()
 
 
 def list_features() -> None:
-    """Wyświetla listę istniejących funkcjonalności."""
+    """Display list of existing features."""
     project_root = get_project_root()
     specs_dir = project_root / "docs" / "specs"
 
     if not specs_dir.exists():
-        print("Brak katalogu specs. Utwórz pierwszą funkcjonalność.")
+        print("No specs directory. Create the first feature.")
         return
 
     features = [d.name for d in specs_dir.iterdir() if d.is_dir()]
 
     if not features:
-        print("Brak zdefiniowanych funkcjonalności.")
+        print("No features defined.")
         return
 
-    print("📚 Istniejące funkcjonalności:")
+    print("Existing features:")
     print()
     for feature in sorted(features):
         feature_path = specs_dir / feature
         readme = feature_path / "README.md"
-        status = "✅" if readme.exists() else "⚠️"
+        status = "[OK]" if readme.exists() else "[!]"
         print(f"  {status} {feature}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Tworzenie struktury nowej funkcjonalności",
+        description="Create new feature structure",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Przykłady:
+Examples:
   python scripts/new-feature.py user-authentication
-  python scripts/new-feature.py inventory-management --author "Jan Kowalski"
+  python scripts/new-feature.py inventory-management --author "John Smith"
   python scripts/new-feature.py --list
         """,
     )
@@ -172,21 +171,21 @@ Przykłady:
     parser.add_argument(
         "feature_name",
         nargs="?",
-        help="Nazwa funkcjonalności (np. 'user-authentication')",
+        help="Feature name (e.g., 'user-authentication')",
     )
 
     parser.add_argument(
         "--author",
         "-a",
         default="AI Assistant",
-        help="Autor specyfikacji (domyślnie: AI Assistant)",
+        help="Specification author (default: AI Assistant)",
     )
 
     parser.add_argument(
         "--list",
         "-l",
         action="store_true",
-        help="Wyświetl listę istniejących funkcjonalności",
+        help="Display list of existing features",
     )
 
     args = parser.parse_args()
@@ -198,13 +197,13 @@ Przykłady:
     if not args.feature_name:
         parser.print_help()
         print()
-        print("❌ Błąd: Podaj nazwę funkcjonalności lub użyj --list")
+        print("Error: Provide a feature name or use --list")
         sys.exit(1)
 
-    # Walidacja nazwy
+    # Validate name
     feature_name = args.feature_name.lower().strip()
     if not feature_name.replace("-", "").replace("_", "").isalnum():
-        print("❌ Błąd: Nazwa funkcjonalności może zawierać tylko litery, cyfry i myślniki")
+        print("Error: Feature name can only contain letters, numbers, and hyphens")
         sys.exit(1)
 
     create_feature_structure(feature_name, args.author)

@@ -1,85 +1,85 @@
-# Plan Testow: Sortowanie Menu
+# Test Plan: Menu Sorting
 
-## Metadane
+## Metadata
 
-| Pole | Wartosc |
-|------|---------|
-| **Autor** | Claude AI |
-| **Data utworzenia** | 2026-01-02 |
-| **Wersja** | 1.0 |
-| **Specyfikacja funkcjonalna** | [Link](./README.md) |
-| **Specyfikacja techniczna** | [Link](./TECHNICAL.md) |
-| **Scenariusze BDD** | [Link](./scenarios.feature) |
+| Field | Value |
+|-------|-------|
+| **Author** | Claude AI |
+| **Created** | 2026-01-02 |
+| **Version** | 1.0 |
+| **Functional Specification** | [Link](./README.md) |
+| **Technical Specification** | [Link](./TECHNICAL.md) |
+| **BDD Scenarios** | [Link](./scenarios.feature) |
 
 ---
 
-## 1. Zakres testow
+## 1. Test Scope
 
-### 1.1 Cele testowania
-- Weryfikacja poprawnosci zapisywania kolejnosci produktow
-- Weryfikacja dzialania drag-and-drop w UI
-- Weryfikacja spojnosci sortowania we wszystkich widokach
-- Weryfikacja obslugi bledow
+### 1.1 Testing Objectives
+- Verify correct saving of product order
+- Verify drag-and-drop functionality in UI
+- Verify sorting consistency across all views
+- Verify error handling
 
-### 1.2 W zakresie
+### 1.2 In Scope
 - [ ] Backend: Endpoint PUT /api/v1/products/reorder
-- [ ] Backend: Sortowanie w GET /api/v1/products
-- [ ] Backend: Automatyczny sort_order dla nowych produktow
-- [ ] Frontend: Drag-and-drop na liscie produktow
+- [ ] Backend: Sorting in GET /api/v1/products
+- [ ] Backend: Automatic sort_order for new products
+- [ ] Frontend: Drag-and-drop on product list
 - [ ] Frontend: Optimistic update
-- [ ] Frontend: Obsluga bledow
+- [ ] Frontend: Error handling
 
-### 1.3 Poza zakresem
-- Testy wydajnosciowe (liczba produktow < 100)
-- Testy dostepnosci (accessibility)
+### 1.3 Out of Scope
+- Performance tests (product count < 100)
+- Accessibility tests
 
 ---
 
-## 2. Strategia testowania
+## 2. Testing Strategy
 
-### 2.1 Poziomy testow
+### 2.1 Test Levels
 
-| Poziom | Pokrycie | Narzedzia |
-|--------|----------|-----------|
+| Level | Coverage | Tools |
+|-------|----------|-------|
 | Unit | 80% | pytest |
-| Integracyjne | 100% API | pytest, TestClient |
-| E2E | Krytyczne sciezki | Playwright |
-| Manualne | Drag-drop UX | - |
+| Integration | 100% API | pytest, TestClient |
+| E2E | Critical paths | Playwright |
+| Manual | Drag-drop UX | - |
 
-### 2.2 Kryteria wejscia
-- [ ] Specyfikacja zatwierdzona
-- [ ] Migracja bazy danych utworzona
-- [ ] Zaleznosci frontend zainstalowane (@dnd-kit)
+### 2.2 Entry Criteria
+- [ ] Specification approved
+- [ ] Database migration created
+- [ ] Frontend dependencies installed (@dnd-kit)
 
-### 2.3 Kryteria wyjscia
-- [ ] Wszystkie testy jednostkowe zaliczone
-- [ ] Wszystkie testy integracyjne API zaliczone
-- [ ] Test E2E drag-drop zaliczony
-- [ ] Brak bledow krytycznych
+### 2.3 Exit Criteria
+- [ ] All unit tests passed
+- [ ] All API integration tests passed
+- [ ] E2E drag-drop test passed
+- [ ] No critical bugs
 
 ---
 
-## 3. Przypadki testowe
+## 3. Test Cases
 
-### 3.1 Testy jednostkowe (Backend)
+### 3.1 Unit Tests (Backend)
 
-#### TC-UNIT-001: ProductService.reorder_products - sukces
-**Komponent:** `ProductService`
-**Metoda:** `reorder_products`
-**Opis:** Poprawna aktualizacja kolejnosci produktow
+#### TC-UNIT-001: ProductService.reorder_products - success
+**Component:** `ProductService`
+**Method:** `reorder_products`
+**Description:** Correct update of product order
 
-**Dane wejsciowe:**
+**Input Data:**
 ```python
 product_ids = [3, 1, 2]
 ```
 
-**Oczekiwany rezultat:**
-- Produkt 3: sort_order = 0
-- Produkt 1: sort_order = 1
-- Produkt 2: sort_order = 2
-- Zwraca: 3
+**Expected Result:**
+- Product 3: sort_order = 0
+- Product 1: sort_order = 1
+- Product 2: sort_order = 2
+- Returns: 3
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_reorder_products_success(db_session):
     # Arrange
@@ -103,19 +103,19 @@ def test_reorder_products_success(db_session):
 
 ---
 
-#### TC-UNIT-002: ProductService.reorder_products - nieistniejacy produkt
-**Komponent:** `ProductService`
-**Metoda:** `reorder_products`
-**Opis:** Blad przy probie zmiany kolejnosci z nieistniejacym ID
+#### TC-UNIT-002: ProductService.reorder_products - non-existent product
+**Component:** `ProductService`
+**Method:** `reorder_products`
+**Description:** Error when trying to reorder with non-existent ID
 
-**Dane wejsciowe:**
+**Input Data:**
 ```python
 product_ids = [1, 999]
 ```
 
-**Oczekiwany rezultat:** `ValueError` z komunikatem o brakujacych ID
+**Expected Result:** `ValueError` with message about missing IDs
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_reorder_products_missing_id(db_session):
     # Arrange
@@ -134,12 +134,12 @@ def test_reorder_products_missing_id(db_session):
 
 ---
 
-#### TC-UNIT-003: Nowy produkt otrzymuje najwyzszy sort_order
-**Komponent:** `ProductService`
-**Metoda:** `create_product`
-**Opis:** Nowo utworzony produkt pojawia sie na koncu listy
+#### TC-UNIT-003: New product gets highest sort_order
+**Component:** `ProductService`
+**Method:** `create_product`
+**Description:** Newly created product appears at the end of the list
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_new_product_gets_max_sort_order(db_session):
     # Arrange
@@ -159,11 +159,11 @@ def test_new_product_gets_max_sort_order(db_session):
 
 ---
 
-### 3.2 Testy integracyjne (API)
+### 3.2 Integration Tests (API)
 
-#### TC-INT-001: PUT /api/v1/products/reorder - sukces
+#### TC-INT-001: PUT /api/v1/products/reorder - success
 **Endpoint:** `PUT /api/v1/products/reorder`
-**Opis:** Poprawna aktualizacja kolejnosci
+**Description:** Correct order update
 
 **Request:**
 ```http
@@ -183,7 +183,7 @@ Content-Type: application/json
 }
 ```
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_reorder_products_success(client: TestClient, sample_products):
     response = client.put(
@@ -198,9 +198,9 @@ def test_reorder_products_success(client: TestClient, sample_products):
 
 ---
 
-#### TC-INT-002: PUT /api/v1/products/reorder - pusta lista
+#### TC-INT-002: PUT /api/v1/products/reorder - empty list
 **Endpoint:** `PUT /api/v1/products/reorder`
-**Opis:** Blad walidacji przy pustej liscie
+**Description:** Validation error on empty list
 
 **Request:**
 ```http
@@ -225,9 +225,9 @@ Content-Type: application/json
 
 ---
 
-#### TC-INT-003: PUT /api/v1/products/reorder - duplikaty
+#### TC-INT-003: PUT /api/v1/products/reorder - duplicates
 **Endpoint:** `PUT /api/v1/products/reorder`
-**Opis:** Blad walidacji przy duplikatach ID
+**Description:** Validation error on duplicate IDs
 
 **Request:**
 ```http
@@ -252,11 +252,11 @@ Content-Type: application/json
 
 ---
 
-#### TC-INT-004: GET /api/v1/products - sortowanie
+#### TC-INT-004: GET /api/v1/products - sorting
 **Endpoint:** `GET /api/v1/products`
-**Opis:** Produkty zwracane w kolejnosci sort_order
+**Description:** Products returned in sort_order
 
-**Kod testu:**
+**Test Code:**
 ```python
 def test_products_sorted_by_sort_order(client: TestClient, db_session):
     # Arrange - products with non-sequential sort_order
@@ -277,20 +277,20 @@ def test_products_sorted_by_sort_order(client: TestClient, db_session):
 
 ---
 
-### 3.3 Testy E2E
+### 3.3 E2E Tests
 
-#### TC-E2E-001: Drag-and-drop produktu
-**Opis:** Pelny przeplyw zmiany kolejnosci metodą drag-and-drop
+#### TC-E2E-001: Drag-and-drop product
+**Description:** Full drag-and-drop order change flow
 
-**Kroki:**
-1. Otworz strone Menu
-2. Znajdz produkt "Kebab" na pozycji 1
-3. Przeciagnij go na pozycje 3
-4. Zweryfikuj nowa kolejnosc
-5. Odswiez strone
-6. Zweryfikuj ze kolejnosc sie zachowala
+**Steps:**
+1. Open Menu page
+2. Find product "Kebab" at position 1
+3. Drag it to position 3
+4. Verify new order
+5. Refresh page
+6. Verify order is preserved
 
-**Kod testu (Playwright):**
+**Test Code (Playwright):**
 ```typescript
 test('drag and drop product reorder', async ({ page }) => {
   // Arrange - add test products
@@ -317,14 +317,14 @@ test('drag and drop product reorder', async ({ page }) => {
 
 ---
 
-## 4. Dane testowe
+## 4. Test Data
 
 ### 4.1 Fixtures
 
 ```python
 @pytest.fixture
 def sample_products(db_session):
-    """Tworzy przykladowe produkty do testow."""
+    """Creates sample products for tests."""
     products = [
         Product(id=1, name="Kebab", sort_order=0),
         Product(id=2, name="Burger", sort_order=1),
@@ -335,45 +335,45 @@ def sample_products(db_session):
     return products
 ```
 
-### 4.2 Dane testowe
+### 4.2 Test Data
 
-| ID | Nazwa | sort_order | Cel testu |
-|----|-------|------------|-----------|
-| 1 | Kebab | 0 | Standardowy przypadek |
-| 2 | Burger | 1 | Standardowy przypadek |
-| 3 | Frytki | 2 | Standardowy przypadek |
-
----
-
-## 5. Przypadki brzegowe
-
-| ID | Przypadek | Oczekiwane zachowanie | Status |
-|----|-----------|----------------------|--------|
-| EC-001 | Jeden produkt | Drag-drop nieaktywny | [ ] |
-| EC-002 | 100 produktow | Wydajny reorder | [ ] |
-| EC-003 | Rownoczesna edycja | Ostatni zapis wygrywa | [ ] |
-| EC-004 | Luka w sort_order | Sortowanie dziala poprawnie | [ ] |
+| ID | Name | sort_order | Test Purpose |
+|----|------|------------|--------------|
+| 1 | Kebab | 0 | Standard case |
+| 2 | Burger | 1 | Standard case |
+| 3 | Frytki | 2 | Standard case |
 
 ---
 
-## 6. Testy manualne
+## 5. Edge Cases
 
-### 6.1 Checklist UX
-
-| Test | Opis | Status |
-|------|------|--------|
-| TM-001 | Uchwyt przeciagania jest widoczny | [ ] |
-| TM-002 | Kursor zmienia sie na grab | [ ] |
-| TM-003 | Karta ma cien podczas przeciagania | [ ] |
-| TM-004 | Wskaznik miejsca docelowego jest widoczny | [ ] |
-| TM-005 | Animacja jest plynna (60 FPS) | [ ] |
-| TM-006 | Toast z bledem przy braku polaczenia | [ ] |
+| ID | Case | Expected Behavior | Status |
+|----|------|-------------------|--------|
+| EC-001 | Single product | Drag-drop inactive | [ ] |
+| EC-002 | 100 products | Efficient reorder | [ ] |
+| EC-003 | Concurrent editing | Last save wins | [ ] |
+| EC-004 | Gap in sort_order | Sorting works correctly | [ ] |
 
 ---
 
-## 7. Srodowisko testowe
+## 6. Manual Tests
 
-### 7.1 Uruchomienie testow
+### 6.1 UX Checklist
+
+| Test | Description | Status |
+|------|-------------|--------|
+| TM-001 | Drag handle is visible | [ ] |
+| TM-002 | Cursor changes to grab | [ ] |
+| TM-003 | Card has shadow during drag | [ ] |
+| TM-004 | Drop target indicator is visible | [ ] |
+| TM-005 | Animation is smooth (60 FPS) | [ ] |
+| TM-006 | Error toast on connection loss | [ ] |
+
+---
+
+## 7. Test Environment
+
+### 7.1 Running Tests
 
 ```bash
 # Backend
@@ -390,21 +390,21 @@ npm run test:e2e
 
 ---
 
-## 8. Raportowanie
+## 8. Reporting
 
-### 8.1 Format raportu
+### 8.1 Report Format
 
-| Metryka | Wartosc |
-|---------|---------|
-| Testy wykonane | - |
-| Testy zaliczone | - |
-| Testy niezaliczone | - |
-| Pokrycie kodu | - |
+| Metric | Value |
+|--------|-------|
+| Tests executed | - |
+| Tests passed | - |
+| Tests failed | - |
+| Code coverage | - |
 
 ---
 
-## Historia zmian
+## Change History
 
-| Wersja | Data | Autor | Opis zmian |
-|--------|------|-------|------------|
-| 1.0 | 2026-01-02 | Claude AI | Wersja poczatkowa |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-01-02 | Claude AI | Initial version |

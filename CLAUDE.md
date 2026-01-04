@@ -54,7 +54,7 @@ See `.claude/skills/interview.md` for question templates per agent type.
 
 3. **Review & Approval**
    - Get user approval before implementation
-   - Update spec status to "Zatwierdzony"
+   - Update spec status to "Approved"
 
 4. **Implementation**
    - Only after spec approval
@@ -83,9 +83,9 @@ new-worktree <name> [type] [base]   # PowerShell or Bash alias
 ### Response When No Spec Exists
 
 ```
-Nie znalazłem specyfikacji dla tej funkcjonalności.
-Zanim zacznę implementację, muszę utworzyć dokumentację.
-Czy chcesz, żebym rozpoczął od utworzenia specyfikacji?
+I couldn't find a specification for this feature.
+Before I start implementation, I need to create documentation.
+Would you like me to start by creating a specification?
 ```
 
 See `CLAUDE_CODE_INSTRUCTIONS.md` for complete protocol details.
@@ -260,8 +260,8 @@ The `EnumColumn()` helper in `app/core/database.py` handles this automatically.
 
 | Model | Description |
 |-------|-------------|
-| `Ingredient` | Skladniki with unit_type (weight/count) |
-| `Product` | Produkty with price |
+| `Ingredient` | Ingredients with unit_type (weight/count) |
+| `Product` | Products with price |
 | `ProductIngredient` | Junction table linking products to ingredients |
 | `ExpenseCategory` | Hierarchical expense categories (max 3 levels) |
 | `DailyRecord` | Daily open/close records |
