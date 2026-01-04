@@ -165,6 +165,49 @@ Before creating a PR:
 
 Never merge without rebasing first.
 
+## Docker Port Management for Feature Branches
+
+**CRITICAL: When working on a feature branch, Docker ports MUST be isolated to avoid conflicts.**
+
+### When Starting Docker on a Feature Branch
+
+Before running `docker compose up` or `docker compose -f docker-compose.dev.yml up`:
+
+1. **Check for port conflicts** - Identify all ports in docker-compose files
+2. **Check running containers** - Look for containers from other branches/main
+3. **Bump port numbers** - Increment ports to avoid overlap with:
+   - Main/master branch (default ports)
+   - Other active feature branches
+
+### Port Allocation Strategy
+
+| Branch | PostgreSQL | Backend | Frontend |
+|--------|------------|---------|----------|
+| main/master | 5432 | 8000 | 5173 |
+| feature-1 | 5433 | 8001 | 5174 |
+| feature-2 | 5434 | 8002 | 5175 |
+| ... | +1 | +1 | +1 |
+
+### Before PR/Merge
+
+**IMPORTANT: Revert all port changes before creating a PR!**
+
+1. Reset docker-compose port numbers to defaults
+2. Only keep relevant Docker changes (new services, env vars, etc.)
+3. Never merge branch-specific port numbers into main/master
+
+### Example Workflow
+
+```bash
+# On feature branch - bump ports
+# Edit docker-compose.dev.yml: 5432 -> 5433
+# Edit docker-compose.yml: 8000 -> 8001, 5173 -> 5174
+
+# Before PR - revert ports
+git diff docker-compose*.yml  # Review changes
+# Revert ONLY port changes, keep other modifications
+```
+
 ## Project Structure
 
 ```
