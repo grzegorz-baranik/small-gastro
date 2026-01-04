@@ -1,0 +1,63 @@
+{
+  "errors.ingredient_exists": "Ingredient with this name already exists",
+  "errors.ingredient_not_found": "Ingredient not found",
+  "errors.ingredient_inactive": "Ingredient '{name}' is inactive",
+  "errors.ingredient_id_not_found": "Ingredient with ID {id} does not exist",
+
+  "errors.product_exists": "Product with this name already exists",
+  "errors.product_not_found": "Product not found",
+
+  "errors.category_not_found": "Category not found",
+  "errors.category_has_subcategories": "Cannot delete category. Make sure it has no subcategories.",
+  "errors.category_parent_not_found": "Parent category does not exist",
+  "errors.category_max_depth": "Maximum category depth is {depth} levels",
+  "errors.category_not_exists": "Category does not exist",
+  "errors.category_not_leaf": "Can only assign level 3 (leaf) categories. Selected category '{name}' is level {level}.",
+
+  "errors.record_not_found": "Record not found",
+  "errors.daily_record_not_found": "Daily record not found",
+  "errors.daily_record_id_not_found": "Daily record with ID {id} does not exist",
+
+  "errors.day_not_opened": "Day has not been opened yet",
+  "errors.day_not_open_for_sales": "Day is not open. Open the day before recording sales.",
+  "errors.cannot_create_sale": "Cannot create sale. Check if product exists and day is open.",
+  "errors.cannot_delete_sale": "Cannot delete sale. Record doesn't exist or day is closed.",
+
+  "errors.transaction_not_found": "Transaction not found",
+
+  "errors.ingredient_or_record_not_found": "Ingredient or daily record not found",
+
+  "errors.count_record_not_found": "Count record not found",
+  "errors.ingredient_list_empty": "Ingredient list cannot be empty",
+  "errors.no_ingredients_found": "No ingredients found",
+  "errors.no_counts_for_ingredient": "No counts for this ingredient",
+
+  "errors.invalid_grouping": "Invalid grouping. Allowed: {allowed}",
+
+  "errors.day_already_exists": "Day {date} already exists (ID: {id})",
+  "errors.another_day_open": "Another day is already open: {date}. Close it first or use 'force' option.",
+  "errors.previous_day_not_closed": "Previous day was not closed",
+  "errors.day_already_closed": "Day is already closed",
+  "errors.no_previous_closed_days": "No previous closed days",
+  "errors.can_only_edit_closed_days": "Can only edit closed days",
+  "errors.day_not_closed": "Day {date} was not closed",
+
+  "errors.cannot_add_to_closed_day": "Cannot add events to closed day",
+  "errors.insufficient_storage": "Insufficient storage (available: {available})",
+  "errors.database_integrity_error": "Database error. Check if data is correct.",
+
+  "errors.delivery_not_found": "Delivery not found",
+  "errors.cannot_delete_delivery_closed": "Cannot delete deliveries from closed day",
+
+  "errors.transfer_not_found": "Transfer not found",
+  "errors.cannot_delete_transfer_closed": "Cannot delete transfers from closed day",
+
+  "errors.spoilage_not_found": "Spoilage not found",
+  "errors.cannot_delete_spoilage_closed": "Cannot delete spoilage from closed day",
+
+  "success.order_updated": "Order updated",
+  "success.day_updated": "Day has been updated",
+  "success.all_days_closed": "All previous days are closed",
+
+  "labels.uncategorized": "Uncategorized"
+}

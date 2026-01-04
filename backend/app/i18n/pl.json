@@ -1,0 +1,63 @@
+{
+  "errors.ingredient_exists": "Skladnik o tej nazwie juz istnieje",
+  "errors.ingredient_not_found": "Skladnik nie znaleziony",
+  "errors.ingredient_inactive": "Skladnik '{name}' jest nieaktywny",
+  "errors.ingredient_id_not_found": "Skladnik o ID {id} nie istnieje",
+
+  "errors.product_exists": "Produkt o tej nazwie juz istnieje",
+  "errors.product_not_found": "Produkt nie znaleziony",
+
+  "errors.category_not_found": "Kategoria nie znaleziona",
+  "errors.category_has_subcategories": "Nie mozna usunac kategorii. Upewnij sie, ze nie ma podkategorii.",
+  "errors.category_parent_not_found": "Kategoria nadrzedna nie istnieje",
+  "errors.category_max_depth": "Maksymalna glebokosc kategorii to {depth} poziomy",
+  "errors.category_not_exists": "Kategoria nie istnieje",
+  "errors.category_not_leaf": "Mozna przypisac tylko kategorie poziomu 3 (lisciowe). Wybrana kategoria '{name}' jest poziomu {level}.",
+
+  "errors.record_not_found": "Rekord nie znaleziony",
+  "errors.daily_record_not_found": "Rekord dzienny nie znaleziony",
+  "errors.daily_record_id_not_found": "Rekord dzienny o ID {id} nie istnieje",
+
+  "errors.day_not_opened": "Dzien nie zostal jeszcze otwarty",
+  "errors.day_not_open_for_sales": "Dzien nie jest otwarty. Otworz dzien przed rejestrowaniem sprzedazy.",
+  "errors.cannot_create_sale": "Nie mozna utworzyc sprzedazy. Sprawdz czy produkt istnieje i czy dzien jest otwarty.",
+  "errors.cannot_delete_sale": "Nie mozna usunac sprzedazy. Rekord nie istnieje lub dzien jest zamkniety.",
+
+  "errors.transaction_not_found": "Transakcja nie znaleziona",
+
+  "errors.ingredient_or_record_not_found": "Skladnik lub rekord dzienny nie znaleziony",
+
+  "errors.count_record_not_found": "Rekord zliczenia nie znaleziony",
+  "errors.ingredient_list_empty": "Lista skladnikow nie moze byc pusta",
+  "errors.no_ingredients_found": "Zadne skladniki nie zostaly znalezione",
+  "errors.no_counts_for_ingredient": "Brak zliczen dla tego skladnika",
+
+  "errors.invalid_grouping": "Nieprawidlowe grupowanie. Dozwolone: {allowed}",
+
+  "errors.day_already_exists": "Dzien {date} juz istnieje (ID: {id})",
+  "errors.another_day_open": "Inny dzien jest juz otwarty: {date}. Zamknij go najpierw lub uzyj opcji 'force'.",
+  "errors.previous_day_not_closed": "Poprzedni dzien nie zostal zamkniety",
+  "errors.day_already_closed": "Dzien jest juz zamkniety",
+  "errors.no_previous_closed_days": "Brak poprzednich zamknietych dni",
+  "errors.can_only_edit_closed_days": "Mozna edytowac tylko zamkniete dni",
+  "errors.day_not_closed": "Dzien {date} nie zostal zamkniety",
+
+  "errors.cannot_add_to_closed_day": "Nie mozna dodawac wydarzen do zamknietego dnia",
+  "errors.insufficient_storage": "Niewystarczajacy stan magazynowy (dostepne: {available})",
+  "errors.database_integrity_error": "Blad bazy danych. Sprawdz czy dane sa poprawne.",
+
+  "errors.delivery_not_found": "Dostawa nie znaleziona",
+  "errors.cannot_delete_delivery_closed": "Nie mozna usuwac dostaw z zamknietego dnia",
+
+  "errors.transfer_not_found": "Transfer nie znaleziony",
+  "errors.cannot_delete_transfer_closed": "Nie mozna usuwac transferow z zamknietego dnia",
+
+  "errors.spoilage_not_found": "Strata nie znaleziona",
+  "errors.cannot_delete_spoilage_closed": "Nie mozna usuwac strat z zamknietego dnia",
+
+  "success.order_updated": "Kolejnosc zaktualizowana",
+  "success.day_updated": "Dzien zostal zaktualizowany",
+  "success.all_days_closed": "Wszystkie poprzednie dni sa zamkniete",
+
+  "labels.uncategorized": "Bez kategorii"
+}

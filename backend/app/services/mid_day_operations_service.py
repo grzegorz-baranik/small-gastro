@@ -41,6 +41,7 @@ from app.schemas.mid_day_operations import (
     SPOILAGE_REASON_LABELS,
     SpoilageReasonEnum,
 )
+from app.core.i18n import t
 
 
 # -----------------------------------------------------------------------------
@@ -54,10 +55,10 @@ def _validate_daily_record_open(db: Session, daily_record_id: int) -> tuple[Opti
     """
     record = db.query(DailyRecord).filter(DailyRecord.id == daily_record_id).first()
     if not record:
-        return None, f"Rekord dzienny o ID {daily_record_id} nie istnieje"
+        return None, t("errors.daily_record_id_not_found", id=daily_record_id)
 
     if record.status != DayStatus.OPEN:
-        return None, "Nie mozna dodawac wydarzen do zamknietego dnia"
+        return None, t("errors.cannot_add_to_closed_day")
 
     return record, None
 
@@ -69,10 +70,10 @@ def _validate_ingredient_active(db: Session, ingredient_id: int) -> tuple[Option
     """
     ingredient = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
     if not ingredient:
-        return None, f"Skladnik o ID {ingredient_id} nie istnieje"
+        return None, t("errors.ingredient_id_not_found", id=ingredient_id)
 
     if not ingredient.is_active:
-        return None, f"Skladnik '{ingredient.name}' jest nieaktywny"
+        return None, t("errors.ingredient_inactive", name=ingredient.name)
 
     return ingredient, None
 
@@ -97,7 +98,7 @@ def _validate_storage_inventory_sufficient(
         available = Decimal(str(storage.quantity))
 
     if requested_quantity > available:
-        return None, f"Niewystarczajacy stan magazynowy (dostepne: {available})"
+        return None, t("errors.insufficient_storage", available=available)
 
     return available, None
 
@@ -143,7 +144,7 @@ def create_delivery(
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Blad integralnosci bazy danych przy tworzeniu dostawy: {e}")
-        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
+        return None, t("errors.database_integrity_error")
 
 
 def get_deliveries(
@@ -179,11 +180,11 @@ def get_delivery_by_id(
     """
     delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
     if not delivery:
-        return None, "Dostawa nie znaleziona"
+        return None, t("errors.delivery_not_found")
 
     ingredient = db.query(Ingredient).filter(Ingredient.id == delivery.ingredient_id).first()
     if not ingredient:
-        return None, "Skladnik nie znaleziony"
+        return None, t("errors.ingredient_not_found")
 
     return _build_delivery_response(delivery, ingredient), None
 
@@ -201,12 +202,12 @@ def delete_delivery(
     """
     delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
     if not delivery:
-        return False, "Dostawa nie znaleziona"
+        return False, t("errors.delivery_not_found")
 
     # Validate daily record is still open
     daily_record = db.query(DailyRecord).filter(DailyRecord.id == delivery.daily_record_id).first()
     if daily_record and daily_record.status != DayStatus.OPEN:
-        return False, "Nie mozna usuwac dostaw z zamknietego dnia"
+        return False, t("errors.cannot_delete_delivery_closed")
 
     db.delete(delivery)
     db.commit()
@@ -286,7 +287,7 @@ def create_storage_transfer(
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Blad integralnosci bazy danych przy tworzeniu transferu: {e}")
-        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
+        return None, t("errors.database_integrity_error")
 
 
 def get_storage_transfers(
@@ -322,11 +323,11 @@ def get_storage_transfer_by_id(
     """
     transfer = db.query(StorageTransfer).filter(StorageTransfer.id == transfer_id).first()
     if not transfer:
-        return None, "Transfer nie znaleziony"
+        return None, t("errors.transfer_not_found")
 
     ingredient = db.query(Ingredient).filter(Ingredient.id == transfer.ingredient_id).first()
     if not ingredient:
-        return None, "Skladnik nie znaleziony"
+        return None, t("errors.ingredient_not_found")
 
     return _build_transfer_response(transfer, ingredient), None
 
@@ -345,12 +346,12 @@ def delete_storage_transfer(
     """
     transfer = db.query(StorageTransfer).filter(StorageTransfer.id == transfer_id).first()
     if not transfer:
-        return False, "Transfer nie znaleziony"
+        return False, t("errors.transfer_not_found")
 
     # Validate daily record is still open
     daily_record = db.query(DailyRecord).filter(DailyRecord.id == transfer.daily_record_id).first()
     if daily_record and daily_record.status != DayStatus.OPEN:
-        return False, "Nie mozna usuwac transferow z zamknietego dnia"
+        return False, t("errors.cannot_delete_transfer_closed")
 
     # Restore quantity to storage inventory
     storage = db.query(StorageInventory).filter(
@@ -424,7 +425,7 @@ def create_spoilage(
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Blad integralnosci bazy danych przy tworzeniu straty: {e}")
-        return None, "Blad bazy danych. Sprawdz czy dane sa poprawne."
+        return None, t("errors.database_integrity_error")
 
 
 def get_spoilages(
@@ -460,11 +461,11 @@ def get_spoilage_by_id(
     """
     spoilage = db.query(Spoilage).filter(Spoilage.id == spoilage_id).first()
     if not spoilage:
-        return None, "Strata nie znaleziona"
+        return None, t("errors.spoilage_not_found")
 
     ingredient = db.query(Ingredient).filter(Ingredient.id == spoilage.ingredient_id).first()
     if not ingredient:
-        return None, "Skladnik nie znaleziony"
+        return None, t("errors.ingredient_not_found")
 
     return _build_spoilage_response(spoilage, ingredient), None
 
@@ -482,12 +483,12 @@ def delete_spoilage(
     """
     spoilage = db.query(Spoilage).filter(Spoilage.id == spoilage_id).first()
     if not spoilage:
-        return False, "Strata nie znaleziona"
+        return False, t("errors.spoilage_not_found")
 
     # Validate daily record is still open
     daily_record = db.query(DailyRecord).filter(DailyRecord.id == spoilage.daily_record_id).first()
     if daily_record and daily_record.status != DayStatus.OPEN:
-        return False, "Nie mozna usuwac strat z zamknietego dnia"
+        return False, t("errors.cannot_delete_spoilage_closed")
 
     db.delete(spoilage)
     db.commit()

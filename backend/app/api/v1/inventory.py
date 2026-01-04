@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.inventory import (
     InventorySnapshotCreate,
     InventorySnapshotResponse,
@@ -104,6 +105,6 @@ def get_ingredient_availability(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skladnik lub rekord dzienny nie znaleziony"
+            detail=t("errors.ingredient_or_record_not_found")
         )
     return result

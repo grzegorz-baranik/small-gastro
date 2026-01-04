@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.ingredient import (
     IngredientCreate,
     IngredientUpdate,
@@ -35,7 +36,7 @@ def create_ingredient(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Skladnik o tej nazwie juz istnieje",
+            detail=t("errors.ingredient_exists"),
         )
     return ingredient_service.create_ingredient(db, ingredient)
 
@@ -50,7 +51,7 @@ def get_ingredient(
     if not ingredient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skladnik nie znaleziony",
+            detail=t("errors.ingredient_not_found"),
         )
     return ingredient
 
@@ -66,7 +67,7 @@ def update_ingredient(
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skladnik nie znaleziony",
+            detail=t("errors.ingredient_not_found"),
         )
     return updated
 
@@ -81,5 +82,5 @@ def delete_ingredient(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skladnik nie znaleziony",
+            detail=t("errors.ingredient_not_found"),
         )

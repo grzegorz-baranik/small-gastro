@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   Play,
   Square,
@@ -30,6 +31,7 @@ import {
 import type { DailyRecord, RecentDayRecord } from '../types'
 
 export default function DailyOperationsPage() {
+  const { t } = useTranslation()
   const { todayRecord, isDayOpen, isLoading: recordLoading, refetch } = useDailyRecord()
   const queryClient = useQueryClient()
 
@@ -86,16 +88,16 @@ export default function DailyOperationsPage() {
   // Get day of week name
   const getDayName = (dateString: string): string => {
     const date = new Date(dateString)
-    const dayNames = [
-      'Niedziela',
-      'Poniedzialek',
-      'Wtorek',
-      'Sroda',
-      'Czwartek',
-      'Piatek',
-      'Sobota',
+    const dayKeys = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
     ]
-    return dayNames[date.getDay()]
+    return t(`dailyOperations.dayOfWeek.${dayKeys[date.getDay()]}`)
   }
 
   // Get status badge
@@ -103,13 +105,13 @@ export default function DailyOperationsPage() {
     if (status === 'open') {
       return (
         <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full">
-          OTWARTY
+          {t('dailyOperations.statusOpen')}
         </span>
       )
     }
     return (
       <span className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-800 rounded-full">
-        ZAMKNIETY
+        {t('dailyOperations.statusClosed')}
       </span>
     )
   }
@@ -153,7 +155,7 @@ export default function DailyOperationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Operacje dzienne</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('dailyOperations.title')}</h1>
       </div>
 
       {/* Today's status card */}
@@ -163,12 +165,12 @@ export default function DailyOperationsPage() {
             <Calendar className="w-8 h-8 text-primary-600" />
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                DZISIAJ: {formatDate(today)} ({getDayName(today)})
+                {t('dailyOperations.todayLabel')} {formatDate(today)} ({getDayName(today)})
               </h2>
               {todayRecord?.opened_at && (
                 <p className="text-sm text-gray-500 flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  Otwarty o: {new Date(todayRecord.opened_at).toLocaleTimeString('pl-PL', {
+                  {t('dailyOperations.openedAt')} {new Date(todayRecord.opened_at).toLocaleTimeString('pl-PL', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
@@ -179,7 +181,7 @@ export default function DailyOperationsPage() {
           <div>
             {todayRecord ? getStatusBadge(todayRecord.status) : (
               <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                NIEOTWART
+                {t('dailyOperations.statusNotOpened')}
               </span>
             )}
           </div>
@@ -197,7 +199,7 @@ export default function DailyOperationsPage() {
             }`}
           >
             <Play className="w-8 h-8" />
-            <span className="font-medium">Otworz dzien</span>
+            <span className="font-medium">{t('dailyOperations.openDay')}</span>
           </button>
 
           <button
@@ -214,7 +216,7 @@ export default function DailyOperationsPage() {
             }`}
           >
             <Square className="w-8 h-8" />
-            <span className="font-medium">Zamknij dzien</span>
+            <span className="font-medium">{t('dailyOperations.closeDay')}</span>
           </button>
 
           <button
@@ -231,7 +233,7 @@ export default function DailyOperationsPage() {
             }`}
           >
             <FileText className="w-8 h-8" />
-            <span className="font-medium">Podsumowanie</span>
+            <span className="font-medium">{t('dailyOperations.summary')}</span>
           </button>
         </div>
       </div>
@@ -239,28 +241,28 @@ export default function DailyOperationsPage() {
       {/* Mid-day operations buttons - only show when day is open */}
       {isDayOpen && todayRecord && (
         <div className="card">
-          <h3 className="card-header">Operacje magazynowe</h3>
+          <h3 className="card-header">{t('dailyOperations.storageOperations')}</h3>
           <div className="grid grid-cols-3 gap-4">
             <button
               onClick={() => setDeliveryModalOpen(true)}
               className="p-4 rounded-lg border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors flex flex-col items-center gap-2"
             >
               <Truck className="w-8 h-8" />
-              <span className="font-medium">Dodaj dostawe</span>
+              <span className="font-medium">{t('dailyOperations.addDelivery')}</span>
             </button>
             <button
               onClick={() => setTransferModalOpen(true)}
               className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-colors flex flex-col items-center gap-2"
             >
               <Package className="w-8 h-8" />
-              <span className="font-medium">Transfer z magazynu</span>
+              <span className="font-medium">{t('dailyOperations.transferFromStorage')}</span>
             </button>
             <button
               onClick={() => setSpoilageModalOpen(true)}
               className="p-4 rounded-lg border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors flex flex-col items-center gap-2"
             >
               <Trash2 className="w-8 h-8" />
-              <span className="font-medium">Zapisz straty</span>
+              <span className="font-medium">{t('dailyOperations.recordSpoilage')}</span>
             </button>
           </div>
         </div>
@@ -269,14 +271,14 @@ export default function DailyOperationsPage() {
       {/* Today's events summary - only show when day is open */}
       {isDayOpen && dayEvents && (
         <div className="card">
-          <h3 className="card-header">Podsumowanie zdarzen</h3>
+          <h3 className="card-header">{t('dailyOperations.eventSummary')}</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
               <Truck className="w-6 h-6 text-green-600" />
               <div>
-                <p className="text-sm text-green-600">Dostawy</p>
+                <p className="text-sm text-green-600">{t('dailyOperations.deliveries')}</p>
                 <p className="font-semibold text-green-800">
-                  {dayEvents.deliveries_count} pozycji
+                  {dayEvents.deliveries_count} {t('common.items')}
                 </p>
                 <p className="text-sm text-green-600">
                   {formatCurrency(dayEvents.deliveries_total_pln)}
@@ -286,18 +288,18 @@ export default function DailyOperationsPage() {
             <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
               <Package className="w-6 h-6 text-blue-600" />
               <div>
-                <p className="text-sm text-blue-600">Transfery z magazynu</p>
+                <p className="text-sm text-blue-600">{t('dailyOperations.transfers')}</p>
                 <p className="font-semibold text-blue-800">
-                  {dayEvents.transfers_count} pozycji
+                  {dayEvents.transfers_count} {t('common.items')}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
               <Trash2 className="w-6 h-6 text-red-600" />
               <div>
-                <p className="text-sm text-red-600">Straty</p>
+                <p className="text-sm text-red-600">{t('dailyOperations.spoilage')}</p>
                 <p className="font-semibold text-red-800">
-                  {dayEvents.spoilage_count} pozycji
+                  {dayEvents.spoilage_count} {t('common.items')}
                 </p>
               </div>
             </div>
@@ -315,7 +317,7 @@ export default function DailyOperationsPage() {
         <>
           {/* Quick sales entry */}
           <div className="card">
-            <h3 className="card-header">Dodaj sprzedaz</h3>
+            <h3 className="card-header">{t('dailyOperations.addSale')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {productsData?.items.map((product) => (
                 <button
@@ -341,9 +343,9 @@ export default function DailyOperationsPage() {
           {/* Today's sales list */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="card-header mb-0">Dzisiejsza sprzedaz</h3>
+              <h3 className="card-header mb-0">{t('dailyOperations.todaySales')}</h3>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Suma</p>
+                <p className="text-sm text-gray-500">{t('common.sum')}</p>
                 <p className="text-xl font-bold text-primary-600">
                   {formatCurrency(salesData?.total_revenue ?? 0)}
                 </p>
@@ -353,7 +355,7 @@ export default function DailyOperationsPage() {
             {salesLoading ? (
               <LoadingSpinner />
             ) : salesData?.items.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Brak sprzedazy</p>
+              <p className="text-gray-500 text-center py-8">{t('dailyOperations.noSales')}</p>
             ) : (
               <div className="space-y-2">
                 {salesData?.items.map((sale) => (
@@ -390,7 +392,7 @@ export default function DailyOperationsPage() {
 
       {/* Recent days history */}
       <div className="card">
-        <h3 className="card-header">Ostatnie dni</h3>
+        <h3 className="card-header">{t('dailyOperations.recentDays')}</h3>
         {recentDaysLoading ? (
           <LoadingSpinner />
         ) : recentDays && recentDays.length > 0 ? (
@@ -399,19 +401,19 @@ export default function DailyOperationsPage() {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                    Data
+                    {t('common.date')}
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                    Status
+                    {t('common.status')}
                   </th>
                   <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
-                    Przychod
+                    {t('dailyOperations.income')}
                   </th>
                   <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
-                    Alerty
+                    {t('dailyOperations.alerts')}
                   </th>
                   <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
-                    Akcje
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -430,11 +432,11 @@ export default function DailyOperationsPage() {
                       {day.status === 'open' ? (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
-                          OTWARTY
+                          {t('dailyOperations.statusOpen')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                          ZAMKNIETY
+                          {t('dailyOperations.statusClosed')}
                         </span>
                       )}
                     </td>
@@ -448,13 +450,13 @@ export default function DailyOperationsPage() {
                         <span className="inline-flex items-center gap-1 text-yellow-600">
                           <AlertTriangle className="w-4 h-4" />
                           <span className="text-sm">
-                            {day.alerts_count} {day.alerts_count === 1 ? 'ostrzezenie' : 'ostrzezenia'}
+                            {day.alerts_count} {day.alerts_count === 1 ? t('dailyOperations.warningCount') : t('dailyOperations.warningsCount')}
                           </span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm">OK</span>
+                          <span className="text-sm">{t('common.ok')}</span>
                         </span>
                       )}
                     </td>
@@ -477,7 +479,7 @@ export default function DailyOperationsPage() {
                         }
                         className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                       >
-                        Zobacz szczegoly
+                        {t('common.viewDetails')}
                       </button>
                     </td>
                   </tr>
@@ -486,7 +488,7 @@ export default function DailyOperationsPage() {
             </table>
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-8">Brak historii</p>
+          <p className="text-gray-500 text-center py-8">{t('dailyOperations.noHistory')}</p>
         )}
       </div>
 

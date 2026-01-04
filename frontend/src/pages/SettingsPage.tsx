@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCategoryTree, createCategory, deleteCategory } from '../api/categories'
 import { Plus, Trash2, ChevronRight, ChevronDown, Tag, Folder, FolderOpen } from 'lucide-react'
@@ -6,20 +7,11 @@ import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import type { ExpenseCategory } from '../types'
 
-const LEVEL_NAMES: Record<number, string> = {
-  1: 'grupe glowna (poziom 1)',
-  2: 'podgrupe (poziom 2)',
-  3: 'kategorie koncowa (poziom 3)',
-}
-
-function getModalTitle(parentLevel: number | undefined): string {
-  const newLevel = parentLevel !== undefined ? parentLevel + 1 : 1
-  return `Dodaj ${LEVEL_NAMES[newLevel] || 'kategorie'}`
-}
-
 export default function SettingsPage() {
+  const { t } = useTranslation()
   const [showModal, setShowModal] = useState(false)
   const [parentId, setParentId] = useState<number | undefined>()
+  const [parentLevel, setParentLevel] = useState<number | undefined>()
   const queryClient = useQueryClient()
 
   const { data: categoryTree, isLoading } = useQuery({
@@ -47,28 +39,32 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['leafCategories'] })
     },
     onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
-      const message = error.response?.data?.detail || 'Nie udalo sie usunac kategorii'
+      const message = error.response?.data?.detail || t('errors.generic')
       alert(message)
     },
   })
 
-  const handleAddSubcategory = (parentCategoryId: number, parentLevel: number) => {
+  const handleAddSubcategory = (parentCategoryId: number, parentCategoryLevel: number) => {
     setParentId(parentCategoryId)
-    setParentLevel(parentLevel)
+    setParentLevel(parentCategoryLevel)
     setShowModal(true)
   }
 
-  const [parentLevel, setParentLevel] = useState<number | undefined>()
+  const getModalTitle = (level: number | undefined): string => {
+    const newLevel = level !== undefined ? level + 1 : 1
+    const levelKey = newLevel.toString() as '1' | '2' | '3'
+    return `${t('common.edit')} ${t(`settings.levelNames.${levelKey}`)}`
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Ustawienia</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
       </div>
 
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="card-header mb-0">Kategorie wydatkow</h2>
+          <h2 className="card-header mb-0">{t('settings.expenseCategories')}</h2>
           <button
             onClick={() => {
               setParentId(undefined)
@@ -78,35 +74,35 @@ export default function SettingsPage() {
             className="btn btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Dodaj grupe glowna
+            {t('settings.addMainGroup')}
           </button>
         </div>
 
         {/* Hierarchy explanation */}
         <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-          <p className="text-sm text-blue-800 mb-2 font-medium">Struktura kategorii (3 poziomy):</p>
+          <p className="text-sm text-blue-800 mb-2 font-medium">{t('settings.categoryStructure')}</p>
           <div className="space-y-1 text-sm text-blue-700">
             <div className="flex items-center gap-2">
               <Folder className="w-4 h-4" />
-              <span><strong>Poziom 1</strong> - Grupa glowna (np. Koszty operacyjne, Koszty administracyjne)</span>
+              <span><strong>{t('settings.level1')}</strong> - {t('settings.level1Desc')} ({t('settings.level1Examples')})</span>
             </div>
             <div className="flex items-center gap-2 ml-4">
               <FolderOpen className="w-4 h-4" />
-              <span><strong>Poziom 2</strong> - Podgrupa (np. Skladniki, Transport, Opakowania)</span>
+              <span><strong>{t('settings.level2')}</strong> - {t('settings.level2Desc')} ({t('settings.level2Examples')})</span>
             </div>
             <div className="flex items-center gap-2 ml-8">
               <Tag className="w-4 h-4" />
-              <span><strong>Poziom 3</strong> - Kategoria koncowa <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs">do przypisania</span></span>
+              <span><strong>{t('settings.level3')}</strong> - {t('settings.level3Desc')} <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs">{t('settings.level3Note')}</span></span>
             </div>
           </div>
-          <p className="text-xs text-blue-600 mt-2">Tylko kategorie poziomu 3 mozna przypisac do transakcji.</p>
+          <p className="text-xs text-blue-600 mt-2">{t('settings.onlyLevel3Assignable')}</p>
         </div>
 
         {isLoading ? (
           <LoadingSpinner />
         ) : categoryTree?.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            Brak kategorii. Dodaj pierwsza kategorie wydatkow.
+            {t('settings.noCategories')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -152,6 +148,7 @@ function CategoryTreeItem({
   onDelete: (id: number) => void
   depth?: number
 }) {
+  const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(true)
   const hasChildren = category.children && category.children.length > 0
   const canAddChild = category.level < 3
@@ -165,9 +162,13 @@ function CategoryTreeItem({
   }
 
   const getLevelBadge = () => {
-    if (category.level === 1) return <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">grupa</span>
-    if (category.level === 2) return <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">podgrupa</span>
-    return <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">do przypisania</span>
+    if (category.level === 1) return <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{t('settings.badgeGroup')}</span>
+    if (category.level === 2) return <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">{t('settings.badgeSubgroup')}</span>
+    return <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">{t('settings.badgeAssignable')}</span>
+  }
+
+  const getAddChildTitle = () => {
+    return category.level === 1 ? t('settings.addSubgroup') : t('settings.addFinalCategory')
   }
 
   return (
@@ -200,7 +201,7 @@ function CategoryTreeItem({
             <button
               onClick={() => onAddSubcategory(category.id, category.level)}
               className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-700"
-              title={`Dodaj ${category.level === 1 ? 'podgrupe' : 'kategorie koncowa'}`}
+              title={getAddChildTitle()}
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -208,7 +209,7 @@ function CategoryTreeItem({
           <button
             onClick={() => onDelete(category.id)}
             className="p-1 hover:bg-red-100 rounded text-gray-500 hover:text-red-600"
-            title="Usun"
+            title={t('common.delete')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -240,6 +241,7 @@ function CategoryForm({
   onSubmit: (name: string) => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -254,8 +256,8 @@ function CategoryForm({
         icon: <Folder className="w-5 h-5 text-blue-500" />,
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-700',
-        description: 'Grupa glowna sluzy do organizacji kategorii na najwyzszym poziomie (np. "Koszty operacyjne", "Koszty administracyjne").',
-        placeholder: 'np. Koszty operacyjne',
+        description: `${t('settings.level1Desc')} (${t('settings.level1Examples')})`,
+        placeholder: t('settings.placeholders.1'),
       }
     }
     if (newLevel === 2) {
@@ -263,36 +265,37 @@ function CategoryForm({
         icon: <FolderOpen className="w-5 h-5 text-amber-500" />,
         color: 'bg-amber-50 border-amber-200',
         textColor: 'text-amber-700',
-        description: 'Podgrupa pozwala dalej podzielic kategorie (np. "Skladniki", "Transport", "Media").',
-        placeholder: 'np. Skladniki, Transport',
+        description: `${t('settings.level2Desc')} (${t('settings.level2Examples')})`,
+        placeholder: t('settings.placeholders.2'),
       }
     }
     return {
       icon: <Tag className="w-5 h-5 text-green-500" />,
       color: 'bg-green-50 border-green-200',
       textColor: 'text-green-700',
-      description: 'Kategoria koncowa to poziom, ktory mozna przypisac do transakcji (np. "Warzywa", "Mieso", "Paliwo").',
-      placeholder: 'np. Warzywa, Mieso, Paliwo',
+      description: t('settings.level3Desc'),
+      placeholder: t('settings.placeholders.3'),
     }
   }
 
   const levelInfo = getLevelInfo()
+  const levelLabel = newLevel === 1 ? t('settings.level1') : newLevel === 2 ? t('settings.level2') : t('settings.level3')
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className={`p-3 rounded-lg border ${levelInfo.color}`}>
         <div className="flex items-center gap-2 mb-1">
           {levelInfo.icon}
-          <span className={`font-medium ${levelInfo.textColor}`}>Poziom {newLevel}</span>
+          <span className={`font-medium ${levelInfo.textColor}`}>{levelLabel}</span>
           {newLevel === 3 && (
-            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">do przypisania</span>
+            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">{t('settings.level3Note')}</span>
           )}
         </div>
         <p className={`text-sm ${levelInfo.textColor}`}>{levelInfo.description}</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
         <input
           type="text"
           value={name}
@@ -303,7 +306,7 @@ function CategoryForm({
         />
       </div>
       <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
-        {isLoading ? 'Zapisywanie...' : 'Zapisz'}
+        {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>
   )

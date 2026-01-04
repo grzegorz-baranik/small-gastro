@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, Package, Trash2, FileSpreadsheet, Calendar } from 'lucide-react'
 import {
@@ -16,14 +17,6 @@ import type { DateRangeRequest, SpoilageReason } from '../types'
 
 type ReportTab = 'trends' | 'usage' | 'spoilage'
 
-const SPOILAGE_REASON_LABELS: Record<SpoilageReason, string> = {
-  expired: 'Przeterminowane',
-  over_prepared: 'Nadmiernie przygotowane',
-  contaminated: 'Zanieczyszczone',
-  equipment_failure: 'Awaria sprzetu',
-  other: 'Inne',
-}
-
 function getDefaultDateRange(): DateRangeRequest {
   const today = new Date()
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -34,21 +27,22 @@ function getDefaultDateRange(): DateRangeRequest {
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<ReportTab>('trends')
   const [dateRange, setDateRange] = useState<DateRangeRequest>(getDefaultDateRange)
   const [selectedIngredients, setSelectedIngredients] = useState<number[]>([])
   const [isExporting, setIsExporting] = useState(false)
 
   const tabs = [
-    { id: 'trends' as ReportTab, label: 'Trendy miesieczne', icon: TrendingUp },
-    { id: 'usage' as ReportTab, label: 'Zuzycie skladnikow', icon: Package },
-    { id: 'spoilage' as ReportTab, label: 'Straty', icon: Trash2 },
+    { id: 'trends' as ReportTab, label: t('reports.monthlyTrends'), icon: TrendingUp },
+    { id: 'usage' as ReportTab, label: t('reports.ingredientUsage'), icon: Package },
+    { id: 'spoilage' as ReportTab, label: t('reports.spoilage'), icon: Trash2 },
   ]
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Raporty</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
       </div>
 
       {/* Tabs */}
@@ -74,7 +68,7 @@ export default function ReportsPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Zakres dat:</span>
+            <span className="text-sm font-medium text-gray-700">{t('reports.dateRange')}</span>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -83,7 +77,7 @@ export default function ReportsPage() {
               onChange={(e) => setDateRange((prev) => ({ ...prev, start_date: e.target.value }))}
               className="input w-auto"
             />
-            <span className="text-gray-500">do</span>
+            <span className="text-gray-500">{t('reports.to')}</span>
             <input
               type="date"
               value={dateRange.end_date}
@@ -129,6 +123,7 @@ interface ReportSectionProps {
 }
 
 function MonthlyTrendsReport({ dateRange, isExporting, setIsExporting }: ReportSectionProps) {
+  const { t } = useTranslation()
   const { data, isLoading, error } = useQuery({
     queryKey: ['monthly-trends', dateRange],
     queryFn: () => getMonthlyTrendsReport(dateRange),
@@ -147,7 +142,7 @@ function MonthlyTrendsReport({ dateRange, isExporting, setIsExporting }: ReportS
   }
 
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="card text-red-600">Blad ladowania raportu</div>
+  if (error) return <div className="card text-red-600">{t('errors.generic')}</div>
 
   return (
     <div className="space-y-6">
@@ -155,25 +150,25 @@ function MonthlyTrendsReport({ dateRange, isExporting, setIsExporting }: ReportS
       {data && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card">
-            <p className="text-sm text-gray-500">Laczny przychod</p>
+            <p className="text-sm text-gray-500">{t('reports.totalRevenue')}</p>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(data.total_income_pln)}</p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Laczne koszty</p>
+            <p className="text-sm text-gray-500">{t('reports.totalCosts')}</p>
             <p className="text-2xl font-bold text-red-600">{formatCurrency(data.total_costs_pln)}</p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Sredni dzienny przychod</p>
+            <p className="text-sm text-gray-500">{t('reports.avgDailyRevenue')}</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.avg_daily_income_pln)}</p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Najlepszy dzien</p>
+            <p className="text-sm text-gray-500">{t('reports.bestDay')}</p>
             {data.best_day ? (
               <p className="text-lg font-bold text-green-600">
                 {formatDate(data.best_day.date)}: {formatCurrency(data.best_day.income_pln)}
               </p>
             ) : (
-              <p className="text-gray-400">Brak danych</p>
+              <p className="text-gray-400">{t('common.noData')}</p>
             )}
           </div>
         </div>
@@ -182,7 +177,7 @@ function MonthlyTrendsReport({ dateRange, isExporting, setIsExporting }: ReportS
       {/* Data Table */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Szczegoly dzienne</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('reports.dailyDetails')}</h3>
           <button
             onClick={handleExport}
             disabled={isExporting || !data?.items.length}
@@ -193,22 +188,22 @@ function MonthlyTrendsReport({ dateRange, isExporting, setIsExporting }: ReportS
             ) : (
               <FileSpreadsheet className="w-4 h-4" />
             )}
-            Eksportuj do Excel
+            {t('common.exportToExcel')}
           </button>
         </div>
 
         {!data?.items.length ? (
-          <p className="text-gray-500 text-center py-8">Brak danych dla wybranego zakresu</p>
+          <p className="text-gray-500 text-center py-8">{t('reports.noDataForRange')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Data</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Przychod</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Dostawy</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Straty</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Zysk</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('common.date')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('dashboard.revenue')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('inventory.deliveries')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('reports.spoilage')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('dashboard.profit')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,6 +245,7 @@ function IngredientUsageReport({
   isExporting,
   setIsExporting,
 }: IngredientUsageReportProps) {
+  const { t } = useTranslation()
   const { data: ingredientsData } = useQuery({
     queryKey: ['ingredients'],
     queryFn: getIngredients,
@@ -281,14 +277,14 @@ function IngredientUsageReport({
   }
 
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="card text-red-600">Blad ladowania raportu</div>
+  if (error) return <div className="card text-red-600">{t('errors.generic')}</div>
 
   return (
     <div className="space-y-6">
       {/* Ingredient Filter */}
       {ingredientsData && ingredientsData.items.length > 0 && (
         <div className="card">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Filtruj skladniki (opcjonalnie):</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">{t('reports.filterIngredients')}</h4>
           <div className="flex flex-wrap gap-2">
             {ingredientsData.items.map((ingredient) => (
               <button
@@ -308,7 +304,7 @@ function IngredientUsageReport({
                 onClick={() => setSelectedIngredients([])}
                 className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-700 hover:bg-gray-400"
               >
-                Wyczysc filtry
+                {t('common.clearFilters')}
               </button>
             )}
           </div>
@@ -318,7 +314,7 @@ function IngredientUsageReport({
       {/* Summary */}
       {data && data.summary.length > 0 && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Podsumowanie zuzycia</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.usageSummary')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.summary.map((item) => (
               <div key={item.ingredient_id} className="p-4 bg-gray-50 rounded-lg">
@@ -335,7 +331,7 @@ function IngredientUsageReport({
       {/* Data Table */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Szczegoly zuzycia</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('reports.usageDetails')}</h3>
           <button
             onClick={handleExport}
             disabled={isExporting || !data?.items.length}
@@ -346,22 +342,22 @@ function IngredientUsageReport({
             ) : (
               <FileSpreadsheet className="w-4 h-4" />
             )}
-            Eksportuj do Excel
+            {t('common.exportToExcel')}
           </button>
         </div>
 
         {!data?.items.length ? (
-          <p className="text-gray-500 text-center py-8">Brak danych dla wybranego zakresu</p>
+          <p className="text-gray-500 text-center py-8">{t('reports.noDataForRange')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Data</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Skladnik</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Otwarcie</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Zuzycie</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Zamkniecie</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('common.date')}</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('menu.ingredient')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('reports.openQty')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('inventory.usage')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('reports.closeQty')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -390,6 +386,16 @@ function IngredientUsageReport({
 }
 
 function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: ReportSectionProps) {
+  const { t } = useTranslation()
+
+  const SPOILAGE_REASON_LABELS: Record<SpoilageReason, string> = {
+    expired: t('spoilageModal.reasons.expired'),
+    over_prepared: t('spoilageModal.reasons.overPrepared'),
+    contaminated: t('spoilageModal.reasons.contaminated'),
+    equipment_failure: t('spoilageModal.reasons.equipmentFailure'),
+    other: t('spoilageModal.reasons.other'),
+  }
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['spoilage-report', dateRange],
     queryFn: () => getSpoilageReport(dateRange),
@@ -408,19 +414,19 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
   }
 
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="card text-red-600">Blad ladowania raportu</div>
+  if (error) return <div className="card text-red-600">{t('errors.generic')}</div>
 
   return (
     <div className="space-y-6">
       {/* Summary by Reason */}
       {data && data.by_reason && data.by_reason.length > 0 && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Podsumowanie wg przyczyny</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.summaryByReason')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {data.by_reason.map((item) => (
               <div key={item.reason} className="p-4 bg-red-50 rounded-lg">
                 <p className="text-sm text-gray-500">{item.reason_label || SPOILAGE_REASON_LABELS[item.reason]}</p>
-                <p className="text-xl font-bold text-red-600">{item.total_count} pozycji</p>
+                <p className="text-xl font-bold text-red-600">{item.total_count} {t('common.items')}</p>
               </div>
             ))}
           </div>
@@ -430,7 +436,7 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
       {/* Summary by Ingredient */}
       {data && data.by_ingredient && data.by_ingredient.length > 0 && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Podsumowanie wg skladnika</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.summaryByIngredient')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.by_ingredient.map((item) => (
               <div key={item.ingredient_id} className="p-4 bg-orange-50 rounded-lg">
@@ -438,7 +444,7 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
                 <p className="text-xl font-bold text-orange-600">
                   {item.total_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
                 </p>
-                <p className="text-sm text-gray-400">{item.total_count} przypadkow</p>
+                <p className="text-sm text-gray-400">{item.total_count} {t('reports.cases')}</p>
               </div>
             ))}
           </div>
@@ -448,7 +454,7 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
       {/* Data Table */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Lista strat</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('reports.spoilageList')}</h3>
           <button
             onClick={handleExport}
             disabled={isExporting || !data?.items.length}
@@ -459,22 +465,22 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
             ) : (
               <FileSpreadsheet className="w-4 h-4" />
             )}
-            Eksportuj do Excel
+            {t('common.exportToExcel')}
           </button>
         </div>
 
         {!data?.items.length ? (
-          <p className="text-gray-500 text-center py-8">Brak strat dla wybranego zakresu</p>
+          <p className="text-gray-500 text-center py-8">{t('reports.noDataForRange')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Data</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Skladnik</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Ilosc</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Przyczyna</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Notatki</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('common.date')}</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('menu.ingredient')}</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('closeDayModal.quantity')}</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('spoilageModal.reason')}</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('reports.notes')}</th>
                 </tr>
               </thead>
               <tbody>

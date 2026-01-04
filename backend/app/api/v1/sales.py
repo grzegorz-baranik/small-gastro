@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.sales import (
     SalesItemCreate,
     SalesItemResponse,
@@ -20,7 +21,7 @@ def get_today_sales(
     if not summary:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dzien nie zostal jeszcze otwarty",
+            detail=t("errors.day_not_opened"),
         )
     return summary
 
@@ -35,7 +36,7 @@ def get_sales_for_day(
     if not summary:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord nie znaleziony",
+            detail=t("errors.record_not_found"),
         )
     return summary
 
@@ -51,14 +52,14 @@ def create_sale(
     if not today_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dzien nie jest otwarty. Otworz dzien przed rejestrowaniem sprzedazy.",
+            detail=t("errors.day_not_open_for_sales"),
         )
 
     sale = sales_service.create_sale(db, today_record.id, data)
     if not sale:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nie mozna utworzyc sprzedazy. Sprawdz czy produkt istnieje i czy dzien jest otwarty.",
+            detail=t("errors.cannot_create_sale"),
         )
 
     return SalesItemResponse(
@@ -83,5 +84,5 @@ def delete_sale(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nie mozna usunac sprzedazy. Rekord nie istnieje lub dzien jest zamkniety.",
+            detail=t("errors.cannot_delete_sale"),
         )

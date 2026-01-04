@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Trash2, AlertCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
@@ -15,13 +16,13 @@ interface SpoilageModalProps {
   dailyRecordId: number
 }
 
-// Spoilage reason labels in Polish - matches backend SpoilageReason enum
-const SPOILAGE_REASON_LABELS: Record<SpoilageReason, string> = {
-  expired: 'Przeterminowane',
-  over_prepared: 'Nadmiernie przygotowane',
-  contaminated: 'Zanieczyszczone',
-  equipment_failure: 'Awaria sprzetu',
-  other: 'Inne',
+// Spoilage reason keys for translation - matches backend SpoilageReason enum
+const SPOILAGE_REASON_KEYS: Record<SpoilageReason, string> = {
+  expired: 'spoilageModal.reasons.expired',
+  over_prepared: 'spoilageModal.reasons.overPrepared',
+  contaminated: 'spoilageModal.reasons.contaminated',
+  equipment_failure: 'spoilageModal.reasons.equipmentFailure',
+  other: 'spoilageModal.reasons.other',
 }
 
 export default function SpoilageModal({
@@ -30,6 +31,7 @@ export default function SpoilageModal({
   onSuccess,
   dailyRecordId,
 }: SpoilageModalProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [ingredientId, setIngredientId] = useState<number | ''>('')
@@ -52,12 +54,12 @@ export default function SpoilageModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spoilage', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
-      showSuccess('Strata zostala zapisana')
+      showSuccess(t('spoilageModal.spoilageRecorded'))
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      const message = error.response?.data?.detail || 'Wystapil blad podczas zapisywania straty'
+      const message = error.response?.data?.detail || t('spoilageModal.errorSaving')
       setGeneralError(message)
       showError(message)
     },
@@ -91,23 +93,23 @@ export default function SpoilageModal({
     let isValid = true
 
     if (!ingredientId) {
-      newErrors.ingredientId = 'Wybierz skladnik'
+      newErrors.ingredientId = t('spoilageModal.selectIngredientError')
       isValid = false
     }
 
     if (!quantity || quantity === '') {
-      newErrors.quantity = 'Podaj ilosc'
+      newErrors.quantity = t('spoilageModal.enterQuantity')
       isValid = false
     } else {
       const numQuantity = parseFloat(quantity)
       if (isNaN(numQuantity) || numQuantity <= 0) {
-        newErrors.quantity = 'Ilosc musi byc wieksza od 0'
+        newErrors.quantity = t('spoilageModal.quantityMustBePositive')
         isValid = false
       }
     }
 
     if (!reason) {
-      newErrors.reason = 'Wybierz powod'
+      newErrors.reason = t('spoilageModal.selectReasonError')
       isValid = false
     }
 
@@ -133,7 +135,7 @@ export default function SpoilageModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Zapisz straty" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('spoilageModal.title')} size="md">
       {ingredientsLoading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner />
@@ -143,7 +145,7 @@ export default function SpoilageModal({
           {/* Warning box */}
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">
-              Straty to skladniki, ktore nie moga byc wykorzystane z powodu uszkodzenia, przeterminowania lub innych przyczyn.
+              {t('spoilageModal.warning')}
             </p>
           </div>
 
@@ -158,7 +160,7 @@ export default function SpoilageModal({
           {/* Ingredient select */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Skladnik
+              {t('menu.ingredient')}
             </label>
             <select
               value={ingredientId}
@@ -174,7 +176,7 @@ export default function SpoilageModal({
               }}
               className={`input w-full ${errors.ingredientId ? 'border-red-500' : ''}`}
             >
-              <option value="">Wybierz skladnik...</option>
+              <option value="">{t('spoilageModal.selectIngredient')}</option>
               {ingredientsData?.items.map((ingredient: Ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>
                   {ingredient.name} ({getUnitLabel(ingredient)})
@@ -189,7 +191,7 @@ export default function SpoilageModal({
           {/* Quantity input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Ilosc {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
+              {t('spoilageModal.quantity')} {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
             </label>
             <input
               type="number"
@@ -217,7 +219,7 @@ export default function SpoilageModal({
           {/* Reason select */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Powod straty
+              {t('spoilageModal.reason')}
             </label>
             <select
               value={reason}
@@ -233,10 +235,10 @@ export default function SpoilageModal({
               }}
               className={`input w-full ${errors.reason ? 'border-red-500' : ''}`}
             >
-              <option value="">Wybierz powod...</option>
-              {(Object.keys(SPOILAGE_REASON_LABELS) as SpoilageReason[]).map((key) => (
+              <option value="">{t('spoilageModal.selectReason')}</option>
+              {(Object.keys(SPOILAGE_REASON_KEYS) as SpoilageReason[]).map((key) => (
                 <option key={key} value={key}>
-                  {SPOILAGE_REASON_LABELS[key]}
+                  {t(SPOILAGE_REASON_KEYS[key])}
                 </option>
               ))}
             </select>
@@ -248,14 +250,14 @@ export default function SpoilageModal({
           {/* Notes input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notatki (opcjonalne)
+              {t('spoilageModal.notesOptional')}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="input w-full"
               rows={3}
-              placeholder="Dodatkowe informacje o stracie..."
+              placeholder={t('spoilageModal.notesPlaceholder')}
             />
           </div>
 
@@ -267,7 +269,7 @@ export default function SpoilageModal({
               className="btn btn-secondary flex-1"
               disabled={createSpoilageMutation.isPending}
             >
-              Anuluj
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -278,12 +280,12 @@ export default function SpoilageModal({
               {createSpoilageMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" />
-                  Zapisywanie...
+                  {t('common.saving')}
                 </>
               ) : (
                 <>
                   <Trash2 className="w-4 h-4" />
-                  Zapisz strate
+                  {t('spoilageModal.saveSpoilage')}
                 </>
               )}
             </button>

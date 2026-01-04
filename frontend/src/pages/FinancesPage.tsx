@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTransactions, createTransaction, deleteTransaction } from '../api/transactions'
 import { getLeafCategories } from '../api/categories'
@@ -9,13 +10,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import SearchableSelect from '../components/common/SearchableSelect'
 import type { TransactionCreate, TransactionType, PaymentMethod, LeafCategory } from '../types'
 
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: 'Gotowka',
-  card: 'Karta',
-  bank_transfer: 'Przelew',
-}
-
 export default function FinancesPage() {
+  const { t } = useTranslation()
   const [showModal, setShowModal] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TransactionType | ''>('')
   const queryClient = useQueryClient()
@@ -46,13 +42,13 @@ export default function FinancesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Finanse</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('finances.title')}</h1>
         <button
           onClick={() => setShowModal(true)}
           className="btn btn-primary flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          Dodaj transakcje
+          {t('finances.addTransaction')}
         </button>
       </div>
 
@@ -64,7 +60,7 @@ export default function FinancesPage() {
             typeFilter === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Wszystkie
+          {t('finances.filterAll')}
         </button>
         <button
           onClick={() => setTypeFilter('revenue')}
@@ -72,7 +68,7 @@ export default function FinancesPage() {
             typeFilter === 'revenue' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Przychody
+          {t('finances.filterRevenue')}
         </button>
         <button
           onClick={() => setTypeFilter('expense')}
@@ -80,7 +76,7 @@ export default function FinancesPage() {
             typeFilter === 'expense' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Wydatki
+          {t('finances.filterExpenses')}
         </button>
       </div>
 
@@ -89,7 +85,7 @@ export default function FinancesPage() {
         {isLoading ? (
           <LoadingSpinner />
         ) : transactionsData?.items.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Brak transakcji</p>
+          <p className="text-gray-500 text-center py-8">{t('finances.noTransactions')}</p>
         ) : (
           <div className="space-y-3">
             {transactionsData?.items.map((transaction) => (
@@ -107,10 +103,10 @@ export default function FinancesPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      {transaction.description || (transaction.type === 'revenue' ? 'Przychod' : 'Wydatek')}
+                      {transaction.description || (transaction.type === 'revenue' ? t('finances.typeRevenue') : t('finances.typeExpense'))}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {formatDate(transaction.transaction_date)} • {PAYMENT_METHOD_LABELS[transaction.payment_method]}
+                      {formatDate(transaction.transaction_date)} • {t(`finances.paymentMethods.${transaction.payment_method === 'bank_transfer' ? 'bankTransfer' : transaction.payment_method}`)}
                       {transaction.category_name && ` • ${transaction.category_name}`}
                     </p>
                   </div>
@@ -136,7 +132,7 @@ export default function FinancesPage() {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Dodaj transakcje"
+        title={t('finances.addTransaction')}
       >
         <TransactionForm
           leafCategories={leafCategories || []}
@@ -157,6 +153,7 @@ function TransactionForm({
   onSubmit: (data: TransactionCreate) => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
@@ -185,7 +182,7 @@ function TransactionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.status')}</label>
         <div className="flex gap-2">
           <button
             type="button"
@@ -194,7 +191,7 @@ function TransactionForm({
               type === 'revenue' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'
             }`}
           >
-            Przychod
+            {t('finances.typeRevenue')}
           </button>
           <button
             type="button"
@@ -203,13 +200,13 @@ function TransactionForm({
               type === 'expense' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'
             }`}
           >
-            Wydatek
+            {t('finances.typeExpense')}
           </button>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Kwota (PLN)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('finances.amount')}</label>
         <input
           type="number"
           step="0.01"
@@ -222,32 +219,32 @@ function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Metoda platnosci</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('finances.paymentMethod')}</label>
         <select
           value={paymentMethod}
           onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
           className="input"
         >
-          <option value="cash">Gotowka</option>
-          <option value="card">Karta</option>
-          <option value="bank_transfer">Przelew bankowy</option>
+          <option value="cash">{t('finances.paymentMethods.cash')}</option>
+          <option value="card">{t('finances.paymentMethods.card')}</option>
+          <option value="bank_transfer">{t('finances.paymentMethods.bankTransfer')}</option>
         </select>
       </div>
 
       {type === 'expense' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Kategoria</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('finances.category')}</label>
           <SearchableSelect
             options={categoryOptions}
             value={categoryId}
             onChange={setCategoryId}
-            placeholder="Wybierz kategorie..."
+            placeholder={t('finances.selectCategory')}
           />
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.date')}</label>
         <input
           type="date"
           value={date}
@@ -258,7 +255,7 @@ function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Opis (opcjonalny)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('finances.descriptionOptional')}</label>
         <input
           type="text"
           value={description}
@@ -268,7 +265,7 @@ function TransactionForm({
       </div>
 
       <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
-        {isLoading ? 'Zapisywanie...' : 'Zapisz'}
+        {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>
   )

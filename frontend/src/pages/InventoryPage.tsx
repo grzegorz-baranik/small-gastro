@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { getDailyRecords, getDaySummary } from '../api/dailyRecords'
 import { formatDate, formatQuantity } from '../utils/formatters'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
@@ -7,6 +8,7 @@ import { CalculatedSalesTable } from '../components/daily'
 import { useState } from 'react'
 
 export default function InventoryPage() {
+  const { t } = useTranslation()
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null)
 
   const { data: recordsData, isLoading: recordsLoading } = useQuery({
@@ -24,12 +26,12 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Historia magazynowa</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('inventory.title')}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Records List */}
         <div className="card lg:col-span-1">
-          <h2 className="card-header">Dni</h2>
+          <h2 className="card-header">{t('inventory.days')}</h2>
           {recordsLoading ? (
             <LoadingSpinner />
           ) : (
@@ -51,7 +53,7 @@ export default function InventoryPage() {
                         ? 'bg-gray-100 text-gray-600'
                         : 'bg-green-100 text-green-700'
                     }`}>
-                      {record.status === 'closed' ? 'Zamkniety' : 'Otwarty'}
+                      {record.status === 'closed' ? t('inventory.statusClosed') : t('inventory.statusOpen')}
                     </span>
                   </div>
                 </button>
@@ -68,18 +70,18 @@ export default function InventoryPage() {
             ) : summary ? (
               <div className="space-y-6">
                 <div>
-                  <h2 className="card-header">Podsumowanie dnia {formatDate(summary.daily_record?.date || '')}</h2>
+                  <h2 className="card-header">{t('inventory.daySummary')} {formatDate(summary.daily_record?.date || '')}</h2>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-500">Sprzedane produkty</p>
+                      <p className="text-sm text-gray-500">{t('inventory.soldProducts')}</p>
                       <p className="text-xl font-bold text-gray-900">{summary.calculated_sales?.length || 0}</p>
                     </div>
                     <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-500">Przychody</p>
+                      <p className="text-sm text-gray-500">{t('inventory.revenue')}</p>
                       <p className="text-xl font-bold text-green-600">{summary.total_income_pln || 0} zl</p>
                     </div>
                     <div className="p-4 bg-red-50 rounded-lg">
-                      <p className="text-sm text-gray-500">Dostawy</p>
+                      <p className="text-sm text-gray-500">{t('inventory.deliveries')}</p>
                       <p className="text-xl font-bold text-red-600">{summary.events?.deliveries_total_pln || 0} zl</p>
                     </div>
                   </div>
@@ -88,7 +90,7 @@ export default function InventoryPage() {
                 {/* Calculated Sales */}
                 {summary.calculated_sales && summary.calculated_sales.length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Obliczona sprzedaz</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3">{t('inventory.calculatedSales')}</h3>
                     <CalculatedSalesTable
                       sales={summary.calculated_sales}
                       totalIncome={summary.total_income_pln || 0}
@@ -99,7 +101,7 @@ export default function InventoryPage() {
                 {/* Usage Items with Discrepancies */}
                 {summary.usage_items && summary.usage_items.length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Zuzycie skladnikow</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3">{t('inventory.ingredientUsage')}</h3>
                     <div className="space-y-2">
                       {summary.usage_items.map((item) => {
                         const hasIssue = item.discrepancy_level && item.discrepancy_level !== 'ok'
@@ -129,19 +131,19 @@ export default function InventoryPage() {
                             </div>
                             <div className="mt-2 grid grid-cols-4 gap-2 text-sm text-gray-600">
                               <div>
-                                <p className="text-xs text-gray-400">Poczatek</p>
+                                <p className="text-xs text-gray-400">{t('inventory.startQty')}</p>
                                 <p>{formatQuantity(item.opening_quantity, item.unit_type)}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-400">Koniec</p>
+                                <p className="text-xs text-gray-400">{t('inventory.endQty')}</p>
                                 <p>{formatQuantity(item.closing_quantity || 0, item.unit_type)}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-400">Zuzycie</p>
+                                <p className="text-xs text-gray-400">{t('inventory.usage')}</p>
                                 <p>{formatQuantity(item.usage || 0, item.unit_type)}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-400">Roznica</p>
+                                <p className="text-xs text-gray-400">{t('inventory.difference')}</p>
                                 <p className={Math.abs(item.discrepancy || 0) > 0.01 ? 'text-red-600 font-medium' : ''}>
                                   {formatQuantity(item.discrepancy || 0, item.unit_type)}
                                 </p>
@@ -157,7 +159,7 @@ export default function InventoryPage() {
             ) : null
           ) : (
             <div className="text-center py-12 text-gray-500">
-              Wybierz dzien z listy, aby zobaczyc szczegoly
+              {t('inventory.selectDayPrompt')}
             </div>
           )}
         </div>

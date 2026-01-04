@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.storage import (
     StorageInventoryCreate,
     StorageInventoryResponse,
@@ -66,7 +67,7 @@ def get_storage_record(
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord zliczenia nie znaleziony",
+            detail=t("errors.count_record_not_found"),
         )
 
     return StorageInventoryResponse(
@@ -93,7 +94,7 @@ def create_storage_count(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skladnik nie znaleziony",
+            detail=t("errors.ingredient_not_found"),
         )
 
     return StorageInventoryResponse(
@@ -119,7 +120,7 @@ def create_storage_count_bulk(
     if not data.items:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Lista skladnikow nie moze byc pusta",
+            detail=t("errors.ingredient_list_empty"),
         )
 
     results = storage_service.create_storage_count_bulk(
@@ -129,7 +130,7 @@ def create_storage_count_bulk(
     if not results:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Zadne skladniki nie zostaly znalezione",
+            detail=t("errors.no_ingredients_found"),
         )
 
     response_items = [
@@ -164,7 +165,7 @@ def get_latest_count_for_ingredient(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Brak zliczen dla tego skladnika",
+            detail=t("errors.no_counts_for_ingredient"),
         )
 
     return StorageInventoryResponse(
