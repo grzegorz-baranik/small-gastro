@@ -17,11 +17,13 @@
 
 .EXAMPLE
     new-worktree my-feature
-    Creates: ../small-gastro-worktrees/feature-my-feature
+    Creates branch: feature/my-feature
+    Creates folder: ../small-gastro-worktrees/feature-my-feature
 
 .EXAMPLE
     new-worktree login-bug -Type fix
-    Creates: ../small-gastro-worktrees/fix-login-bug
+    Creates branch: fix/login-bug
+    Creates folder: ../small-gastro-worktrees/fix-login-bug
 
 .EXAMPLE
     new-worktree code-cleanup -Type refactor -Base develop
@@ -49,8 +51,10 @@ if (-not $repoRoot) {
 
 $repoName = Split-Path $repoRoot -Leaf
 $worktreesDir = Join-Path (Split-Path $repoRoot -Parent) "$repoName-worktrees"
-$branchName = "$Type-$Name"
-$worktreePath = Join-Path $worktreesDir $branchName
+$branchName = "$Type/$Name"
+# Use hyphen for folder name since slash is not allowed in directory names
+$folderName = "$Type-$Name"
+$worktreePath = Join-Path $worktreesDir $folderName
 
 # Check if worktree already exists
 if (Test-Path $worktreePath) {
@@ -74,8 +78,11 @@ Write-Host "Fetching latest from origin..." -ForegroundColor Cyan
 git fetch origin
 
 # Check if base branch exists
-$baseBranchExists = git show-ref --verify --quiet "refs/heads/$Base" 2>$null
-$remoteBaseBranchExists = git show-ref --verify --quiet "refs/remotes/origin/$Base" 2>$null
+git show-ref --verify --quiet "refs/heads/$Base" 2>$null
+$baseBranchExists = $LASTEXITCODE -eq 0
+
+git show-ref --verify --quiet "refs/remotes/origin/$Base" 2>$null
+$remoteBaseBranchExists = $LASTEXITCODE -eq 0
 
 if (-not $baseBranchExists -and -not $remoteBaseBranchExists) {
     Write-Error "Base branch '$Base' does not exist locally or on origin!"
@@ -86,7 +93,8 @@ if (-not $baseBranchExists -and -not $remoteBaseBranchExists) {
 $baseRef = if ($baseBranchExists) { $Base } else { "origin/$Base" }
 
 # Check if branch already exists
-$branchExists = git show-ref --verify --quiet "refs/heads/$branchName" 2>$null
+git show-ref --verify --quiet "refs/heads/$branchName" 2>$null
+$branchExists = $LASTEXITCODE -eq 0
 if ($branchExists) {
     Write-Host "Branch '$branchName' already exists. Creating worktree from existing branch..." -ForegroundColor Yellow
     git worktree add $worktreePath $branchName

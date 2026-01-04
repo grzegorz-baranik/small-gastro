@@ -11,9 +11,9 @@
 #   base  - Base branch to create from (default: 'main')
 #
 # Examples:
-#   new-worktree my-feature
-#   new-worktree login-bug fix
-#   new-worktree code-cleanup refactor develop
+#   new-worktree my-feature          -> branch: feature/my-feature
+#   new-worktree login-bug fix       -> branch: fix/login-bug
+#   new-worktree code-cleanup refactor develop  -> branch: refactor/code-cleanup
 #
 
 set -e
@@ -43,9 +43,9 @@ if [ -z "$NAME" ]; then
     echo "  base  - Base branch to create from (default: 'main')"
     echo ""
     echo "Examples:"
-    echo "  new-worktree my-feature"
-    echo "  new-worktree login-bug fix"
-    echo "  new-worktree code-cleanup refactor develop"
+    echo "  new-worktree my-feature          -> branch: feature/my-feature"
+    echo "  new-worktree login-bug fix       -> branch: fix/login-bug"
+    echo "  new-worktree code-cleanup refactor develop  -> branch: refactor/code-cleanup"
     exit 1
 fi
 
@@ -64,8 +64,10 @@ fi
 
 REPO_NAME=$(basename "$REPO_ROOT")
 WORKTREES_DIR="$(dirname "$REPO_ROOT")/${REPO_NAME}-worktrees"
-BRANCH_NAME="${TYPE}-${NAME}"
-WORKTREE_PATH="${WORKTREES_DIR}/${BRANCH_NAME}"
+BRANCH_NAME="${TYPE}/${NAME}"
+# Use hyphen for folder name since slash is not allowed in directory names
+FOLDER_NAME="${TYPE}-${NAME}"
+WORKTREE_PATH="${WORKTREES_DIR}/${FOLDER_NAME}"
 
 # Check if worktree already exists
 if [ -d "$WORKTREE_PATH" ]; then
