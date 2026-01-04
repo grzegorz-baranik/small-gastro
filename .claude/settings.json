@@ -1,0 +1,122 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-bash.sh \"$CLAUDE_TOOL_INPUT\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-file-write.sh \"$CLAUDE_TOOL_INPUT\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-file-write.sh \"$CLAUDE_FILE_PATHS\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-bash.sh \"$CLAUDE_TOOL_INPUT\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/on-stop.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(yarn *)",
+      "Bash(pnpm *)",
+      "Bash(npx *)",
+      "Bash(pip install *)",
+      "Bash(pip3 install *)",
+      "Bash(poetry *)",
+      "Bash(python -m pytest*)",
+      "Bash(pytest*)",
+      "Bash(python -m py_compile*)",
+      "Bash(python -c*)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(docker compose *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push origin *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git worktree *)",
+      "Bash(git reset *)",
+      "Bash(git rebase *)",
+      "Bash(alembic *)",
+      "Bash(python -m alembic *)",
+      "Bash(make *)",
+      "Bash(ruff *)",
+      "Bash(black *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)",
+      "Bash(psql *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(jq *)",
+      "Bash(timeout *)",
+      "Read(*)",
+      "Write(./**)",
+      "Edit(./**)"
+    ],
+    "deny": [
+      "Bash(git push * main*)",
+      "Bash(git push * master*)",
+      "Bash(git merge * main*)",
+      "Bash(git merge * master*)",
+      "Bash(sudo *)",
+      "Bash(rm -rf /*)",
+      "Write(../**)",
+      "Write(/etc/**)",
+      "Write(/usr/**)",
+      "Write(~/**)"
+    ]
+  }
+}
