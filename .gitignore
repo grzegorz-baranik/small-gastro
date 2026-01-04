@@ -104,3 +104,4 @@ alembic/versions/__pycache__/
 
 # Local settings
 .claude/settings.local.json
+.claude/settings.local.json
