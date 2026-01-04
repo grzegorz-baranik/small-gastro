@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Square, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import ConfirmDialog from '../common/ConfirmDialog'
@@ -33,6 +34,7 @@ export default function CloseDayModal({
   onSuccess,
   dailyRecord,
 }: CloseDayModalProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [closingInventory, setClosingInventory] = useState<ClosingInventoryState>({})
@@ -69,12 +71,12 @@ export default function CloseDayModal({
       queryClient.invalidateQueries({ queryKey: ['todayRecord'] })
       queryClient.invalidateQueries({ queryKey: ['recentDays'] })
       queryClient.invalidateQueries({ queryKey: ['daySummary'] })
-      showSuccess('Dzien zostal zamkniety')
+      showSuccess(t('closeDayModal.dayClosed'))
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      const message = error.response?.data?.detail || 'Wystapil blad podczas zamykania dnia'
+      const message = error.response?.data?.detail || t('closeDayModal.errorClosing')
       setGeneralError(message)
       showError(message)
       setShowConfirmClose(false)
@@ -227,15 +229,15 @@ export default function CloseDayModal({
     activeIngredients.forEach((ingredient) => {
       const value = closingInventory[ingredient.id]
       if (value === undefined || value === '') {
-        newErrors[ingredient.id] = 'Wymagane'
+        newErrors[ingredient.id] = t('validation.required')
         isValid = false
       } else {
         const numValue = parseFloat(value)
         if (isNaN(numValue)) {
-          newErrors[ingredient.id] = 'Nieprawidlowa wartosc'
+          newErrors[ingredient.id] = t('openDayModal.invalidValue')
           isValid = false
         } else if (numValue < 0) {
-          newErrors[ingredient.id] = 'Ilosc nie moze byc ujemna'
+          newErrors[ingredient.id] = t('openDayModal.cannotBeNegative')
           isValid = false
         }
       }
@@ -256,15 +258,15 @@ export default function CloseDayModal({
     activeIngredients.forEach((ingredient) => {
       const value = closingInventory[ingredient.id]
       if (value === undefined || value === '') {
-        newErrors[ingredient.id] = 'Wymagane'
+        newErrors[ingredient.id] = t('validation.required')
         isValid = false
       } else {
         const numValue = parseFloat(value)
         if (isNaN(numValue)) {
-          newErrors[ingredient.id] = 'Nieprawidlowa wartosc'
+          newErrors[ingredient.id] = t('openDayModal.invalidValue')
           isValid = false
         } else if (numValue < 0) {
-          newErrors[ingredient.id] = 'Ilosc nie moze byc ujemna'
+          newErrors[ingredient.id] = t('openDayModal.cannotBeNegative')
           isValid = false
         }
       }
@@ -279,7 +281,7 @@ export default function CloseDayModal({
     setGeneralError(null)
 
     if (!validateForm()) {
-      setGeneralError('Wszystkie skladniki musza miec uzupelniona ilosc')
+      setGeneralError(t('openDayModal.allIngredientsMustHaveQty'))
       return
     }
 
@@ -313,17 +315,17 @@ export default function CloseDayModal({
           ingredient_name: ingredient.name,
           discrepancy_percent: percent,
           level,
-          message: `${ingredient.name}: ${percent.toFixed(1)}% - ${level === 'warning' ? 'Ostrzezenie' : 'Krytyczne'}`,
+          message: `${ingredient.name}: ${percent.toFixed(1)}% - ${level === 'warning' ? t('dashboard.severityMedium') : t('dashboard.severityHigh')}`,
         })
       }
     })
     return alerts
-  }, [showCalculation, activeIngredients, closingInventory, usageItemsMap])
+  }, [showCalculation, activeIngredients, closingInventory, usageItemsMap, t])
 
   const isLoading = ingredientsLoading || summaryLoading
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Zamknij dzien: ${formatDate(dailyRecord.date)}`} size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('closeDayModal.title', { date: formatDate(dailyRecord.date) })} size="2xl">
       {isLoading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner />
@@ -333,30 +335,30 @@ export default function CloseDayModal({
           {/* Day summary */}
           {daySummary && (
             <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-              <h3 className="font-medium text-gray-900">Podsumowanie dnia</h3>
+              <h3 className="font-medium text-gray-900">{t('closeDayModal.daySummary')}</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <span className="text-gray-500">Otwarcie:</span>{' '}
+                  <span className="text-gray-500">{t('closeDayModal.opening')}</span>{' '}
                   <span className="font-medium">
                     {daySummary.opening_time || '-'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Dostawy:</span>{' '}
+                  <span className="text-gray-500">{t('closeDayModal.deliveries')}</span>{' '}
                   <span className="font-medium">
                     {daySummary.events.deliveries_count} ({formatCurrency(daySummary.events.deliveries_total_pln)})
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Transfery:</span>{' '}
+                  <span className="text-gray-500">{t('closeDayModal.transfers')}</span>{' '}
                   <span className="font-medium">
-                    {daySummary.events.transfers_count} pozycji
+                    {daySummary.events.transfers_count} {t('common.items')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Straty:</span>{' '}
+                  <span className="text-gray-500">{t('closeDayModal.spoilage')}</span>{' '}
                   <span className="font-medium">
-                    {daySummary.events.spoilage_count} pozycji
+                    {daySummary.events.spoilage_count} {t('common.items')}
                   </span>
                 </div>
               </div>
@@ -375,14 +377,14 @@ export default function CloseDayModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-700">
-                Stany koncowe skladnikow
+                {t('closeDayModal.finalQuantities')}
               </h3>
               <button
                 type="button"
                 onClick={handleCopyExpected}
                 className="text-sm text-primary-600 hover:text-primary-700"
               >
-                Kopiuj oczekiwane wartosci
+                {t('closeDayModal.copyExpected')}
               </button>
             </div>
             <div className="border border-gray-200 rounded-lg overflow-x-auto">
@@ -390,25 +392,25 @@ export default function CloseDayModal({
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Skladnik
+                      {t('menu.ingredient')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      Otwarcie
+                      {t('closeDayModal.openQty')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      +Dost.
+                      {t('closeDayModal.deliveryQty')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      +Trans.
+                      {t('closeDayModal.transferQty')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      -Straty
+                      {t('closeDayModal.spoilageQty')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      Oczekiw.
+                      {t('closeDayModal.expectedQty')}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                      Zamkniecie
+                      {t('closeDayModal.closeQty')}
                     </th>
                   </tr>
                 </thead>
@@ -492,7 +494,7 @@ export default function CloseDayModal({
             onClick={handleCalculateUsage}
             className="btn btn-secondary w-full"
           >
-            Oblicz zuzycie
+            {t('closeDayModal.calculateUsage')}
           </button>
 
           {/* Calculation results */}
@@ -502,20 +504,20 @@ export default function CloseDayModal({
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
                   <h4 className="text-sm font-medium text-gray-700">
-                    Obliczone zuzycie
+                    {t('closeDayModal.calculatedUsage')}
                   </h4>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Skladnik
+                        {t('menu.ingredient')}
                       </th>
                       <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                        Zuzycie
+                        {t('closeDayModal.usage')}
                       </th>
                       <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
-                        Status
+                        {t('common.status')}
                       </th>
                     </tr>
                   </thead>
@@ -556,7 +558,7 @@ export default function CloseDayModal({
               {/* Discrepancy alerts */}
               {calculatedAlerts.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700">Alerty</h4>
+                  <h4 className="text-sm font-medium text-gray-700">{t('dailyOperations.alerts')}</h4>
                   {calculatedAlerts.map((alert) => (
                     <div
                       key={alert.ingredient_id}
@@ -574,23 +576,23 @@ export default function CloseDayModal({
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
                     <h4 className="text-sm font-medium text-gray-700">
-                      Obliczona sprzedaz
+                      {t('closeDayModal.calculatedSales')}
                     </h4>
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Produkt
+                          {t('menu.product')}
                         </th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                          Ilosc
+                          {t('closeDayModal.quantity')}
                         </th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                          Cena
+                          {t('menu.price')}
                         </th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                          Przychod
+                          {t('closeDayModal.revenue')}
                         </th>
                       </tr>
                     </thead>
@@ -619,7 +621,7 @@ export default function CloseDayModal({
                           colSpan={3}
                           className="px-4 py-2 text-right font-medium text-gray-900"
                         >
-                          RAZEM:
+                          {t('common.total')}:
                         </td>
                         <td className="px-4 py-2 text-right font-bold text-primary-600">
                           {formatCurrency(daySummary.total_income_pln)}
@@ -635,14 +637,14 @@ export default function CloseDayModal({
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notatki (opcjonalne)
+              {t('closeDayModal.notesOptional')}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="input w-full"
-              placeholder="Dodaj notatki do tego dnia..."
+              placeholder={t('closeDayModal.notesPlaceholder')}
             />
           </div>
 
@@ -654,7 +656,7 @@ export default function CloseDayModal({
               className="btn btn-secondary flex-1"
               disabled={closeDayMutation.isPending}
             >
-              Anuluj
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -665,12 +667,12 @@ export default function CloseDayModal({
               {closeDayMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" />
-                  Zamykanie...
+                  {t('closeDayModal.closing')}
                 </>
               ) : (
                 <>
                   <Square className="w-4 h-4" />
-                  Zamknij dzien
+                  {t('dailyOperations.closeDay')}
                 </>
               )}
             </button>
@@ -683,10 +685,10 @@ export default function CloseDayModal({
         isOpen={showConfirmClose}
         onClose={() => setShowConfirmClose(false)}
         onConfirm={handleConfirmClose}
-        title="Potwierdz zamkniecie dnia"
-        message={`Czy na pewno chcesz zamknac dzien ${formatDate(dailyRecord.date)}? Po zamknieciu nie bedziesz mogl dodawac nowych dostaw, transferow ani strat do tego dnia.`}
-        confirmText="Zamknij dzien"
-        cancelText="Anuluj"
+        title={t('closeDayModal.confirmClose')}
+        message={t('closeDayModal.confirmCloseMessage', { date: formatDate(dailyRecord.date) })}
+        confirmText={t('dailyOperations.closeDay')}
+        cancelText={t('common.cancel')}
         variant="danger"
         isLoading={closeDayMutation.isPending}
       />

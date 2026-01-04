@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.services import daily_operations_service
 from app.schemas.daily_operations import (
     OpenDayRequest,
@@ -238,7 +239,7 @@ def get_daily_record(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord nie znaleziony"
+            detail=t("errors.record_not_found")
         )
 
     return result
@@ -266,7 +267,7 @@ def get_daily_summary(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord nie znaleziony"
+            detail=t("errors.record_not_found")
         )
 
     return result

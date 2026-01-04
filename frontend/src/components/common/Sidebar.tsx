@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -10,21 +11,23 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { path: '/pulpit', icon: LayoutDashboard, label: 'Pulpit' },
-  { path: '/menu', icon: UtensilsCrossed, label: 'Menu' },
-  { path: '/operacje', icon: Calendar, label: 'Operacje dzienne' },
-  { path: '/finanse', icon: Wallet, label: 'Finanse' },
-  { path: '/magazyn', icon: Package, label: 'Magazyn' },
-  { path: '/raporty', icon: FileBarChart, label: 'Raporty' },
-  { path: '/ustawienia', icon: Settings, label: 'Ustawienia' },
+  { path: '/pulpit', icon: LayoutDashboard, labelKey: 'navigation.dashboard' },
+  { path: '/menu', icon: UtensilsCrossed, labelKey: 'navigation.menu' },
+  { path: '/operacje', icon: Calendar, labelKey: 'navigation.dailyOperations' },
+  { path: '/finanse', icon: Wallet, labelKey: 'navigation.finances' },
+  { path: '/magazyn', icon: Package, labelKey: 'navigation.inventory' },
+  { path: '/raporty', icon: FileBarChart, labelKey: 'navigation.reports' },
+  { path: '/ustawienia', icon: Settings, labelKey: 'navigation.settings' },
 ]
 
 export default function Sidebar() {
+  const { t } = useTranslation()
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">Small Gastro</h1>
-        <p className="text-sm text-gray-500 mt-1">Zarzadzanie gastronomia</p>
+        <h1 className="text-xl font-bold text-gray-900">{t('common.appName')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('common.appSubtitle')}</p>
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
@@ -40,7 +43,7 @@ export default function Sidebar() {
             }
           >
             <item.icon className="w-5 h-5" />
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </nav>

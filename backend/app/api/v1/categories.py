@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.expense_category import (
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
@@ -72,7 +73,7 @@ def update_category(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Kategoria nie znaleziona",
+            detail=t("errors.category_not_found"),
         )
     return result
 
@@ -87,5 +88,5 @@ def delete_category(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nie mozna usunac kategorii. Upewnij sie, ze nie ma podkategorii.",
+            detail=t("errors.category_has_subcategories"),
         )

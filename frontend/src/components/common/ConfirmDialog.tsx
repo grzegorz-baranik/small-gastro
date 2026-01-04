@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -19,13 +20,17 @@ export default function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmText = 'Potwierdz',
-  cancelText = 'Anuluj',
+  confirmText,
+  cancelText,
   variant = 'default',
   isLoading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
+
+  const resolvedConfirmText = confirmText ?? t('confirmDialog.defaultConfirm')
+  const resolvedCancelText = cancelText ?? t('confirmDialog.defaultCancel')
 
   // Handle Escape key
   useEffect(() => {
@@ -116,7 +121,7 @@ export default function ConfirmDialog({
               <button
                 onClick={onClose}
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Zamknij"
+                aria-label={t('common.close')}
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
@@ -129,7 +134,7 @@ export default function ConfirmDialog({
                 className="btn btn-secondary"
                 disabled={isLoading}
               >
-                {cancelText}
+                {resolvedCancelText}
               </button>
               <button
                 ref={confirmButtonRef}
@@ -137,7 +142,7 @@ export default function ConfirmDialog({
                 className={`btn ${styles.button}`}
                 disabled={isLoading}
               >
-                {isLoading ? 'Przetwarzanie...' : confirmText}
+                {isLoading ? t('common.processing') : resolvedConfirmText}
               </button>
             </div>
           </div>

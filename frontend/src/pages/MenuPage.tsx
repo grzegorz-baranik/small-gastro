@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -25,6 +26,7 @@ import SortableProductCard from '../components/products/SortableProductCard'
 import type { Product, ProductCreate, IngredientCreate } from '../types'
 
 export default function MenuPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<'products' | 'ingredients'>('products')
   const [showProductModal, setShowProductModal] = useState(false)
   const [showIngredientModal, setShowIngredientModal] = useState(false)
@@ -127,13 +129,13 @@ export default function MenuPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Menu</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('menu.title')}</h1>
         <button
           onClick={() => activeTab === 'products' ? setShowProductModal(true) : setShowIngredientModal(true)}
           className="btn btn-primary flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          {activeTab === 'products' ? 'Dodaj produkt' : 'Dodaj skladnik'}
+          {activeTab === 'products' ? t('menu.addProduct') : t('menu.addIngredient')}
         </button>
       </div>
 
@@ -147,7 +149,7 @@ export default function MenuPage() {
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
-          Produkty
+          {t('menu.products')}
         </button>
         <button
           onClick={() => setActiveTab('ingredients')}
@@ -157,7 +159,7 @@ export default function MenuPage() {
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
-          Skladniki
+          {t('menu.ingredients')}
         </button>
       </div>
 
@@ -168,8 +170,8 @@ export default function MenuPage() {
             <LoadingSpinner />
           ) : productsData?.items.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <p>Brak produktow w menu.</p>
-              <p className="text-sm mt-1">Dodaj pierwszy produkt powyzej.</p>
+              <p>{t('menu.noProducts')}</p>
+              <p className="text-sm mt-1">{t('menu.addFirstProduct')}</p>
             </div>
           ) : (
             <DndContext
@@ -202,8 +204,8 @@ export default function MenuPage() {
             <LoadingSpinner />
           ) : ingredientsData?.items.length === 0 ? (
             <div className="col-span-full text-center py-12 text-gray-500">
-              <p>Brak skladnikow.</p>
-              <p className="text-sm mt-1">Dodaj pierwszy skladnik powyzej.</p>
+              <p>{t('menu.noIngredients')}</p>
+              <p className="text-sm mt-1">{t('menu.addFirstIngredient')}</p>
             </div>
           ) : (
             ingredientsData?.items.map((ingredient) => (
@@ -220,7 +222,7 @@ export default function MenuPage() {
                     <div>
                       <h3 className="font-medium text-gray-900">{ingredient.name}</h3>
                       <p className="text-sm text-gray-500">
-                        {ingredient.unit_type === 'weight' ? 'Na wage' : 'Na sztuki'}
+                        {ingredient.unit_type === 'weight' ? t('menu.byWeight') : t('menu.byCount')}
                       </p>
                     </div>
                   </div>
@@ -241,7 +243,7 @@ export default function MenuPage() {
       <Modal
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
-        title="Dodaj produkt"
+        title={t('menu.addProduct')}
       >
         <ProductForm
           onSubmit={(data) => createProductMutation.mutate(data)}
@@ -253,7 +255,7 @@ export default function MenuPage() {
       <Modal
         isOpen={showIngredientModal}
         onClose={() => setShowIngredientModal(false)}
-        title="Dodaj skladnik"
+        title={t('menu.addIngredient')}
       >
         <IngredientForm
           onSubmit={(data) => createIngredientMutation.mutate(data)}
@@ -274,6 +276,7 @@ export default function MenuPage() {
 }
 
 function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) => void; isLoading: boolean }) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
 
@@ -285,18 +288,18 @@ function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="input"
-          placeholder="np. Kebab, Burger"
+          placeholder={t('menu.productNamePlaceholder')}
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cena domyslna (PLN)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('menu.defaultPrice')}</label>
         <input
           type="number"
           step="0.01"
@@ -307,17 +310,18 @@ function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) 
           required
         />
         <p className="text-xs text-gray-500 mt-1">
-          Mozesz dodac warianty z roznymi cenami po utworzeniu produktu.
+          {t('menu.variantsNote')}
         </p>
       </div>
       <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
-        {isLoading ? 'Zapisywanie...' : 'Zapisz'}
+        {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>
   )
 }
 
 function IngredientForm({ onSubmit, isLoading }: { onSubmit: (data: IngredientCreate) => void; isLoading: boolean }) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [unitType, setUnitType] = useState<'weight' | 'count'>('weight')
 
@@ -329,7 +333,7 @@ function IngredientForm({ onSubmit, isLoading }: { onSubmit: (data: IngredientCr
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
         <input
           type="text"
           value={name}
@@ -340,18 +344,18 @@ function IngredientForm({ onSubmit, isLoading }: { onSubmit: (data: IngredientCr
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Typ jednostki</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('menu.unitType')}</label>
         <select
           value={unitType}
           onChange={(e) => setUnitType(e.target.value as 'weight' | 'count')}
           className="input"
         >
-          <option value="weight">Na wage (gramy)</option>
-          <option value="count">Na sztuki</option>
+          <option value="weight">{t('menu.byWeightGrams')}</option>
+          <option value="count">{t('menu.byCount')}</option>
         </select>
       </div>
       <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
-        {isLoading ? 'Zapisywanie...' : 'Zapisz'}
+        {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>
   )

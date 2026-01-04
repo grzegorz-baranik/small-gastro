@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.product import (
     ProductCreate,
     ProductSimpleCreate,
@@ -75,7 +76,7 @@ def create_product(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Produkt o tej nazwie juz istnieje",
+            detail=t("errors.product_exists"),
         )
     created = product_service.create_product(db, product)
     return _product_to_response(created)
@@ -91,7 +92,7 @@ def create_simple_product(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Produkt o tej nazwie juz istnieje",
+            detail=t("errors.product_exists"),
         )
     created = product_service.create_simple_product(db, product)
     return _product_to_response(created)
@@ -106,7 +107,7 @@ def reorder_products(
     try:
         updated_count = product_service.reorder_products(db, request.product_ids)
         return ProductReorderResponse(
-            message="Kolejnosc zaktualizowana",
+            message=t("success.order_updated"),
             updated_count=updated_count,
         )
     except ValueError as e:
@@ -126,7 +127,7 @@ def get_product(
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Produkt nie znaleziony",
+            detail=t("errors.product_not_found"),
         )
     return _product_to_response(product)
 
@@ -142,7 +143,7 @@ def update_product(
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Produkt nie znaleziony",
+            detail=t("errors.product_not_found"),
         )
     return _product_to_response(updated)
 
@@ -157,5 +158,5 @@ def delete_product(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Produkt nie znaleziony",
+            detail=t("errors.product_not_found"),
         )

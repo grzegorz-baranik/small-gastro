@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Play, Copy, AlertCircle, AlertTriangle } from 'lucide-react'
 import Modal from '../common/Modal'
 import ConfirmDialog from '../common/ConfirmDialog'
@@ -17,6 +18,7 @@ interface OpenDayModalProps {
 }
 
 export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModalProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [date, setDate] = useState(getTodayDateString())
@@ -52,12 +54,12 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayRecord'] })
       queryClient.invalidateQueries({ queryKey: ['recentDays'] })
-      showSuccess('Dzien zostal otwarty')
+      showSuccess(t('openDayModal.dayOpened'))
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      const message = error.response?.data?.detail || 'Wystapil blad podczas otwierania dnia'
+      const message = error.response?.data?.detail || t('openDayModal.errorOpening')
       setGeneralError(message)
       showError(message)
     },
@@ -101,7 +103,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
     })
     setInventory(newInventory)
     setErrors({})
-    showSuccess('Skopiowano wartosci z ostatniego zamkniecia')
+    showSuccess(t('openDayModal.copiedValues'))
   }
 
   // Update inventory value
@@ -130,15 +132,15 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
     activeIngredients.forEach((ingredient) => {
       const value = inventory[ingredient.id]
       if (value === undefined || value === '') {
-        newErrors[ingredient.id] = 'Wymagane'
+        newErrors[ingredient.id] = t('validation.required')
         isValid = false
       } else {
         const numValue = parseFloat(value)
         if (isNaN(numValue)) {
-          newErrors[ingredient.id] = 'Nieprawidlowa wartosc'
+          newErrors[ingredient.id] = t('openDayModal.invalidValue')
           isValid = false
         } else if (numValue < 0) {
-          newErrors[ingredient.id] = 'Ilosc nie moze byc ujemna'
+          newErrors[ingredient.id] = t('openDayModal.cannotBeNegative')
           isValid = false
         }
       }
@@ -153,7 +155,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
     setGeneralError(null)
 
     if (!validateForm()) {
-      setGeneralError('Wszystkie skladniki musza miec uzupelniona ilosc')
+      setGeneralError(t('openDayModal.allIngredientsMustHaveQty'))
       return
     }
 
@@ -190,7 +192,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title="Otworz dzien"
+        title={t('openDayModal.title')}
         size="xl"
         preventClose={openDayMutation.isPending}
       >
@@ -212,13 +214,13 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
                 <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-yellow-800">
-                    Poprzedni dzien nie zostal zamkniety
+                    {t('openDayModal.previousDayNotClosed')}
                   </p>
                   <p className="text-sm text-yellow-700 mt-1">
-                    Data: {previousDayStatus.previous_date ? formatDate(previousDayStatus.previous_date) : 'Nieznana'}
+                    {t('openDayModal.dateLabel')} {previousDayStatus.previous_date ? formatDate(previousDayStatus.previous_date) : t('common.unknown')}
                   </p>
                   <p className="text-sm text-yellow-600 mt-1">
-                    Zalecamy najpierw zamknac poprzedni dzien.
+                    {t('openDayModal.recommendClosePrevious')}
                   </p>
                 </div>
               </div>
@@ -235,7 +237,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
             {/* Date picker */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-                Data
+                {t('common.date')}
               </label>
               <input
                 type="date"
@@ -250,7 +252,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
             {previousClosing?.date && (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="text-sm text-gray-600">
-                  Ostatnie zamkniecie: {formatDate(previousClosing.date)}
+                  {t('openDayModal.lastClose')} {formatDate(previousClosing.date)}
                 </div>
                 <button
                   type="button"
@@ -258,7 +260,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
                   className="btn btn-secondary flex items-center gap-2 text-sm"
                 >
                   <Copy className="w-4 h-4" />
-                  Kopiuj z ostatniego zamkniecia
+                  {t('openDayModal.copyFromLastClose')}
                 </button>
               </div>
             )}
@@ -266,13 +268,13 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
             {/* Ingredients table */}
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2 label-required">
-                Stany poczatkowe skladnikow
+                {t('openDayModal.initialQuantities')}
               </h3>
               {activeIngredients.length === 0 ? (
                 <div className="empty-state py-8">
-                  <p className="empty-state-title">Brak skladnikow</p>
+                  <p className="empty-state-title">{t('openDayModal.noIngredients')}</p>
                   <p className="empty-state-description">
-                    Dodaj skladniki w menu, aby moc otworzyc dzien.
+                    {t('openDayModal.addIngredientsFirst')}
                   </p>
                 </div>
               ) : (
@@ -282,16 +284,16 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Skladnik
+                            {t('menu.ingredient')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Jednostka
+                            {t('openDayModal.unit')}
                           </th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                            Ostatnie zamkniecie
+                            {t('openDayModal.lastCloseQty')}
                           </th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                            Stan poczatkowy *
+                            {t('openDayModal.initialQty')} *
                           </th>
                         </tr>
                       </thead>
@@ -365,7 +367,7 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
                 className="btn btn-secondary flex-1"
                 disabled={openDayMutation.isPending}
               >
-                Anuluj
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -375,12 +377,12 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
                 {openDayMutation.isPending ? (
                   <>
                     <LoadingSpinner size="sm" />
-                    Otwieranie...
+                    {t('openDayModal.opening')}
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4" />
-                    Otworz dzien
+                    {t('dailyOperations.openDay')}
                   </>
                 )}
               </button>
@@ -394,10 +396,10 @@ export default function OpenDayModal({ isOpen, onClose, onSuccess }: OpenDayModa
         isOpen={showPreviousDayWarning}
         onClose={() => setShowPreviousDayWarning(false)}
         onConfirm={handleConfirmOpenDespiteWarning}
-        title="Poprzedni dzien nie jest zamkniety"
-        message={`Poprzedni dzien (${previousDayStatus?.previous_date ? formatDate(previousDayStatus.previous_date) : 'nieznany'}) nie zostal zamkniety. Czy na pewno chcesz kontynuowac i otworzyc nowy dzien? Zalecamy najpierw zamknac poprzedni dzien dla zachowania spojnosci danych.`}
-        confirmText="Kontynuuj mimo to"
-        cancelText="Zamknij poprzedni dzien"
+        title={t('openDayModal.confirmPreviousNotClosed')}
+        message={t('openDayModal.confirmPreviousNotClosedMessage')}
+        confirmText={t('openDayModal.continueAnyway')}
+        cancelText={t('openDayModal.closePreviousDay')}
         variant="warning"
         isLoading={openDayMutation.isPending}
       />

@@ -61,6 +61,7 @@ from app.schemas.daily_operations import (
     CalculatedSaleItem,
     PreviousDayStatusResponse,
 )
+from app.core.i18n import t
 
 
 # -----------------------------------------------------------------------------
@@ -381,12 +382,12 @@ def open_day(
     # Check if day already exists for this date
     existing = get_record_by_date(db, target_date)
     if existing:
-        return None, f"Dzien {target_date} juz istnieje (ID: {existing.id})"
+        return None, t("errors.day_already_exists", date=target_date, id=existing.id)
 
     # Check for currently open day
     open_record = get_open_day(db)
     if open_record and not force:
-        return None, f"Inny dzien jest juz otwarty: {open_record.date}. Zamknij go najpierw lub uzyj opcji 'force'."
+        return None, t("errors.another_day_open", date=open_record.date)
 
     # Check for previous unclosed day (warning, not blocking)
     previous_warning = None
@@ -395,7 +396,7 @@ def open_day(
         previous_warning = PreviousDayWarning(
             previous_date=previous_unclosed.date,
             previous_record_id=previous_unclosed.id,
-            message="Poprzedni dzien nie zostal zamkniety"
+            message=t("errors.previous_day_not_closed")
         )
 
     # Create the daily record
@@ -525,10 +526,10 @@ def close_day(
     # Get the record
     db_record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
     if not db_record:
-        return None, "Rekord nie znaleziony"
+        return None, t("errors.record_not_found")
 
     if db_record.status == DayStatus.CLOSED:
-        return None, "Dzien jest juz zamkniety"
+        return None, t("errors.day_already_closed")
 
     # Calculate usage before creating closing snapshots
     usage_summary = calculate_usage(db, record_id, data.closing_inventory)
@@ -756,7 +757,7 @@ def get_previous_closing(db: Session) -> PreviousClosingResponse:
         # No closed days, return all active ingredients with zero quantities
         ingredients = db.query(Ingredient).filter(Ingredient.is_active == True).all()
         return PreviousClosingResponse(
-            message="Brak poprzednich zamknietych dni",
+            message=t("errors.no_previous_closed_days"),
             items=[
                 PreviousClosingItem(
                     ingredient_id=ing.id,
@@ -826,10 +827,10 @@ def edit_closed_day(
     """
     db_record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
     if not db_record:
-        return None, "Rekord nie znaleziony"
+        return None, t("errors.record_not_found")
 
     if db_record.status != DayStatus.CLOSED:
-        return None, "Mozna edytowac tylko zamkniete dni"
+        return None, t("errors.can_only_edit_closed_days")
 
     # Delete existing closing snapshots
     db.query(InventorySnapshot).filter(
@@ -872,7 +873,7 @@ def edit_closed_day(
         status=db_record.status,
         updated_at=db_record.updated_at,
         usage_summary=usage_summary,
-        message="Dzien zostal zaktualizowany"
+        message=t("success.day_updated")
     ), None
 
 
@@ -1018,10 +1019,10 @@ def check_previous_day_status(db: Session) -> PreviousDayStatusResponse:
             has_unclosed_previous=True,
             unclosed_date=unclosed.date,
             unclosed_record_id=unclosed.id,
-            message=f"Dzien {unclosed.date} nie zostal zamkniety"
+            message=t("errors.day_not_closed", date=unclosed.date)
         )
 
     return PreviousDayStatusResponse(
         has_unclosed_previous=False,
-        message="Wszystkie poprzednie dni sa zamkniete"
+        message=t("success.all_days_closed")
     )

@@ -7,6 +7,7 @@ from app.schemas.expense_category import (
     ExpenseCategoryTree,
     ExpenseCategoryLeafResponse,
 )
+from app.core.i18n import t
 
 
 # Use constants from model for single source of truth
@@ -116,11 +117,11 @@ def create_category(db: Session, category: ExpenseCategoryCreate) -> ExpenseCate
     if category.parent_id:
         parent = get_category(db, category.parent_id)
         if not parent:
-            raise CategoryNotFoundError("Kategoria nadrzedna nie istnieje")
+            raise CategoryNotFoundError(t("errors.category_parent_not_found"))
         level = parent.level + 1
         if level > MAX_CATEGORY_DEPTH:
             raise MaxDepthExceededError(
-                f"Maksymalna glebokosc kategorii to {MAX_CATEGORY_DEPTH} poziomy"
+                t("errors.category_max_depth", depth=MAX_CATEGORY_DEPTH)
             )
 
     db_category = ExpenseCategory(

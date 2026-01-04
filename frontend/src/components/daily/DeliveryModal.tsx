@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Truck, AlertCircle } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
@@ -21,6 +22,7 @@ export default function DeliveryModal({
   onSuccess,
   dailyRecordId,
 }: DeliveryModalProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [ingredientId, setIngredientId] = useState<number | ''>('')
@@ -42,12 +44,12 @@ export default function DeliveryModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deliveries', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
-      showSuccess('Dostawa zostala dodana')
+      showSuccess(t('deliveryModal.deliveryAdded'))
       onSuccess()
       onClose()
     },
     onError: (error: { response?: { data?: { detail?: string } } }) => {
-      const message = error.response?.data?.detail || 'Wystapil blad podczas zapisywania dostawy'
+      const message = error.response?.data?.detail || t('deliveryModal.errorSaving')
       setGeneralError(message)
       showError(message)
     },
@@ -80,28 +82,28 @@ export default function DeliveryModal({
     let isValid = true
 
     if (!ingredientId) {
-      newErrors.ingredientId = 'Wybierz skladnik'
+      newErrors.ingredientId = t('deliveryModal.selectIngredientError')
       isValid = false
     }
 
     if (!quantity || quantity === '') {
-      newErrors.quantity = 'Podaj ilosc'
+      newErrors.quantity = t('deliveryModal.enterQuantity')
       isValid = false
     } else {
       const numQuantity = parseFloat(quantity)
       if (isNaN(numQuantity) || numQuantity <= 0) {
-        newErrors.quantity = 'Ilosc musi byc wieksza od 0'
+        newErrors.quantity = t('deliveryModal.quantityMustBePositive')
         isValid = false
       }
     }
 
     if (!pricePln || pricePln === '') {
-      newErrors.pricePln = 'Podaj cene'
+      newErrors.pricePln = t('deliveryModal.enterPrice')
       isValid = false
     } else {
       const numPrice = parseFloat(pricePln)
       if (isNaN(numPrice) || numPrice < 0) {
-        newErrors.pricePln = 'Cena nie moze byc ujemna'
+        newErrors.pricePln = t('deliveryModal.priceCannotBeNegative')
         isValid = false
       }
     }
@@ -127,7 +129,7 @@ export default function DeliveryModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Dodaj dostawe" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('deliveryModal.title')} size="md">
       {ingredientsLoading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner />
@@ -145,7 +147,7 @@ export default function DeliveryModal({
           {/* Ingredient select */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Skladnik
+              {t('menu.ingredient')}
             </label>
             <select
               value={ingredientId}
@@ -161,7 +163,7 @@ export default function DeliveryModal({
               }}
               className={`input w-full ${errors.ingredientId ? 'border-red-500' : ''}`}
             >
-              <option value="">Wybierz skladnik...</option>
+              <option value="">{t('deliveryModal.selectIngredient')}</option>
               {ingredientsData?.items.map((ingredient: Ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>
                   {ingredient.name} ({getUnitLabel(ingredient)})
@@ -176,7 +178,7 @@ export default function DeliveryModal({
           {/* Quantity input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Ilosc {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
+              {t('deliveryModal.quantity')} {selectedIngredient && `(${getUnitLabel(selectedIngredient)})`}
             </label>
             <input
               type="number"
@@ -204,7 +206,7 @@ export default function DeliveryModal({
           {/* Price input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 label-required">
-              Cena (PLN)
+              {t('deliveryModal.price')}
             </label>
             <input
               type="number"
@@ -237,7 +239,7 @@ export default function DeliveryModal({
               className="btn btn-secondary flex-1"
               disabled={createDeliveryMutation.isPending}
             >
-              Anuluj
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -248,12 +250,12 @@ export default function DeliveryModal({
               {createDeliveryMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" />
-                  Zapisywanie...
+                  {t('common.saving')}
                 </>
               ) : (
                 <>
                   <Truck className="w-4 h-4" />
-                  Zapisz dostawe
+                  {t('deliveryModal.saveDelivery')}
                 </>
               )}
             </button>

@@ -6,6 +6,7 @@ from decimal import Decimal
 from app.models.transaction import Transaction, TransactionType, PaymentMethod
 from app.models.expense_category import ExpenseCategory
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionSummary
+from app.core.i18n import t
 
 
 # Use constant from model for single source of truth
@@ -24,11 +25,10 @@ def validate_leaf_category(db: Session, category_id: Optional[int]) -> None:
 
     category = db.query(ExpenseCategory).filter(ExpenseCategory.id == category_id).first()
     if not category:
-        raise InvalidCategoryError("Kategoria nie istnieje")
+        raise InvalidCategoryError(t("errors.category_not_exists"))
     if category.level != LEAF_CATEGORY_LEVEL:
         raise InvalidCategoryError(
-            f"Mozna przypisac tylko kategorie poziomu 3 (lisciowe). "
-            f"Wybrana kategoria '{category.name}' jest poziomu {category.level}."
+            t("errors.category_not_leaf", name=category.name, level=category.level)
         )
 
 
@@ -208,7 +208,7 @@ def get_transaction_summary(db: Session, date_from: date, date_to: date) -> Tran
         Transaction.transaction_date <= date_to,
     ).scalar() or Decimal("0")
     if uncategorized > 0:
-        expenses_by_category["Bez kategorii"] = Decimal(str(uncategorized))
+        expenses_by_category[t("labels.uncategorized")] = Decimal(str(uncategorized))
 
     return TransactionSummary(
         period_start=date_from,

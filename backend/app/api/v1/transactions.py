@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.models.transaction import Transaction, TransactionType, PaymentMethod
 from app.schemas.transaction import (
     TransactionCreate,
@@ -87,7 +88,7 @@ def get_transaction(
     if not transaction:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Transakcja nie znaleziona",
+            detail=t("errors.transaction_not_found"),
         )
     return _to_response(transaction)
 
@@ -109,7 +110,7 @@ def update_transaction(
     if not transaction:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Transakcja nie znaleziona",
+            detail=t("errors.transaction_not_found"),
         )
     return _to_response(transaction)
 
@@ -124,5 +125,5 @@ def delete_transaction(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Transakcja nie znaleziona",
+            detail=t("errors.transaction_not_found"),
         )

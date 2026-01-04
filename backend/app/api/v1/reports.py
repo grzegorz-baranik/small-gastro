@@ -18,6 +18,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.core.i18n import t
 from app.schemas.reports import (
     DailySummaryReportResponse,
     MonthlyTrendsReportResponse,
@@ -59,7 +60,7 @@ def get_daily_summary_report(
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord dzienny nie znaleziony"
+            detail=t("errors.daily_record_not_found")
         )
     return report
 
@@ -82,7 +83,7 @@ def export_daily_summary_report(
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rekord dzienny nie znaleziony"
+            detail=t("errors.daily_record_not_found")
         )
 
     excel_file = reports_service.export_daily_summary_to_excel(report)
@@ -280,7 +281,7 @@ def get_spoilage_report(
     if group_by not in ALLOWED_GROUP_BY_VALUES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieprawidlowe grupowanie. Dozwolone: {', '.join(ALLOWED_GROUP_BY_VALUES)}"
+            detail=t("errors.invalid_grouping", allowed=", ".join(ALLOWED_GROUP_BY_VALUES))
         )
     report = reports_service.get_spoilage_report(
         db,
@@ -313,7 +314,7 @@ def export_spoilage_report(
     if group_by not in ALLOWED_GROUP_BY_VALUES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieprawidlowe grupowanie. Dozwolone: {', '.join(ALLOWED_GROUP_BY_VALUES)}"
+            detail=t("errors.invalid_grouping", allowed=", ".join(ALLOWED_GROUP_BY_VALUES))
         )
     report = reports_service.get_spoilage_report(
         db,
