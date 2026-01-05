@@ -4,6 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## TL;DR - MANDATORY RULES (Read This First!)
+
+| Rule | Requirement |
+|------|-------------|
+| **Running the app** | ALWAYS use `docker compose up -d` - NEVER use `uvicorn` or `npm run dev` directly |
+| **Feature branches** | ALWAYS bump Docker ports before running (see Port Allocation table) |
+| **Before starting Docker** | ALWAYS run `docker ps` first to check for port conflicts |
+| **Before PR/Merge** | ALWAYS revert port changes back to defaults |
+| **New features** | ALWAYS use git worktrees, not branches in main repo |
+| **Clarifications** | ALWAYS use `/interview` skill - never assume |
+
+---
+
 ## CRITICAL: Interview-First Workflow
 
 **ALL agents MUST use the `/interview` skill (AskUserQuestion tool) for ANY clarification or decision point.**
@@ -108,26 +121,70 @@ A web application for managing a small food business (kebab, burger, etc.) with:
 3. **Daily Operations** - Open/close day with inventory snapshots, sales recording
 4. **Dashboard** - Income, expenses, profit, discrepancy warnings
 
-## Commands
+## CRITICAL: Docker-First Execution (MANDATORY)
+
+**NEVER run the application using local `uvicorn` or `npm run dev` directly on the host system!**
+
+**ALL execution MUST go through Docker Compose. This is NON-NEGOTIABLE.**
+
+### Why Docker-Only:
+- Ensures consistent environment across all branches
+- Enables port isolation for parallel feature development
+- Prevents "works on my machine" issues
+- Avoids polluting the host system with dependencies
+
+### Running the Solution
 
 ```bash
-# Development with Docker (PostgreSQL only)
-docker compose -f docker-compose.dev.yml up -d
+# ALWAYS use Docker Compose - NEVER run uvicorn/npm directly!
 
-# Backend
-cd backend
-pip install -r requirements.txt
-alembic upgrade head                    # Apply migrations
-uvicorn app.main:app --reload           # Start dev server (port 8000)
+# Step 1: Check for running containers from other branches
+docker ps
 
-# Frontend
-cd frontend
-npm install
-npm run dev                             # Start dev server (port 5173)
+# Step 2: If on a feature branch, bump ports FIRST (see Port Allocation below)
 
-# Production (Full Docker Stack)
-docker compose up -d                    # Start all services
+# Step 3: Start the full stack
+docker compose up -d                    # Start all services (backend + frontend + db)
 docker compose logs -f                  # Follow logs
+
+# Step 4: Run migrations (inside container)
+docker compose exec backend alembic upgrade head
+```
+
+### FORBIDDEN Commands (Never Use These)
+
+```bash
+# ❌ WRONG - Never run directly on host:
+uvicorn app.main:app --reload           # FORBIDDEN
+npm run dev                             # FORBIDDEN
+python -m uvicorn ...                   # FORBIDDEN
+
+# ✅ CORRECT - Always use Docker:
+docker compose up -d                    # CORRECT
+docker compose exec backend alembic upgrade head  # CORRECT
+```
+
+### Development Workflow
+
+```bash
+# Start full stack
+docker compose up -d
+
+# View logs
+docker compose logs -f
+docker compose logs -f backend          # Backend only
+docker compose logs -f frontend         # Frontend only
+
+# Restart after code changes (if not using hot-reload)
+docker compose restart backend
+docker compose restart frontend
+
+# Stop everything
+docker compose down
+
+# Rebuild after dependency changes
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## Worktree Workflow (MANDATORY)
@@ -165,47 +222,79 @@ Before creating a PR:
 
 Never merge without rebasing first.
 
-## Docker Port Management for Feature Branches
+## CRITICAL: Docker Port Management for Feature Branches (MANDATORY)
 
-**CRITICAL: When working on a feature branch, Docker ports MUST be isolated to avoid conflicts.**
+**When working on a feature branch, Docker ports MUST be isolated to avoid conflicts. This is MANDATORY - failure to follow this will cause port conflicts!**
 
-### When Starting Docker on a Feature Branch
+### Pre-Flight Checklist (BEFORE `docker compose up`)
 
-Before running `docker compose up` or `docker compose -f docker-compose.dev.yml up`:
+**ALWAYS perform these steps before starting Docker on ANY feature branch:**
 
-1. **Check for port conflicts** - Identify all ports in docker-compose files
-2. **Check running containers** - Look for containers from other branches/main
-3. **Bump port numbers** - Increment ports to avoid overlap with:
-   - Main/master branch (default ports)
-   - Other active feature branches
+1. **Check running containers:**
+   ```bash
+   docker ps
+   ```
 
-### Port Allocation Strategy
+2. **If containers are running from other branches:**
+   - Either stop them: `docker compose down` (in that branch's directory)
+   - Or bump YOUR ports to avoid conflicts
 
-| Branch | PostgreSQL | Backend | Frontend |
-|--------|------------|---------|----------|
-| main/master | 5432 | 8000 | 5173 |
-| feature-1 | 5433 | 8001 | 5174 |
-| feature-2 | 5434 | 8002 | 5175 |
-| ... | +1 | +1 | +1 |
+3. **Bump port numbers in docker-compose.yml:**
+   - Edit `docker-compose.yml` (or `docker-compose.dev.yml`)
+   - Increment ALL exposed ports by the same offset
+   - Update corresponding `.env` files if needed
 
-### Before PR/Merge
+### Port Allocation Strategy (MANDATORY)
 
-**IMPORTANT: Revert all port changes before creating a PR!**
+| Branch | PostgreSQL | Backend | Frontend | VITE_API_BASE_URL |
+|--------|------------|---------|----------|-------------------|
+| main/master | 5432 | 8000 | 5173 | http://localhost:8000/api/v1 |
+| feature-1 | 5433 | 8001 | 5174 | http://localhost:8001/api/v1 |
+| feature-2 | 5434 | 8002 | 5175 | http://localhost:8002/api/v1 |
+| feature-3 | 5435 | 8003 | 5176 | http://localhost:8003/api/v1 |
+| ... | +1 | +1 | +1 | ... |
 
-1. Reset docker-compose port numbers to defaults
-2. Only keep relevant Docker changes (new services, env vars, etc.)
-3. Never merge branch-specific port numbers into main/master
-
-### Example Workflow
+### Files to Update When Bumping Ports
 
 ```bash
-# On feature branch - bump ports
-# Edit docker-compose.dev.yml: 5432 -> 5433
-# Edit docker-compose.yml: 8000 -> 8001, 5173 -> 5174
+# 1. docker-compose.yml - Update these port mappings:
+#    - PostgreSQL: "5432:5432" -> "5433:5432"
+#    - Backend: "8000:8000" -> "8001:8000"
+#    - Frontend: "5173:5173" -> "5174:5173"
 
-# Before PR - revert ports
-git diff docker-compose*.yml  # Review changes
-# Revert ONLY port changes, keep other modifications
+# 2. frontend/.env (or docker-compose environment):
+#    VITE_API_BASE_URL=http://localhost:8001/api/v1
+
+# 3. backend/.env (if DATABASE_URL uses localhost):
+#    DATABASE_URL=postgresql://user:pass@localhost:5433/small_gastro
+```
+
+### Before PR/Merge (CRITICAL)
+
+**IMPORTANT: Revert ALL port changes before creating a PR!**
+
+1. Reset docker-compose port numbers to defaults (5432, 8000, 5173)
+2. Reset VITE_API_BASE_URL to http://localhost:8000/api/v1
+3. Only keep relevant Docker changes (new services, env vars, etc.)
+4. Never merge branch-specific port numbers into main/master
+
+```bash
+# Review port changes before PR
+git diff docker-compose*.yml
+git diff frontend/.env
+
+# Revert ONLY port-related changes, keep other modifications
+```
+
+### Quick Reference: Port Bump Commands
+
+```bash
+# Check what ports are in use
+docker ps --format "table {{.Names}}\t{{.Ports}}"
+netstat -an | findstr "LISTENING" | findstr "5432 8000 5173"
+
+# Identify next available port offset
+# If feature-1 uses +1, use +2 for your feature
 ```
 
 ## Project Structure
