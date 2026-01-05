@@ -28,6 +28,7 @@ import {
   SpoilageModal,
   MidDayEventsList,
 } from '../components/daily'
+import { ShiftAssignmentSection } from '../components/employees'
 import type { DailyRecord, RecentDayRecord } from '../types'
 
 export default function DailyOperationsPage() {
@@ -310,6 +311,14 @@ export default function DailyOperationsPage() {
       {/* Mid-day events list - only show when day is open */}
       {isDayOpen && todayRecord && (
         <MidDayEventsList dailyRecordId={todayRecord.id} />
+      )}
+
+      {/* Shift assignments - only show when day is open or today's record exists */}
+      {todayRecord && (
+        <ShiftAssignmentSection
+          dailyRecordId={todayRecord.id}
+          isEditable={isDayOpen}
+        />
       )}
 
       {/* Sales section - only show when day is open */}

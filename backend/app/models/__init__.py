@@ -4,12 +4,15 @@ from app.models.expense_category import ExpenseCategory
 from app.models.daily_record import DailyRecord, DayStatus
 from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.sales_item import SalesItem
-from app.models.transaction import Transaction, TransactionType, PaymentMethod
+from app.models.transaction import Transaction, TransactionType, PaymentMethod, WagePeriodType
 from app.models.delivery import Delivery
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.calculated_sale import CalculatedSale
 from app.models.storage_inventory import StorageInventory
+from app.models.position import Position
+from app.models.employee import Employee
+from app.models.shift_assignment import ShiftAssignment
 
 __all__ = [
     # Core entities
@@ -44,4 +47,10 @@ __all__ = [
     "Transaction",
     "TransactionType",
     "PaymentMethod",
+    "WagePeriodType",
+
+    # Employees & Shifts
+    "Position",
+    "Employee",
+    "ShiftAssignment",
 ]

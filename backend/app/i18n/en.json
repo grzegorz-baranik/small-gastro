@@ -55,6 +55,18 @@
   "errors.spoilage_not_found": "Spoilage not found",
   "errors.cannot_delete_spoilage_closed": "Cannot delete spoilage from closed day",
 
+  "errors.position_exists": "Position with this name already exists",
+  "errors.position_not_found": "Position not found",
+  "errors.position_has_employees": "Cannot delete position with assigned employees",
+
+  "errors.employee_not_found": "Employee not found",
+  "errors.employee_has_shifts": "Cannot delete employee with shift history",
+  "errors.employee_has_wages": "Cannot delete employee with wage history",
+  "errors.employee_already_assigned": "Employee is already assigned to this day",
+
+  "errors.shift_not_found": "Shift not found",
+  "errors.shift_end_before_start": "End time must be after start time",
+
   "success.order_updated": "Order updated",
   "success.day_updated": "Day has been updated",
   "success.all_days_closed": "All previous days are closed",

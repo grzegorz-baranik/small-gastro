@@ -18,19 +18,25 @@ from app.services.transaction_service import InvalidCategoryError
 router = APIRouter()
 
 
-def _to_response(t: Transaction) -> TransactionResponse:
+def _to_response(txn: Transaction) -> TransactionResponse:
     """Convert Transaction model to TransactionResponse schema."""
     return TransactionResponse(
-        id=t.id,
-        type=t.type,
-        category_id=t.category_id,
-        amount=t.amount,
-        payment_method=t.payment_method,
-        description=t.description,
-        transaction_date=t.transaction_date,
-        daily_record_id=t.daily_record_id,
-        category_name=t.category.name if t.category_id and t.category else None,
-        created_at=t.created_at,
+        id=txn.id,
+        type=txn.type,
+        category_id=txn.category_id,
+        amount=txn.amount,
+        payment_method=txn.payment_method,
+        description=txn.description,
+        transaction_date=txn.transaction_date,
+        daily_record_id=txn.daily_record_id,
+        category_name=txn.category.name if txn.category_id and txn.category else None,
+        created_at=txn.created_at,
+        # Wage-specific fields
+        employee_id=txn.employee_id,
+        employee_name=txn.employee.name if txn.employee_id and txn.employee else None,
+        wage_period_type=txn.wage_period_type,
+        wage_period_start=txn.wage_period_start,
+        wage_period_end=txn.wage_period_end,
     )
 
 
@@ -43,13 +49,14 @@ def list_transactions(
     payment_method: Optional[PaymentMethod] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    employee_id: Optional[int] = Query(None, description="Filtruj po pracowniku"),
     db: Session = Depends(get_db),
 ):
     """Pobierz liste transakcji z filtrami."""
     items, total = transaction_service.get_transactions(
-        db, skip, limit, type_filter, category_id, payment_method, date_from, date_to
+        db, skip, limit, type_filter, category_id, payment_method, date_from, date_to, employee_id
     )
-    return TransactionListResponse(items=[_to_response(t) for t in items], total=total)
+    return TransactionListResponse(items=[_to_response(txn) for txn in items], total=total)
 
 
 @router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)

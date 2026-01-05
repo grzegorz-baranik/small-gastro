@@ -55,6 +55,18 @@
   "errors.spoilage_not_found": "Strata nie znaleziona",
   "errors.cannot_delete_spoilage_closed": "Nie mozna usuwac strat z zamknietego dnia",
 
+  "errors.position_exists": "Stanowisko o tej nazwie juz istnieje",
+  "errors.position_not_found": "Stanowisko nie znalezione",
+  "errors.position_has_employees": "Nie mozna usunac stanowiska z przypisanymi pracownikami",
+
+  "errors.employee_not_found": "Pracownik nie znaleziony",
+  "errors.employee_has_shifts": "Nie mozna usunac pracownika z historia zmian",
+  "errors.employee_has_wages": "Nie mozna usunac pracownika z historia wyplat",
+  "errors.employee_already_assigned": "Pracownik jest juz przypisany do tego dnia",
+
+  "errors.shift_not_found": "Zmiana nie znaleziona",
+  "errors.shift_end_before_start": "Godzina zakonczenia musi byc po godzinie rozpoczecia",
+
   "success.order_updated": "Kolejnosc zaktualizowana",
   "success.day_updated": "Dzien zostal zaktualizowany",
   "success.all_days_closed": "Wszystkie poprzednie dni sa zamkniete",

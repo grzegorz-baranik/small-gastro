@@ -37,3 +37,4 @@ class DailyRecord(Base):
     storage_transfers = relationship("StorageTransfer", back_populates="daily_record", cascade="all, delete-orphan")
     spoilages = relationship("Spoilage", back_populates="daily_record", cascade="all, delete-orphan")
     calculated_sales = relationship("CalculatedSale", back_populates="daily_record", cascade="all, delete-orphan")
+    shift_assignments = relationship("ShiftAssignment", back_populates="daily_record", cascade="all, delete-orphan")

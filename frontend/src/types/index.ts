@@ -264,6 +264,7 @@ export interface DailySalesSummary {
 // Transaction types
 export type TransactionType = 'expense' | 'revenue'
 export type PaymentMethod = 'cash' | 'card' | 'bank_transfer'
+export type WagePeriodType = 'daily' | 'weekly' | 'biweekly' | 'monthly'
 
 export interface Transaction {
   id: number
@@ -276,6 +277,12 @@ export interface Transaction {
   daily_record_id: number | null
   category_name: string | null
   created_at: string
+  // Wage-specific fields
+  employee_id: number | null
+  employee_name: string | null
+  wage_period_type: WagePeriodType | null
+  wage_period_start: string | null
+  wage_period_end: string | null
 }
 
 export interface TransactionCreate {
@@ -286,6 +293,11 @@ export interface TransactionCreate {
   description?: string
   transaction_date: string
   daily_record_id?: number
+  // Wage-specific fields
+  employee_id?: number
+  wage_period_type?: WagePeriodType
+  wage_period_start?: string
+  wage_period_end?: string
 }
 
 // Dashboard types
@@ -523,3 +535,9 @@ export interface SpoilageReportResponse {
   by_ingredient: SpoilageByIngredientSummary[]
   total_count: number
 }
+
+// Re-export employee/shift management types
+export * from './positions'
+export * from './employees'
+export * from './shift_assignments'
+export * from './wage_analytics'

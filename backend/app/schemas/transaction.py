@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime
 from decimal import Decimal
-from app.models.transaction import TransactionType, PaymentMethod
+from app.models.transaction import TransactionType, PaymentMethod, WagePeriodType
 
 
 class TransactionBase(BaseModel):
@@ -16,6 +16,11 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     daily_record_id: Optional[int] = None
+    # Wage-specific fields (optional)
+    employee_id: Optional[int] = None
+    wage_period_type: Optional[WagePeriodType] = None
+    wage_period_start: Optional[date] = None
+    wage_period_end: Optional[date] = None
 
 
 class TransactionUpdate(BaseModel):
@@ -25,6 +30,11 @@ class TransactionUpdate(BaseModel):
     payment_method: Optional[PaymentMethod] = None
     description: Optional[str] = None
     transaction_date: Optional[date] = None
+    # Wage-specific fields
+    employee_id: Optional[int] = None
+    wage_period_type: Optional[WagePeriodType] = None
+    wage_period_start: Optional[date] = None
+    wage_period_end: Optional[date] = None
 
 
 class TransactionResponse(TransactionBase):
@@ -32,6 +42,12 @@ class TransactionResponse(TransactionBase):
     daily_record_id: Optional[int] = None
     category_name: Optional[str] = None
     created_at: datetime
+    # Wage-specific fields
+    employee_id: Optional[int] = None
+    employee_name: Optional[str] = None
+    wage_period_type: Optional[WagePeriodType] = None
+    wage_period_start: Optional[date] = None
+    wage_period_end: Optional[date] = None
 
     class Config:
         from_attributes = True
