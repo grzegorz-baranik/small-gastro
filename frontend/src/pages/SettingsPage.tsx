@@ -5,6 +5,7 @@ import { getCategoryTree, createCategory, deleteCategory } from '../api/categori
 import { Plus, Trash2, ChevronRight, ChevronDown, Tag, Folder, FolderOpen } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { PositionsSection, EmployeesSection } from '../components/employees'
 import type { ExpenseCategory } from '../types'
 
 export default function SettingsPage() {
@@ -61,6 +62,12 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
       </div>
+
+      {/* Positions Section */}
+      <PositionsSection />
+
+      {/* Employees Section */}
+      <EmployeesSection />
 
       <div className="card">
         <div className="flex items-center justify-between mb-4">

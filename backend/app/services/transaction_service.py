@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 from app.models.transaction import Transaction, TransactionType, PaymentMethod
 from app.models.expense_category import ExpenseCategory
+from app.models.employee import Employee
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionSummary
 from app.core.i18n import t
 
@@ -60,10 +61,13 @@ def get_transactions(
     payment_method: Optional[PaymentMethod] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    employee_id: Optional[int] = None,
 ) -> tuple[list[Transaction], int]:
-    # Eagerly load the category relationship to avoid N+1 queries
-    # and ensure the relationship is available after the query
-    query = db.query(Transaction).options(joinedload(Transaction.category))
+    # Eagerly load the category and employee relationships to avoid N+1 queries
+    query = db.query(Transaction).options(
+        joinedload(Transaction.category),
+        joinedload(Transaction.employee),
+    )
 
     # Normalize type_filter to handle both enum and string values
     normalized_type = _normalize_type_filter(type_filter)
@@ -77,6 +81,8 @@ def get_transactions(
         query = query.filter(Transaction.transaction_date >= date_from)
     if date_to:
         query = query.filter(Transaction.transaction_date <= date_to)
+    if employee_id:
+        query = query.filter(Transaction.employee_id == employee_id)
 
     # Count without the joinedload for efficiency
     count_query = db.query(Transaction)
@@ -90,6 +96,8 @@ def get_transactions(
         count_query = count_query.filter(Transaction.transaction_date >= date_from)
     if date_to:
         count_query = count_query.filter(Transaction.transaction_date <= date_to)
+    if employee_id:
+        count_query = count_query.filter(Transaction.employee_id == employee_id)
     total = count_query.count()
 
     items = query.order_by(Transaction.transaction_date.desc(), Transaction.id.desc()).offset(skip).limit(limit).all()
@@ -100,7 +108,10 @@ def get_transactions(
 def get_transaction(db: Session, transaction_id: int) -> Optional[Transaction]:
     return (
         db.query(Transaction)
-        .options(joinedload(Transaction.category))
+        .options(
+            joinedload(Transaction.category),
+            joinedload(Transaction.employee),
+        )
         .filter(Transaction.id == transaction_id)
         .first()
     )
@@ -119,12 +130,17 @@ def create_transaction(db: Session, data: TransactionCreate) -> Transaction:
         description=data.description,
         transaction_date=data.transaction_date,
         daily_record_id=data.daily_record_id,
+        # Wage-specific fields
+        employee_id=data.employee_id,
+        wage_period_type=data.wage_period_type,
+        wage_period_start=data.wage_period_start,
+        wage_period_end=data.wage_period_end,
     )
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
 
-    # Re-fetch with eager loading to ensure category relationship is loaded
+    # Re-fetch with eager loading to ensure relationships are loaded
     return get_transaction(db, db_transaction.id)
 
 

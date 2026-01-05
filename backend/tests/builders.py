@@ -21,6 +21,10 @@ from app.models.transaction import Transaction, TransactionType, PaymentMethod
 from app.models.expense_category import ExpenseCategory
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.delivery import Delivery
+from app.models.position import Position
+from app.models.employee import Employee
+from app.models.shift_assignment import ShiftAssignment
+from app.models.transaction import WagePeriodType
 
 
 def build_ingredient(
@@ -220,3 +224,157 @@ def build_delivery(
     db.add(delivery)
     db.flush()
     return delivery
+
+
+def build_position(
+    db: Session,
+    name: Optional[str] = None,
+    hourly_rate: Decimal = Decimal("25.00"),
+    **overrides
+) -> Position:
+    """Create a position with sensible defaults."""
+    if name is None:
+        count = db.query(Position).count()
+        name = f"Test Position {count + 1}"
+
+    data = {
+        "name": name,
+        "hourly_rate": hourly_rate,
+    }
+    data.update(overrides)
+
+    position = Position(**data)
+    db.add(position)
+    db.flush()
+    return position
+
+
+def build_employee(
+    db: Session,
+    name: Optional[str] = None,
+    position_id: Optional[int] = None,
+    position: Optional[Position] = None,
+    hourly_rate_override: Optional[Decimal] = None,
+    is_active: bool = True,
+    **overrides
+) -> Employee:
+    """
+    Create an employee with sensible defaults.
+
+    You can pass either position_id or position object.
+    If neither is provided, a new position will be created.
+    """
+    if name is None:
+        count = db.query(Employee).count()
+        name = f"Test Employee {count + 1}"
+
+    # Handle position - use provided id, or get from object, or create new
+    if position_id is None:
+        if position is not None:
+            position_id = position.id
+        else:
+            # Create a position for this employee
+            new_position = build_position(db)
+            position_id = new_position.id
+
+    data = {
+        "name": name,
+        "position_id": position_id,
+        "hourly_rate_override": hourly_rate_override,
+        "is_active": is_active,
+    }
+    data.update(overrides)
+
+    employee = Employee(**data)
+    db.add(employee)
+    db.flush()
+    return employee
+
+
+def build_shift_assignment(
+    db: Session,
+    daily_record_id: Optional[int] = None,
+    daily_record: Optional[DailyRecord] = None,
+    employee_id: Optional[int] = None,
+    employee: Optional[Employee] = None,
+    start_time: Optional["time"] = None,
+    end_time: Optional["time"] = None,
+    **overrides
+) -> ShiftAssignment:
+    """
+    Create a shift assignment with sensible defaults.
+
+    You can pass either daily_record_id/employee_id or the objects themselves.
+    If not provided, will create new objects.
+    """
+    from datetime import time
+
+    # Handle daily_record
+    if daily_record_id is None:
+        if daily_record is not None:
+            daily_record_id = daily_record.id
+        else:
+            new_record = build_daily_record(db, status=DayStatus.OPEN)
+            daily_record_id = new_record.id
+
+    # Handle employee
+    if employee_id is None:
+        if employee is not None:
+            employee_id = employee.id
+        else:
+            new_employee = build_employee(db)
+            employee_id = new_employee.id
+
+    # Default times
+    if start_time is None:
+        start_time = time(8, 0)
+    if end_time is None:
+        end_time = time(16, 0)
+
+    data = {
+        "daily_record_id": daily_record_id,
+        "employee_id": employee_id,
+        "start_time": start_time,
+        "end_time": end_time,
+    }
+    data.update(overrides)
+
+    shift = ShiftAssignment(**data)
+    db.add(shift)
+    db.flush()
+    return shift
+
+
+def build_wage_transaction(
+    db: Session,
+    employee_id: int,
+    amount: Decimal = Decimal("1000.00"),
+    transaction_date: Optional[date] = None,
+    wage_period_type: WagePeriodType = WagePeriodType.MONTHLY,
+    wage_period_start: Optional[date] = None,
+    wage_period_end: Optional[date] = None,
+    category_id: Optional[int] = None,
+    **overrides
+) -> Transaction:
+    """Create a wage transaction (expense for an employee)."""
+    if transaction_date is None:
+        transaction_date = date.today()
+
+    data = {
+        "type": TransactionType.EXPENSE,
+        "amount": amount,
+        "payment_method": PaymentMethod.BANK_TRANSFER,
+        "transaction_date": transaction_date,
+        "employee_id": employee_id,
+        "wage_period_type": wage_period_type,
+        "wage_period_start": wage_period_start,
+        "wage_period_end": wage_period_end,
+        "category_id": category_id,
+        "description": "Wyplata",
+    }
+    data.update(overrides)
+
+    transaction = Transaction(**data)
+    db.add(transaction)
+    db.flush()
+    return transaction

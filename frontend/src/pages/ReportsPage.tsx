@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { TrendingUp, Package, Trash2, FileSpreadsheet, Calendar } from 'lucide-react'
+import { TrendingUp, Package, Trash2, FileSpreadsheet, Calendar, Users } from 'lucide-react'
 import {
   getMonthlyTrendsReport,
   exportMonthlyTrendsExcel,
@@ -13,9 +13,10 @@ import {
 import { getIngredients } from '../api/ingredients'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { WageAnalyticsSection } from '../components/employees'
 import type { DateRangeRequest, SpoilageReason } from '../types'
 
-type ReportTab = 'trends' | 'usage' | 'spoilage'
+type ReportTab = 'trends' | 'usage' | 'spoilage' | 'wages'
 
 function getDefaultDateRange(): DateRangeRequest {
   const today = new Date()
@@ -37,6 +38,7 @@ export default function ReportsPage() {
     { id: 'trends' as ReportTab, label: t('reports.monthlyTrends'), icon: TrendingUp },
     { id: 'usage' as ReportTab, label: t('reports.ingredientUsage'), icon: Package },
     { id: 'spoilage' as ReportTab, label: t('reports.spoilage'), icon: Trash2 },
+    { id: 'wages' as ReportTab, label: t('employees.wages'), icon: Users },
   ]
 
   return (
@@ -63,30 +65,32 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {/* Date Range Selector */}
-      <div className="card">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">{t('reports.dateRange')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateRange.start_date}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, start_date: e.target.value }))}
-              className="input w-auto"
-            />
-            <span className="text-gray-500">{t('reports.to')}</span>
-            <input
-              type="date"
-              value={dateRange.end_date}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, end_date: e.target.value }))}
-              className="input w-auto"
-            />
+      {/* Date Range Selector - hide for wages tab which has its own date selector */}
+      {activeTab !== 'wages' && (
+        <div className="card">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">{t('reports.dateRange')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateRange.start_date}
+                onChange={(e) => setDateRange((prev) => ({ ...prev, start_date: e.target.value }))}
+                className="input w-auto"
+              />
+              <span className="text-gray-500">{t('reports.to')}</span>
+              <input
+                type="date"
+                value={dateRange.end_date}
+                onChange={(e) => setDateRange((prev) => ({ ...prev, end_date: e.target.value }))}
+                className="input w-auto"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Report Content */}
       {activeTab === 'trends' && (
@@ -112,6 +116,7 @@ export default function ReportsPage() {
           setIsExporting={setIsExporting}
         />
       )}
+      {activeTab === 'wages' && <WageAnalyticsSection />}
     </div>
   )
 }

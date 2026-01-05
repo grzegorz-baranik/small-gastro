@@ -16,6 +16,14 @@ class PaymentMethod(str, enum.Enum):
     BANK_TRANSFER = "bank_transfer"
 
 
+class WagePeriodType(str, enum.Enum):
+    """Period type for wage transactions."""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
@@ -29,11 +37,19 @@ class Transaction(Base):
     daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Wage-specific fields (nullable, only used for wage transactions)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    wage_period_type = Column(EnumColumn(WagePeriodType), nullable=True)
+    wage_period_start = Column(Date, nullable=True)
+    wage_period_end = Column(Date, nullable=True)
+
     __table_args__ = (
         Index("idx_transactions_date", "transaction_date"),
         Index("idx_transactions_type", "type"),
+        Index("idx_transactions_employee", "employee_id"),
     )
 
     # Relationships
     category = relationship("ExpenseCategory", back_populates="transactions")
     daily_record = relationship("DailyRecord", back_populates="transactions")
+    employee = relationship("Employee", back_populates="transactions")
