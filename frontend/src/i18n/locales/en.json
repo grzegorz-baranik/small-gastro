@@ -29,7 +29,11 @@
     "filterOptional": "Filter (optional)",
     "exportToExcel": "Export to Excel",
     "unknown": "Unknown",
-    "ok": "OK"
+    "ok": "OK",
+    "storage": "Storage",
+    "shop": "Shop",
+    "remaining": "Remaining",
+    "age": "Age"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -92,6 +96,7 @@
     "statusNotOpened": "NOT OPENED",
     "openDay": "Open Day",
     "closeDay": "Close Day",
+    "manageDay": "Manage Day",
     "summary": "Summary",
     "storageOperations": "Storage Operations",
     "addDelivery": "Add Delivery",
@@ -204,7 +209,10 @@
     "invoicePlaceholder": "e.g., FV/2025/001",
     "totalCost": "Total delivery cost (PLN)",
     "notes": "Notes",
-    "notesPlaceholder": "Additional notes about the delivery..."
+    "notesPlaceholder": "Additional notes about the delivery...",
+    "destination": "Destination",
+    "toWarehouse": "Warehouse",
+    "toShop": "Shop"
   },
   "transferModal": {
     "title": "Transfer from Storage",
@@ -266,7 +274,64 @@
     }
   },
   "inventory": {
-    "title": "Inventory History",
+    "title": "Inventory",
+    "tabs": {
+      "stockLevels": "Stock Levels",
+      "batches": "Batches & Expiry"
+    },
+    "summary": {
+      "warehouseItems": "Items in Warehouse",
+      "shopItems": "Items in Shop",
+      "expiryAlerts": "Expiry Alerts"
+    },
+    "table": {
+      "ingredient": "Ingredient",
+      "warehouse": "Warehouse",
+      "shop": "Shop",
+      "total": "Total",
+      "actions": "Actions",
+      "noData": "No stock data available",
+      "search": "Search ingredient..."
+    },
+    "adjustment": {
+      "title": "Stock Adjustment",
+      "type": "Adjustment Type",
+      "set": "Set Value",
+      "add": "Add",
+      "subtract": "Subtract",
+      "quantity": "Quantity",
+      "reason": "Reason",
+      "notes": "Notes (optional)",
+      "preview": "Change Preview",
+      "current": "Current",
+      "new": "After Adjustment",
+      "submit": "Submit Adjustment",
+      "success": "Adjustment saved successfully",
+      "error": "Error saving adjustment",
+      "reasons": {
+        "inventoryCount": "Inventory Count",
+        "damage": "Damage",
+        "loss": "Loss",
+        "other": "Other"
+      }
+    },
+    "transfer": {
+      "title": "Quick Transfer",
+      "available": "Available in Warehouse",
+      "quantity": "Quantity to Transfer",
+      "toShop": "Transfer to Shop",
+      "success": "Transfer saved successfully",
+      "error": "Error saving transfer"
+    },
+    "actions": {
+      "adjust": "Adjust",
+      "transfer": "Transfer",
+      "refresh": "Refresh"
+    },
+    "expiry": {
+      "warning": "Expiry date approaching",
+      "batches": "batches"
+    },
     "days": "Days",
     "statusClosed": "Closed",
     "statusOpen": "Open",
@@ -282,6 +347,11 @@
     "usage": "Usage",
     "difference": "Difference",
     "selectDayPrompt": "Select a day from the list to see details"
+  },
+  "delivery": {
+    "destination": "Destination",
+    "toWarehouse": "Warehouse",
+    "toShop": "Shop"
   },
   "daySummary": {
     "dayEvents": "Day Events",
@@ -497,7 +567,46 @@
     "closingShort": "Close",
     "usageShort": "Usage",
     "warningLevel": "Warning",
-    "criticalLevel": "Critical"
+    "criticalLevel": "Critical",
+    "step5Title": "Reconciliation"
+  },
+  "reconciliation": {
+    "title": "Sales Reconciliation",
+    "recordedSales": "Recorded Sales",
+    "calculatedSales": "Calculated Sales",
+    "discrepancy": "Discrepancy",
+    "product": "Product",
+    "recordedQty": "Recorded",
+    "calculatedQty": "Calculated",
+    "qtyDiscrepancy": "Qty Discrepancy",
+    "status": {
+      "ideal": "Ideal",
+      "acceptable": "Acceptable",
+      "review_recommended": "Review Recommended",
+      "investigation_needed": "Investigation Needed"
+    },
+    "productStatus": {
+      "match": "Match",
+      "minor_discrepancy": "Minor Discrepancy",
+      "major_discrepancy": "Major Discrepancy",
+      "recorded_only": "Recorded Only",
+      "calculated_only": "Calculated Only"
+    },
+    "recordedOnlySection": "Recorded Only",
+    "calculatedOnlySection": "Calculated Only",
+    "recordedOnlyHint": "Products recorded in sales but not detected in ingredient usage",
+    "calculatedOnlyHint": "Products detected in ingredient usage but not recorded in sales",
+    "noDiscrepancies": "No Discrepancies",
+    "allMatches": "All products match - recorded sales align with ingredient usage",
+    "infoTitle": "Information",
+    "infoText": "This step compares sales recorded during the day with sales calculated from ingredient usage. Discrepancies are informational and do not block day closing.",
+    "notesLabel": "Discrepancy Notes",
+    "notesPlaceholder": "Add notes explaining discrepancies (optional)...",
+    "loading": "Loading reconciliation data...",
+    "error": "Failed to load reconciliation data",
+    "productsComparison": "Products Comparison",
+    "suggestions": "Suggestions",
+    "noSuggestions": "No suggestions"
   },
   "errors": {
     "generic": "An error occurred",
@@ -506,5 +615,89 @@
     "unauthorized": "Unauthorized",
     "forbidden": "Access denied",
     "closeDayFailed": "Failed to close the day. Please try again."
+  },
+  "batch": {
+    "title": "Batches",
+    "batchNumber": "Batch number",
+    "expiryDate": "Expiry date",
+    "expiryDateOptional": "Expiry date (optional)",
+    "daysUntilExpiry": "Days until expiry",
+    "selectBatch": "Select batch",
+    "noBatches": "No batches available",
+    "expiryAlerts": "Expiry alerts",
+    "expired": "Expired",
+    "expiringSoon": "Expiring soon"
+  },
+  "dayManagement": {
+    "backToList": "Back to list",
+    "notFound": "Day not found",
+    "notFoundDescription": "The day with the specified ID does not exist.",
+    "loadError": "Loading error",
+    "loadErrorDescription": "Failed to load day data. Please try again.",
+    "sections": {
+      "overview": "Overview",
+      "opening": "Opening",
+      "shifts": "Shifts",
+      "operations": "Operations",
+      "sales": "Sales",
+      "closing": "Closing"
+    },
+    "placeholders": {
+      "overview": "Day overview will appear here.",
+      "opening": "Day opening data will appear here.",
+      "shifts": "Employee shift management will appear here.",
+      "operations": "Storage operations (deliveries, transfers, spoilage) will appear here.",
+      "sales": "Sales and revenue will appear here.",
+      "closing": "Day closing and summary will appear here."
+    }
+  },
+  "salesEntry": {
+    "title": "Sales",
+    "todayTotal": "Today",
+    "allCategories": "All",
+    "noProducts": "No products in this category",
+    "noProductsAvailable": "No products available for sale",
+    "addProductsFirst": "Add products in the menu to record sales.",
+    "recentSales": "Recent Sales",
+    "noRecentSales": "No recorded sales",
+    "voidSale": "Void",
+    "saleRecorded": "Sale recorded",
+    "saleRecordedDesc": "{{product}} - {{price}}",
+    "errorRecording": "Failed to record sale",
+    "dayNotOpen": "Day is not open",
+    "dayNotOpenDesc": "Open the day to record sales.",
+    "openDayFirst": "Open Day",
+    "soldToday": "sold",
+    "quantitySelector": {
+      "title": "Quantity",
+      "add": "Add",
+      "cancel": "Cancel"
+    },
+    "voidDialog": {
+      "title": "Void Sale",
+      "productLabel": "Product",
+      "recordedAt": "Recorded at",
+      "reasonLabel": "Void reason",
+      "selectReason": "Select reason...",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Additional information...",
+      "confirm": "Void Sale",
+      "cancel": "Keep",
+      "reasons": {
+        "mistake": "Recording mistake",
+        "customer_refund": "Customer refund",
+        "duplicate": "Duplicate",
+        "other": "Other reason"
+      },
+      "success": "Sale voided",
+      "error": "Failed to void sale"
+    },
+    "categories": {
+      "kebaby": "Kebabs",
+      "zapiekanki": "Baguettes",
+      "hotdogi": "Hot Dogs",
+      "napoje": "Drinks",
+      "dodatki": "Extras"
+    }
   }
 }

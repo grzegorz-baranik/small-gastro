@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Truck, AlertCircle, Plus, Trash2, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Truck, AlertCircle, Plus, Trash2, ArrowLeft, ArrowRight, Warehouse, Store } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
 import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { createDelivery } from '../../api/midDayOperations'
-import type { Ingredient, DeliveryItemCreate } from '../../types'
+import type { Ingredient, DeliveryItemCreate, DeliveryDestination } from '../../types'
 
 interface DeliveryModalProps {
   isOpen: boolean
@@ -21,6 +21,7 @@ interface DeliveryItemFormData {
   ingredient_id: number | ''
   quantity: string
   cost_pln: string
+  expiry_date: string
 }
 
 type Step = 'items' | 'details'
@@ -43,6 +44,7 @@ export default function DeliveryModal({
   const [nextItemId, setNextItemId] = useState(1)
 
   // Details step
+  const [destination, setDestination] = useState<DeliveryDestination>('storage')
   const [supplierName, setSupplierName] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [totalCostPln, setTotalCostPln] = useState('')
@@ -82,8 +84,9 @@ export default function DeliveryModal({
   useEffect(() => {
     if (isOpen) {
       setStep('items')
-      setItems([{ id: 1, ingredient_id: '', quantity: '', cost_pln: '' }])
+      setItems([{ id: 1, ingredient_id: '', quantity: '', cost_pln: '', expiry_date: '' }])
       setNextItemId(2)
+      setDestination('storage')
       setSupplierName('')
       setInvoiceNumber('')
       setTotalCostPln('')
@@ -106,7 +109,7 @@ export default function DeliveryModal({
 
   // Add new item row
   const addItem = () => {
-    setItems([...items, { id: nextItemId, ingredient_id: '', quantity: '', cost_pln: '' }])
+    setItems([...items, { id: nextItemId, ingredient_id: '', quantity: '', cost_pln: '', expiry_date: '' }])
     setNextItemId(nextItemId + 1)
   }
 
@@ -212,12 +215,14 @@ export default function DeliveryModal({
       ingredient_id: item.ingredient_id as number,
       quantity: parseFloat(item.quantity),
       cost_pln: item.cost_pln ? parseFloat(item.cost_pln) : undefined,
+      expiry_date: item.expiry_date || undefined,
     }))
 
     createDeliveryMutation.mutate({
       daily_record_id: dailyRecordId,
       items: deliveryItems,
       total_cost_pln: parseFloat(totalCostPln),
+      destination,
       supplier_name: supplierName || undefined,
       invoice_number: invoiceNumber || undefined,
       notes: notes || undefined,
@@ -323,6 +328,17 @@ export default function DeliveryModal({
                           />
                         </div>
 
+                        {/* Expiry date (optional) */}
+                        <div className="w-36">
+                          <input
+                            type="date"
+                            value={item.expiry_date}
+                            onChange={(e) => updateItem(item.id, 'expiry_date', e.target.value)}
+                            className="input w-full text-sm"
+                            title={t('batch.expiryDateOptional')}
+                          />
+                        </div>
+
                         {/* Remove button */}
                         <button
                           type="button"
@@ -366,6 +382,39 @@ export default function DeliveryModal({
                 <p className="text-sm text-blue-800">
                   {t('deliveryModal.itemsCount', { count: items.length })}
                 </p>
+              </div>
+
+              {/* Destination picker */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('deliveryModal.destination')}
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDestination('storage')}
+                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                      destination === 'storage'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <Warehouse className="w-5 h-5" />
+                    <span className="font-medium">{t('deliveryModal.toWarehouse')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDestination('shop')}
+                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                      destination === 'shop'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <Store className="w-5 h-5" />
+                    <span className="font-medium">{t('deliveryModal.toShop')}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Supplier name */}

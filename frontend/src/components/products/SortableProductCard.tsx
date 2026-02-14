@@ -8,12 +8,14 @@ interface SortableProductCardProps {
   product: Product
   onManageVariants: () => void
   onDelete: () => void
+  'data-testid'?: string
 }
 
 export default function SortableProductCard({
   product,
   onManageVariants,
   onDelete,
+  'data-testid': dataTestId,
 }: SortableProductCardProps) {
   const {
     attributes,
@@ -42,6 +44,7 @@ export default function SortableProductCard({
       ref={setNodeRef}
       style={style}
       className={`card ${isDragging ? 'shadow-lg ring-2 ring-primary-300' : ''} ${!product.is_active ? 'opacity-50' : ''}`}
+      data-testid={dataTestId}
     >
       <div className="flex items-start gap-3">
         {/* Drag handle */}

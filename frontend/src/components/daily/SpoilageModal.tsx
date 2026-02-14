@@ -7,7 +7,8 @@ import LoadingSpinner from '../common/LoadingSpinner'
 import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { createSpoilage } from '../../api/midDayOperations'
-import type { Ingredient, SpoilageReason } from '../../types'
+import { getBatchesForIngredient } from '../../api/batches'
+import type { Ingredient, SpoilageReason, IngredientBatch } from '../../types'
 
 interface SpoilageModalProps {
   isOpen: boolean
@@ -38,6 +39,7 @@ export default function SpoilageModal({
   const [quantity, setQuantity] = useState('')
   const [reason, setReason] = useState<SpoilageReason | ''>('')
   const [notes, setNotes] = useState('')
+  const [batchId, setBatchId] = useState<number | ''>('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
 
@@ -46,6 +48,13 @@ export default function SpoilageModal({
     queryKey: ['ingredients'],
     queryFn: getIngredients,
     enabled: isOpen,
+  })
+
+  // Fetch batches for selected ingredient
+  const { data: batchesData, isLoading: batchesLoading } = useQuery({
+    queryKey: ['batches', ingredientId],
+    queryFn: () => getBatchesForIngredient(ingredientId as number, undefined, true),
+    enabled: isOpen && !!ingredientId,
   })
 
   // Create spoilage mutation
@@ -72,10 +81,16 @@ export default function SpoilageModal({
       setQuantity('')
       setReason('')
       setNotes('')
+      setBatchId('')
       setErrors({})
       setGeneralError(null)
     }
   }, [isOpen])
+
+  // Reset batch when ingredient changes
+  useEffect(() => {
+    setBatchId('')
+  }, [ingredientId])
 
   // Get selected ingredient details
   const selectedIngredient = ingredientsData?.items.find(
@@ -85,6 +100,16 @@ export default function SpoilageModal({
   // Get unit label for ingredient
   const getUnitLabel = (ingredient: Ingredient): string => {
     return ingredient.unit_type === 'weight' ? 'kg' : 'szt'
+  }
+
+  // Format batch option display
+  const formatBatchOption = (batch: IngredientBatch): string => {
+    let label = `${batch.batch_number} - ${batch.remaining_quantity} ${batch.unit_label}`
+    if (batch.expiry_date) {
+      const expiryDate = new Date(batch.expiry_date).toLocaleDateString()
+      label += ` (${t('batch.expiryDate')}: ${expiryDate})`
+    }
+    return label
   }
 
   // Validate form
@@ -131,6 +156,7 @@ export default function SpoilageModal({
       quantity: parseFloat(quantity),
       reason: reason as SpoilageReason,
       notes: notes.trim() || undefined,
+      batch_id: batchId ? (batchId as number) : undefined,
     })
   }
 
@@ -215,6 +241,36 @@ export default function SpoilageModal({
               <p className="text-xs text-red-600 mt-1">{errors.quantity}</p>
             )}
           </div>
+
+          {/* Batch select (optional) - only show when ingredient is selected */}
+          {ingredientId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('batch.selectBatch')} ({t('common.optional')})
+              </label>
+              {batchesLoading ? (
+                <div className="flex items-center gap-2 py-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-sm text-gray-500">{t('common.loading')}</span>
+                </div>
+              ) : batchesData && batchesData.length > 0 ? (
+                <select
+                  value={batchId}
+                  onChange={(e) => setBatchId(e.target.value ? parseInt(e.target.value) : '')}
+                  className="input w-full"
+                >
+                  <option value="">{t('batch.selectBatch')}...</option>
+                  {batchesData.map((batch: IngredientBatch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {formatBatchOption(batch)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-500 py-2">{t('batch.noBatches')}</p>
+              )}
+            </div>
+          )}
 
           {/* Reason select */}
           <div>

@@ -6,15 +6,23 @@ Provides endpoints for:
 - Viewing day summaries
 - Pre-filling from previous closing
 - Editing closed days
+- Day closing wizard operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from decimal import Decimal
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.api.deps import get_db
 from app.core.i18n import t
 from app.services import daily_operations_service
+from app.services.day_wizard_service import (
+    DayWizardService,
+    DailyRecordNotFoundError,
+    DayNotOpenError,
+    InventoryNotEnteredError,
+)
 from app.schemas.daily_operations import (
     OpenDayRequest,
     OpenDayResponse,
@@ -27,9 +35,24 @@ from app.schemas.daily_operations import (
     EditClosedDayResponse,
     DailyRecordDetailResponse,
     PreviousDayStatusResponse,
+    UpdateOpeningInventoryRequest,
+    UpdateOpeningInventoryResponse,
 )
 from app.schemas.daily_record import DailyRecordResponse
+from app.schemas.day_wizard import (
+    WizardStateResponse,
+    CompleteOpeningRequest,
+    CompleteOpeningResponse,
+    SuggestedShiftsResponse,
+    SalesPreviewResponse,
+)
 from app.models.daily_record import DailyRecord, DayStatus
+from app.models.inventory_snapshot import InventorySnapshot
+from app.models.delivery import Delivery
+from app.models.storage_transfer import StorageTransfer
+from app.models.spoilage import Spoilage
+from app.models.transaction import Transaction
+from app.models.calculated_sale import CalculatedSale
 
 
 router = APIRouter()
@@ -150,6 +173,201 @@ def get_open_day(
         return None
 
     return daily_operations_service.get_daily_record_detail(db, record.id)
+
+
+# =============================================================================
+# WIZARD ENDPOINTS (for Day Closing Wizard feature)
+# These must come BEFORE /{record_id} routes to avoid path conflicts
+# =============================================================================
+
+
+@router.get("/{record_id}/wizard-state", response_model=WizardStateResponse)
+def get_wizard_state(
+    record_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz aktualny stan kreatora zamykania dnia.
+
+    Zwraca:
+    - current_step: aktualny krok ('opening', 'mid_day', 'closing', 'completed')
+    - opening: stan kroku otwarcia
+    - mid_day: stan kroku operacji w ciagu dnia
+    - closing: stan kroku zamkniecia
+    """
+    service = DayWizardService(db)
+
+    try:
+        return service.get_wizard_state(record_id)
+    except DailyRecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+
+
+@router.post("/{record_id}/complete-opening", response_model=CompleteOpeningResponse)
+def complete_opening(
+    record_id: int,
+    data: CompleteOpeningRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Zakoncz krok otwarcia dnia.
+
+    Wymaga:
+    - confirmed_shifts: lista zatwierdzonych zmian pracownikow
+    - opening_inventory: lista stanow poczatkowych skladnikow
+
+    Walidacja:
+    - Wymagana co najmniej jedna zmiana pracownika
+    - Wymagany co najmniej jeden stan magazynowy
+    """
+    service = DayWizardService(db)
+
+    try:
+        return service.complete_opening(record_id, data)
+    except DailyRecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+    except DayNotOpenError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=t("errors.day_not_open")
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except InventoryNotEnteredError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.get("/{record_id}/suggested-shifts", response_model=SuggestedShiftsResponse)
+def get_suggested_shifts(
+    record_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz sugerowane zmiany na podstawie szablonow.
+
+    Zwraca liste sugerowanych zmian na podstawie:
+    - Szablonow zmian (jesli istnieja)
+    - Nadpisanych zmian dla danego dnia
+    """
+    service = DayWizardService(db)
+
+    try:
+        record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
+        if not record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=t("errors.record_not_found")
+            )
+
+        shifts = service.get_suggested_shifts(record_id, record.date)
+        return SuggestedShiftsResponse(suggested_shifts=shifts)
+    except DailyRecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+
+
+@router.get("/{record_id}/sales-preview")
+def get_sales_preview(
+    record_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz podglad sprzedazy na podstawie stanow zamkniecia.
+
+    Query params:
+    - closing_inventory[ingredient_id]: ilosc zamkniecia dla skladnika
+
+    Przyklad:
+    GET /daily-records/1/sales-preview?closing_inventory[1]=38.0&closing_inventory[2]=80
+
+    Zwraca:
+    - ingredients_used: lista zuzycia skladnikow
+    - calculated_sales: lista wyliczonej sprzedazy
+    - summary: podsumowanie finansowe
+    - warnings: ostrzezenia (np. rozbieznosci)
+    """
+    import re
+
+    # Parse closing_inventory from query params
+    # Format: closing_inventory[1]=38.0 becomes {1: Decimal("38.0")}
+    closing_inventory: dict[int, Decimal] = {}
+
+    for key, value in request.query_params.items():
+        # Match closing_inventory[id] pattern
+        match = re.match(r'closing_inventory\[(\d+)\]', key)
+        if match:
+            ingredient_id = int(match.group(1))
+            try:
+                closing_inventory[ingredient_id] = Decimal(str(value))
+            except (ValueError, TypeError):
+                pass  # Skip invalid values
+
+    service = DayWizardService(db)
+
+    try:
+        result = service.calculate_sales_preview(record_id, closing_inventory)
+        return result
+    except DailyRecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+
+
+# =============================================================================
+# END WIZARD ENDPOINTS
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Update Opening Inventory
+# -----------------------------------------------------------------------------
+
+@router.put("/{record_id}/opening-inventory", response_model=UpdateOpeningInventoryResponse)
+def update_opening_inventory(
+    record_id: int,
+    data: UpdateOpeningInventoryRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Aktualizuj stany poczatkowe dla otwartego dnia.
+
+    Pozwala na korekte stanow poczatkowych dopoki dzien jest otwarty.
+    Przydatne gdy zauwazono blad po otwarciu dnia.
+
+    Walidacja:
+    - Mozna aktualizowac tylko dni ze statusem 'open'
+    - Zastepuje wszystkie istniejace stany poczatkowe nowymi wartosciami
+
+    Zwraca:
+    - Zaktualizowany rekord dnia z nowymi stanami poczatkowymi
+    """
+    response, error = daily_operations_service.update_opening_inventory(
+        db, record_id, data.items
+    )
+
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error
+        )
+
+    return response
 
 
 # -----------------------------------------------------------------------------
@@ -327,3 +545,42 @@ def edit_closed_day(
         )
 
     return response
+
+
+# -----------------------------------------------------------------------------
+# Delete Daily Record (for testing)
+# -----------------------------------------------------------------------------
+
+@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_daily_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Usun rekord dzienny (tylko do testow).
+
+    UWAGA: Ta operacja usuwa rowniez wszystkie powiazane dane:
+    - Snapshoty inwentarza
+    - Dostawy
+    - Transfery
+    - Straty
+    - Transakcje
+    """
+    record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+
+    # Delete all related records (cascading should handle most, but be explicit)
+    db.query(InventorySnapshot).filter(InventorySnapshot.daily_record_id == record_id).delete()
+    db.query(Delivery).filter(Delivery.daily_record_id == record_id).delete()
+    db.query(StorageTransfer).filter(StorageTransfer.daily_record_id == record_id).delete()
+    db.query(Spoilage).filter(Spoilage.daily_record_id == record_id).delete()
+    db.query(Transaction).filter(Transaction.daily_record_id == record_id).delete()
+    db.query(CalculatedSale).filter(CalculatedSale.daily_record_id == record_id).delete()
+
+    db.delete(record)
+    db.commit()

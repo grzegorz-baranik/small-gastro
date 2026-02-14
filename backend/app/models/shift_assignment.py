@@ -42,6 +42,7 @@ class ShiftAssignment(Base):
     # Relationships
     daily_record = relationship("DailyRecord", back_populates="shift_assignments")
     employee = relationship("Employee", back_populates="shift_assignments")
+    recorded_sales = relationship("RecordedSale", back_populates="shift_assignment")
 
     @property
     def hours_worked(self) -> float:

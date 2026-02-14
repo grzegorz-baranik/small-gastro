@@ -30,3 +30,4 @@ class Ingredient(Base):
     storage_transfers = relationship("StorageTransfer", back_populates="ingredient")
     spoilages = relationship("Spoilage", back_populates="ingredient")
     storage_inventory = relationship("StorageInventory", back_populates="ingredient", uselist=False)
+    batches = relationship("IngredientBatch", back_populates="ingredient")

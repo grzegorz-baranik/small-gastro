@@ -13,6 +13,11 @@ from app.models.storage_inventory import StorageInventory
 from app.models.position import Position
 from app.models.employee import Employee
 from app.models.shift_assignment import ShiftAssignment
+from app.models.ingredient_batch import IngredientBatch, BatchLocation, BatchDeduction
+from app.models.shift_template import ShiftTemplate
+from app.models.shift_schedule_override import ShiftScheduleOverride
+from app.models.recorded_sale import RecordedSale, VoidReason
+from app.models.product_category import ProductCategory
 
 __all__ = [
     # Core entities
@@ -40,9 +45,19 @@ __all__ = [
     # Sales tracking
     "SalesItem",  # Legacy
     "CalculatedSale",
+    "RecordedSale",
+    "VoidReason",
+
+    # Product categories
+    "ProductCategory",
 
     # Storage management
     "StorageInventory",
+
+    # Batch tracking
+    "IngredientBatch",
+    "BatchLocation",
+    "BatchDeduction",
 
     # Financial
     "Transaction",
@@ -54,4 +69,6 @@ __all__ = [
     "Position",
     "Employee",
     "ShiftAssignment",
+    "ShiftTemplate",
+    "ShiftScheduleOverride",
 ]

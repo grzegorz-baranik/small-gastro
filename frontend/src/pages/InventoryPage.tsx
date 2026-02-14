@@ -1,169 +1,285 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { getDailyRecords, getDaySummary } from '../api/dailyRecords'
-import { formatDate, formatQuantity } from '../utils/formatters'
-import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { Warehouse, Store, AlertTriangle, RefreshCw, Package } from 'lucide-react'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import { CalculatedSalesTable } from '../components/daily'
-import { useState } from 'react'
+import { BatchExpiryPanel, StockLevelsTable, StockAdjustmentModal, QuickTransferModal } from '../components/inventory'
+import { getStockLevels, createStockAdjustment } from '../api/inventory'
+import { createTransfer } from '../api/midDayOperations'
+import { useDailyRecord } from '../context/DailyRecordContext'
+import { useToast } from '../context/ToastContext'
+import type { StockAdjustmentCreate } from '../types'
+
+type TabType = 'stockLevels' | 'batches'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
-  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null)
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+  const { openRecord } = useDailyRecord()
 
-  const { data: recordsData, isLoading: recordsLoading } = useQuery({
-    queryKey: ['dailyRecords'],
-    queryFn: () => getDailyRecords(),
+  const [activeTab, setActiveTab] = useState<TabType>('stockLevels')
+
+  // Adjustment modal state
+  const [adjustmentModal, setAdjustmentModal] = useState<{
+    isOpen: boolean
+    ingredientId: number | null
+    ingredientName: string
+    location: 'storage' | 'shop'
+    currentQuantity: number
+    unitLabel: string
+  }>({
+    isOpen: false,
+    ingredientId: null,
+    ingredientName: '',
+    location: 'storage',
+    currentQuantity: 0,
+    unitLabel: 'szt',
   })
 
-  const records = recordsData?.items || []
-
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['dailySummary', selectedRecordId],
-    queryFn: () => getDaySummary(selectedRecordId!),
-    enabled: !!selectedRecordId,
+  // Transfer modal state
+  const [transferModal, setTransferModal] = useState<{
+    isOpen: boolean
+    ingredientId: number | null
+    ingredientName: string
+    warehouseQuantity: number
+    unitLabel: string
+  }>({
+    isOpen: false,
+    ingredientId: null,
+    ingredientName: '',
+    warehouseQuantity: 0,
+    unitLabel: 'szt',
   })
+
+  // Fetch stock levels
+  const { data: stockLevels = [], isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['stockLevels'],
+    queryFn: getStockLevels,
+    staleTime: 30000, // 30 seconds
+  })
+
+  // Create adjustment mutation
+  const adjustmentMutation = useMutation({
+    mutationFn: createStockAdjustment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockLevels'] })
+      showToast(t('inventory.adjustment.success'), 'success')
+    },
+    onError: () => {
+      showToast(t('inventory.adjustment.error'), 'error')
+    },
+  })
+
+  // Create transfer mutation
+  const transferMutation = useMutation({
+    mutationFn: async ({ ingredientId, quantity }: { ingredientId: number; quantity: number }) => {
+      if (!openRecord?.id) {
+        throw new Error('No open day')
+      }
+      return createTransfer({
+        daily_record_id: openRecord.id,
+        ingredient_id: ingredientId,
+        quantity,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockLevels'] })
+      showToast(t('inventory.transfer.success'), 'success')
+    },
+    onError: () => {
+      showToast(t('inventory.transfer.error'), 'error')
+    },
+  })
+
+  // Calculate summary stats
+  const summaryStats = useMemo(() => {
+    const warehouseItems = stockLevels.filter(s => s.warehouse_qty > 0).length
+    const shopItems = stockLevels.filter(s => s.shop_qty > 0).length
+    const expiryAlerts = stockLevels.filter(s => {
+      if (!s.nearest_expiry) return false
+      const daysUntilExpiry = Math.ceil(
+        (new Date(s.nearest_expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      )
+      return daysUntilExpiry <= 7
+    }).length
+
+    return { warehouseItems, shopItems, expiryAlerts }
+  }, [stockLevels])
+
+  // Handle adjustment click
+  const handleAdjust = (ingredientId: number, location: 'storage' | 'shop') => {
+    const stockItem = stockLevels.find(s => s.ingredient_id === ingredientId)
+    if (!stockItem) return
+
+    setAdjustmentModal({
+      isOpen: true,
+      ingredientId,
+      ingredientName: stockItem.ingredient_name,
+      location,
+      currentQuantity: location === 'storage' ? stockItem.warehouse_qty : stockItem.shop_qty,
+      unitLabel: stockItem.unit_label,
+    })
+  }
+
+  // Handle transfer click
+  const handleTransfer = (ingredientId: number) => {
+    const stockItem = stockLevels.find(s => s.ingredient_id === ingredientId)
+    if (!stockItem) return
+
+    setTransferModal({
+      isOpen: true,
+      ingredientId,
+      ingredientName: stockItem.ingredient_name,
+      warehouseQuantity: stockItem.warehouse_qty,
+      unitLabel: stockItem.unit_label,
+    })
+  }
+
+  // Handle adjustment submit
+  const handleAdjustmentSubmit = async (data: StockAdjustmentCreate) => {
+    await adjustmentMutation.mutateAsync(data)
+  }
+
+  // Handle transfer submit
+  const handleTransferSubmit = async (quantity: number) => {
+    if (!transferModal.ingredientId) return
+    await transferMutation.mutateAsync({
+      ingredientId: transferModal.ingredientId,
+      quantity,
+    })
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('inventory.title')}</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{t('inventory.title')}</h1>
+        <button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          className="btn btn-secondary flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          {t('inventory.actions.refresh')}
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Records List */}
-        <div className="card lg:col-span-1">
-          <h2 className="card-header">{t('inventory.days')}</h2>
-          {recordsLoading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="space-y-2">
-              {records.map((record) => (
-                <button
-                  key={record.id}
-                  onClick={() => setSelectedRecordId(record.id)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
-                    selectedRecordId === record.id
-                      ? 'bg-primary-50 border border-primary-200'
-                      : 'hover:bg-gray-50 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-gray-900">{formatDate(record.date)}</p>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      record.status === 'closed'
-                        ? 'bg-gray-100 text-gray-600'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {record.status === 'closed' ? t('inventory.statusClosed') : t('inventory.statusOpen')}
-                    </span>
-                  </div>
-                </button>
-              ))}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Warehouse className="w-5 h-5 text-blue-600" />
             </div>
-          )}
+            <div>
+              <p className="text-sm text-gray-500">{t('inventory.summary.warehouseItems')}</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryStats.warehouseItems}</p>
+            </div>
+          </div>
         </div>
-
-        {/* Details */}
-        <div className="card lg:col-span-2">
-          {selectedRecordId ? (
-            summaryLoading ? (
-              <LoadingSpinner />
-            ) : summary ? (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="card-header">{t('inventory.daySummary')} {formatDate(summary.daily_record?.date || '')}</h2>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-500">{t('inventory.soldProducts')}</p>
-                      <p className="text-xl font-bold text-gray-900">{summary.calculated_sales?.length || 0}</p>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-500">{t('inventory.revenue')}</p>
-                      <p className="text-xl font-bold text-green-600">{summary.total_income_pln || 0} zl</p>
-                    </div>
-                    <div className="p-4 bg-red-50 rounded-lg">
-                      <p className="text-sm text-gray-500">{t('inventory.deliveries')}</p>
-                      <p className="text-xl font-bold text-red-600">{summary.events?.deliveries_total_pln || 0} zl</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Calculated Sales */}
-                {summary.calculated_sales && summary.calculated_sales.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">{t('inventory.calculatedSales')}</h3>
-                    <CalculatedSalesTable
-                      sales={summary.calculated_sales}
-                      totalIncome={summary.total_income_pln || 0}
-                    />
-                  </div>
-                )}
-
-                {/* Usage Items with Discrepancies */}
-                {summary.usage_items && summary.usage_items.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">{t('inventory.ingredientUsage')}</h3>
-                    <div className="space-y-2">
-                      {summary.usage_items.map((item) => {
-                        const hasIssue = item.discrepancy_level && item.discrepancy_level !== 'ok'
-                        return (
-                          <div
-                            key={item.ingredient_id}
-                            className={`p-3 rounded-lg ${
-                              hasIssue ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {hasIssue ? (
-                                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                )}
-                                <span className="font-medium text-gray-900">{item.ingredient_name}</span>
-                              </div>
-                              {item.discrepancy_percent !== null && (
-                                <span className={`text-sm font-medium ${
-                                  Math.abs(item.discrepancy_percent) > 10 ? 'text-red-600' : 'text-gray-600'
-                                }`}>
-                                  {item.discrepancy_percent > 0 ? '+' : ''}{item.discrepancy_percent.toFixed(1)}%
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-2 grid grid-cols-4 gap-2 text-sm text-gray-600">
-                              <div>
-                                <p className="text-xs text-gray-400">{t('inventory.startQty')}</p>
-                                <p>{formatQuantity(item.opening_quantity, item.unit_type, item.unit_label)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-400">{t('inventory.endQty')}</p>
-                                <p>{formatQuantity(item.closing_quantity || 0, item.unit_type, item.unit_label)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-400">{t('inventory.usage')}</p>
-                                <p>{formatQuantity(item.usage || 0, item.unit_type, item.unit_label)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-400">{t('inventory.difference')}</p>
-                                <p className={Math.abs(item.discrepancy || 0) > 0.01 ? 'text-red-600 font-medium' : ''}>
-                                  {formatQuantity(item.discrepancy || 0, item.unit_type, item.unit_label)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : null
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              {t('inventory.selectDayPrompt')}
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Store className="w-5 h-5 text-green-600" />
             </div>
-          )}
+            <div>
+              <p className="text-sm text-gray-500">{t('inventory.summary.shopItems')}</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryStats.shopItems}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card p-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${summaryStats.expiryAlerts > 0 ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+              <AlertTriangle className={`w-5 h-5 ${summaryStats.expiryAlerts > 0 ? 'text-yellow-600' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">{t('inventory.summary.expiryAlerts')}</p>
+              <p className={`text-2xl font-bold ${summaryStats.expiryAlerts > 0 ? 'text-yellow-600' : 'text-gray-900'}`}>
+                {summaryStats.expiryAlerts}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex gap-4" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('stockLevels')}
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === 'stockLevels'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            aria-current={activeTab === 'stockLevels' ? 'page' : undefined}
+          >
+            <Warehouse className="w-4 h-4" />
+            {t('inventory.tabs.stockLevels')}
+          </button>
+          <button
+            onClick={() => setActiveTab('batches')}
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === 'batches'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            aria-current={activeTab === 'batches' ? 'page' : undefined}
+            data-testid="batches-tab"
+          >
+            <Package className="w-4 h-4" />
+            {t('inventory.tabs.batches')}
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'stockLevels' ? (
+        <div className="card">
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <StockLevelsTable
+              stockLevels={stockLevels}
+              isLoading={isLoading}
+              onAdjust={handleAdjust}
+              onTransfer={handleTransfer}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="card" data-testid="batch-tracking-panel">
+          <h2 className="card-header flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            {t('batch.title')}
+          </h2>
+          <BatchExpiryPanel />
+        </div>
+      )}
+
+      {/* Modals */}
+      <StockAdjustmentModal
+        isOpen={adjustmentModal.isOpen}
+        onClose={() => setAdjustmentModal(prev => ({ ...prev, isOpen: false }))}
+        ingredientId={adjustmentModal.ingredientId}
+        ingredientName={adjustmentModal.ingredientName}
+        location={adjustmentModal.location}
+        currentQuantity={adjustmentModal.currentQuantity}
+        unitLabel={adjustmentModal.unitLabel}
+        onSubmit={handleAdjustmentSubmit}
+      />
+
+      <QuickTransferModal
+        isOpen={transferModal.isOpen}
+        onClose={() => setTransferModal(prev => ({ ...prev, isOpen: false }))}
+        ingredientId={transferModal.ingredientId}
+        ingredientName={transferModal.ingredientName}
+        warehouseQuantity={transferModal.warehouseQuantity}
+        unitLabel={transferModal.unitLabel}
+        onSubmit={handleTransferSubmit}
+      />
     </div>
   )
 }

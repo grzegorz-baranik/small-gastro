@@ -5,11 +5,19 @@ Supports both legacy (quantity_grams/quantity_count) and new unified (quantity) 
 for backwards compatibility during transition period.
 """
 
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional
-from datetime import datetime
+from typing import Optional, List
+from datetime import datetime, date
 from decimal import Decimal
 from app.models.inventory_snapshot import SnapshotType, InventoryLocation
+
+
+class AdjustmentType(str, Enum):
+    """Type of stock adjustment."""
+    set = "set"           # Set to exact value
+    add = "add"           # Add quantity
+    subtract = "subtract"  # Subtract quantity
 
 
 class InventorySnapshotCreate(BaseModel):
@@ -119,3 +127,52 @@ class TransferStockItem(BaseModel):
     unit_label: str
     storage_quantity: Decimal  # Current quantity in storage
     shop_quantity: Decimal     # Current quantity in shop (opening + deliveries + transfers - spoilage)
+
+
+class StockLevel(BaseModel):
+    """
+    Unified stock level for an ingredient showing warehouse and shop quantities.
+
+    Used in the Inventory page to display real-time stock levels for all ingredients
+    with warehouse vs shop quantities side by side.
+    """
+    ingredient_id: int
+    ingredient_name: str
+    unit_type: str  # "weight" or "count"
+    unit_label: str  # "kg", "szt", etc.
+    warehouse_qty: Decimal
+    shop_qty: Decimal
+    total_qty: Decimal
+    batches_count: int
+    nearest_expiry: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+
+class StockAdjustmentCreate(BaseModel):
+    """Request schema for creating a stock adjustment."""
+    ingredient_id: int
+    location: str = Field(..., pattern="^(storage|shop)$")  # "storage" or "shop"
+    adjustment_type: AdjustmentType
+    quantity: Decimal = Field(..., ge=0)
+    reason: str = Field(..., min_length=1, max_length=200)
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class StockAdjustmentResponse(BaseModel):
+    """Response schema for stock adjustment result."""
+    id: int
+    ingredient_id: int
+    ingredient_name: str
+    location: str
+    adjustment_type: str
+    previous_quantity: Decimal
+    new_quantity: Decimal
+    adjustment_amount: Decimal  # The actual change (can be negative for subtract)
+    reason: str
+    notes: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -7,17 +7,20 @@ Updated to use unified quantity field and include mid-day events
 """
 
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
-from typing import Optional
+from sqlalchemy import func, desc
+from typing import Optional, List
 from decimal import Decimal
 from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.ingredient import Ingredient, UnitType
+from app.models.ingredient_batch import IngredientBatch
+from app.models.daily_record import DailyRecord, DayStatus
 from app.models.product import ProductIngredient
 from app.models.sales_item import SalesItem
 from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage
 from app.models.storage_inventory import StorageInventory
+from datetime import datetime
 from app.schemas.inventory import (
     InventorySnapshotCreate,
     InventorySnapshotResponse,
@@ -25,6 +28,10 @@ from app.schemas.inventory import (
     CurrentStock,
     IngredientAvailability,
     TransferStockItem,
+    StockLevel,
+    AdjustmentType,
+    StockAdjustmentCreate,
+    StockAdjustmentResponse,
 )
 
 
@@ -327,3 +334,187 @@ def get_transfer_stock_info(
         ))
 
     return result
+
+
+def get_stock_levels(db: Session) -> List[StockLevel]:
+    """
+    Get current stock levels for all ingredients, showing warehouse and shop quantities.
+
+    Logic:
+    1. Get all active ingredients
+    2. For each ingredient:
+       - warehouse_qty: from StorageInventory table
+       - shop_qty: from latest opening InventorySnapshot for the current/most recent open day
+       - batches_count: count of IngredientBatch records for this ingredient where remaining_quantity > 0
+       - nearest_expiry: min expiry_date from IngredientBatch where remaining_quantity > 0
+    3. Return combined list
+    """
+    # Get the most recent DailyRecord (prefer OPEN, fallback to latest CLOSED)
+    current_day = db.query(DailyRecord).filter(
+        DailyRecord.status == DayStatus.OPEN
+    ).order_by(desc(DailyRecord.date)).first()
+
+    if not current_day:
+        # Fallback to most recent closed day
+        current_day = db.query(DailyRecord).filter(
+            DailyRecord.status == DayStatus.CLOSED
+        ).order_by(desc(DailyRecord.date)).first()
+
+    # Get all active ingredients with storage inventory eager loaded
+    ingredients = db.query(Ingredient).options(
+        joinedload(Ingredient.storage_inventory)
+    ).filter(Ingredient.is_active == True).all()
+
+    result = []
+
+    for ingredient in ingredients:
+        # Get warehouse quantity from StorageInventory
+        warehouse_qty = Decimal("0")
+        if ingredient.storage_inventory:
+            warehouse_qty = Decimal(str(ingredient.storage_inventory.quantity))
+
+        # Get shop quantity from opening snapshot of current/most recent day
+        shop_qty = Decimal("0")
+        if current_day:
+            opening_snapshot = db.query(InventorySnapshot).filter(
+                InventorySnapshot.daily_record_id == current_day.id,
+                InventorySnapshot.ingredient_id == ingredient.id,
+                InventorySnapshot.snapshot_type == SnapshotType.OPEN,
+                InventorySnapshot.location == InventoryLocation.SHOP
+            ).first()
+
+            if opening_snapshot and opening_snapshot.quantity is not None:
+                shop_qty = Decimal(str(opening_snapshot.quantity))
+
+        # Calculate total
+        total_qty = warehouse_qty + shop_qty
+
+        # Get batch information (count of active batches and nearest expiry)
+        batches_count = db.query(func.count(IngredientBatch.id)).filter(
+            IngredientBatch.ingredient_id == ingredient.id,
+            IngredientBatch.remaining_quantity > 0,
+            IngredientBatch.is_active == True
+        ).scalar() or 0
+
+        # Get nearest expiry date from active batches
+        nearest_expiry = db.query(func.min(IngredientBatch.expiry_date)).filter(
+            IngredientBatch.ingredient_id == ingredient.id,
+            IngredientBatch.remaining_quantity > 0,
+            IngredientBatch.is_active == True,
+            IngredientBatch.expiry_date.isnot(None)
+        ).scalar()
+
+        result.append(StockLevel(
+            ingredient_id=ingredient.id,
+            ingredient_name=ingredient.name,
+            unit_type=ingredient.unit_type.value,
+            unit_label=ingredient.unit_label or "szt",
+            warehouse_qty=warehouse_qty,
+            shop_qty=shop_qty,
+            total_qty=total_qty,
+            batches_count=batches_count,
+            nearest_expiry=nearest_expiry,
+        ))
+
+    return result
+
+
+class IngredientNotFoundError(Exception):
+    """Raised when ingredient is not found."""
+    pass
+
+
+class ShopAdjustmentNotSupportedError(Exception):
+    """Raised when shop adjustment is attempted (not yet supported)."""
+    pass
+
+
+class InsufficientStockError(Exception):
+    """Raised when there is not enough stock for subtraction."""
+    def __init__(self, available: Decimal):
+        self.available = available
+        super().__init__(f"Insufficient stock (available: {available})")
+
+
+def create_stock_adjustment(
+    db: Session,
+    adjustment: StockAdjustmentCreate
+) -> StockAdjustmentResponse:
+    """
+    Create a stock adjustment for warehouse (storage) inventory.
+
+    For 'storage': Updates StorageInventory table directly.
+    For 'shop': Not yet supported (shop inventory is snapshot-based).
+
+    Steps:
+    1. Get current quantity for the ingredient at the location
+    2. Calculate new quantity based on adjustment_type (set/add/subtract)
+    3. Update the appropriate table
+    4. Return response with before/after quantities
+
+    Raises:
+        IngredientNotFoundError: If ingredient does not exist
+        ShopAdjustmentNotSupportedError: If location is 'shop'
+        InsufficientStockError: If subtract would result in negative stock
+    """
+    # Get ingredient
+    ingredient = db.query(Ingredient).filter(Ingredient.id == adjustment.ingredient_id).first()
+    if not ingredient:
+        raise IngredientNotFoundError()
+
+    # Shop adjustments not supported yet (shop inventory is snapshot-based)
+    if adjustment.location == "shop":
+        raise ShopAdjustmentNotSupportedError()
+
+    # Get or create StorageInventory record
+    storage_inv = db.query(StorageInventory).filter(
+        StorageInventory.ingredient_id == adjustment.ingredient_id
+    ).first()
+
+    if not storage_inv:
+        # Create new storage inventory record with 0 quantity
+        storage_inv = StorageInventory(
+            ingredient_id=adjustment.ingredient_id,
+            quantity=Decimal("0")
+        )
+        db.add(storage_inv)
+        db.flush()  # Get the ID without committing
+
+    previous_quantity = Decimal(str(storage_inv.quantity))
+
+    # Calculate new quantity based on adjustment type
+    if adjustment.adjustment_type == AdjustmentType.set:
+        new_quantity = adjustment.quantity
+        adjustment_amount = new_quantity - previous_quantity
+    elif adjustment.adjustment_type == AdjustmentType.add:
+        new_quantity = previous_quantity + adjustment.quantity
+        adjustment_amount = adjustment.quantity
+    elif adjustment.adjustment_type == AdjustmentType.subtract:
+        new_quantity = previous_quantity - adjustment.quantity
+        adjustment_amount = -adjustment.quantity
+        # Check for negative stock
+        if new_quantity < 0:
+            raise InsufficientStockError(previous_quantity)
+    else:
+        # Should not happen due to Pydantic validation
+        raise ValueError(f"Invalid adjustment type: {adjustment.adjustment_type}")
+
+    # Update storage inventory
+    storage_inv.quantity = new_quantity
+    storage_inv.last_counted_at = datetime.now()
+    db.commit()
+    db.refresh(storage_inv)
+
+    return StockAdjustmentResponse(
+        id=storage_inv.id,
+        ingredient_id=ingredient.id,
+        ingredient_name=ingredient.name,
+        location=adjustment.location,
+        adjustment_type=adjustment.adjustment_type.value,
+        previous_quantity=previous_quantity,
+        new_quantity=new_quantity,
+        adjustment_amount=adjustment_amount,
+        reason=adjustment.reason,
+        notes=adjustment.notes,
+        created_at=storage_inv.updated_at or datetime.now(),
+    )

@@ -48,6 +48,7 @@ export default function FinancesPage() {
         <button
           onClick={() => setShowModal(true)}
           className="btn btn-primary flex items-center gap-2"
+          data-testid="add-expense-btn"
         >
           <Plus className="w-4 h-4" />
           {t('finances.addTransaction')}
@@ -94,6 +95,7 @@ export default function FinancesPage() {
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-4 border border-gray-100 rounded-lg"
+                data-testid={`transaction-row-${transaction.id}`}
               >
                 <div className="flex items-center gap-4">
                   <div className={`p-2 rounded-lg ${transaction.type === 'revenue' ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -376,6 +378,7 @@ function TransactionForm({
           onChange={(e) => setAmount(e.target.value)}
           className="input"
           required
+          data-testid="expense-amount-input"
         />
       </div>
 
@@ -413,7 +416,7 @@ function TransactionForm({
         />
       </div>
 
-      <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+      <button type="submit" className="btn btn-primary w-full" disabled={isLoading} data-testid="save-expense-btn">
         {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>

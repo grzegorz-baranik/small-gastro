@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, Numeric, DateTime, ForeignKey, CheckConstraint, String, Text
+from sqlalchemy import Column, Integer, Numeric, DateTime, Date, ForeignKey, CheckConstraint, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.database import Base
+from app.core.database import Base, EnumColumn
+from app.models.ingredient_batch import BatchLocation
 
 
 class Delivery(Base):
@@ -16,6 +17,7 @@ class Delivery(Base):
     supplier_name = Column(String(255), nullable=True)
     invoice_number = Column(String(100), nullable=True)
     total_cost_pln = Column(Numeric(10, 2), nullable=False)  # Total cost of entire delivery
+    destination = Column(EnumColumn(BatchLocation), nullable=False, server_default="storage")  # Where delivery goes: storage or shop
     notes = Column(Text, nullable=True)
     transaction_id = Column(Integer, ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
     delivered_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -42,6 +44,7 @@ class DeliveryItem(Base):
     ingredient_id = Column(Integer, ForeignKey("ingredients.id", ondelete="RESTRICT"), nullable=False)
     quantity = Column(Numeric(10, 3), nullable=False)  # In ingredient's unit (kg or count)
     cost_pln = Column(Numeric(10, 2), nullable=True)  # Optional per-item cost
+    expiry_date = Column(Date, nullable=True)  # Optional expiry date for batch tracking
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
@@ -52,3 +55,4 @@ class DeliveryItem(Base):
     # Relationships
     delivery = relationship("Delivery", back_populates="items")
     ingredient = relationship("Ingredient", back_populates="delivery_items")
+    batch = relationship("IngredientBatch", back_populates="delivery_item", uselist=False)

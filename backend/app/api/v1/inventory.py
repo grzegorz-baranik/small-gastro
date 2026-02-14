@@ -17,9 +17,17 @@ from app.schemas.inventory import (
     CurrentStock,
     IngredientAvailability,
     TransferStockItem,
+    StockLevel,
+    StockAdjustmentCreate,
+    StockAdjustmentResponse,
 )
 from app.models.inventory_snapshot import SnapshotType, InventoryLocation
 from app.services import inventory_service
+from app.services.inventory_service import (
+    IngredientNotFoundError,
+    ShopAdjustmentNotSupportedError,
+    InsufficientStockError,
+)
 
 router = APIRouter()
 
@@ -30,6 +38,19 @@ def get_current_stock(
 ):
     """Pobierz aktualny stan magazynowy."""
     return inventory_service.get_current_stock(db)
+
+
+@router.get("/stock-levels", response_model=list[StockLevel])
+def get_stock_levels(
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz stany magazynowe dla wszystkich skladnikow (magazyn + sklep).
+
+    Zwraca aktualne ilosci w magazynie i sklepie dla kazdego skladnika,
+    wraz z informacjami o partiach i najbliższej dacie waznosci.
+    """
+    return inventory_service.get_stock_levels(db)
 
 
 @router.get("/daily-record/{daily_record_id}/snapshots", response_model=list[InventorySnapshotResponse])
@@ -124,3 +145,38 @@ def get_transfer_stock(
     zdecydowac ile przenieść.
     """
     return inventory_service.get_transfer_stock_info(db, daily_record_id)
+
+
+@router.post("/adjustment", response_model=StockAdjustmentResponse, status_code=status.HTTP_201_CREATED)
+def create_adjustment(
+    adjustment: StockAdjustmentCreate,
+    db: Session = Depends(get_db),
+):
+    """
+    Utworz korekte stanow magazynowych.
+
+    Pozwala na korekte ilosci skladnikow w magazynie (storage).
+    Korekty dla sklepu (shop) nie sa jeszcze obslugiwane.
+
+    Typy korekty:
+    - set: Ustaw dokladna wartosc
+    - add: Dodaj ilosc
+    - subtract: Odejmij ilosc
+    """
+    try:
+        return inventory_service.create_stock_adjustment(db, adjustment)
+    except IngredientNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.ingredient_not_found")
+        )
+    except ShopAdjustmentNotSupportedError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=t("errors.shop_adjustment_not_supported")
+        )
+    except InsufficientStockError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=t("errors.insufficient_storage", available=str(e.available))
+        )

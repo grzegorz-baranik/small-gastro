@@ -11,6 +11,8 @@ interface ModalProps {
   size?: ModalSize
   /** If true, prevents closing on Escape key or backdrop click */
   preventClose?: boolean
+  /** Optional data-testid for E2E testing */
+  'data-testid'?: string
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -29,6 +31,7 @@ export default function Modal({
   children,
   size = 'lg',
   preventClose = false,
+  'data-testid': dataTestId,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const previousActiveElement = useRef<Element | null>(null)
@@ -101,16 +104,19 @@ export default function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      data-testid={dataTestId}
     >
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className="fixed inset-0 bg-black/50 transition-opacity"
           onClick={handleBackdropClick}
           aria-hidden="true"
+          data-testid="modal-backdrop"
         />
         <div
           ref={modalRef}
           className={`relative bg-white rounded-xl shadow-xl w-full animate-scale-in ${sizeClasses[size]}`}
+          data-testid="modal-content"
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
@@ -121,6 +127,7 @@ export default function Modal({
               className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Zamknij"
               disabled={preventClose}
+              data-testid="modal-close-btn"
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>

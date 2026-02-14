@@ -43,6 +43,7 @@
   "errors.day_already_closed": "Day is already closed",
   "errors.no_previous_closed_days": "No previous closed days",
   "errors.can_only_edit_closed_days": "Can only edit closed days",
+  "errors.can_only_update_opening_for_open_days": "Can only update opening inventory for open days",
   "errors.day_not_closed": "Day {date} was not closed",
   "errors.gap_in_days": "Cannot open day {target_date}. Day {gap_date} is not closed. Close all previous days before opening a new one.",
   "errors.date_too_old": "Cannot open a day older than {days} days",
@@ -61,6 +62,13 @@
   "errors.spoilage_not_found": "Spoilage not found",
   "errors.cannot_delete_spoilage_closed": "Cannot delete spoilage from closed day",
 
+  "errors.shop_adjustment_not_supported": "Shop inventory adjustments are not yet supported. Use storage adjustments only.",
+
+  "errors.batch_not_found": "Batch not found",
+  "errors.batch_inactive": "Batch is inactive (depleted)",
+  "errors.batch_insufficient_quantity": "Insufficient quantity in batch (available: {available})",
+  "errors.batch_ingredient_mismatch": "Batch does not belong to this ingredient",
+
   "errors.position_exists": "Position with this name already exists",
   "errors.position_not_found": "Position not found",
   "errors.position_has_employees": "Cannot delete position with assigned employees",
@@ -73,9 +81,16 @@
   "errors.shift_not_found": "Shift not found",
   "errors.shift_end_before_start": "End time must be after start time",
 
+  "errors.day_not_open": "Day is not open",
+  "errors.product_not_found_or_inactive": "Product not found or is inactive",
+  "errors.sale_not_found_or_voided": "Sale not found or has already been voided",
+  "errors.sale_not_found_or_already_voided": "Sale not found or already voided",
+  "errors.cannot_void_sale_closed_day": "Cannot void sale from a closed day",
+
   "success.order_updated": "Order updated",
   "success.day_updated": "Day has been updated",
   "success.all_days_closed": "All previous days are closed",
+  "success.opening_inventory_updated": "Opening inventory has been updated",
 
   "labels.uncategorized": "Uncategorized",
   "labels.delivery_expense": "Goods delivery",

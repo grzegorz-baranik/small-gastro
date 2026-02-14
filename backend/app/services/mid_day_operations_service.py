@@ -28,6 +28,9 @@ from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.storage_inventory import StorageInventory
 from app.models.transaction import Transaction, TransactionType, PaymentMethod
+from app.models.ingredient_batch import IngredientBatch, BatchLocation
+
+from app.services import batch_service
 
 from app.schemas.mid_day_operations import (
     DeliveryCreate,
@@ -152,12 +155,17 @@ def create_delivery(
         db.add(db_transaction)
         db.flush()  # Get transaction ID without committing
 
+        # Determine destination location for batches (default to storage)
+        destination_str = data.destination or "storage"
+        batch_location = BatchLocation(destination_str)
+
         # Create delivery
         db_delivery = Delivery(
             daily_record_id=data.daily_record_id,
             supplier_name=data.supplier_name,
             invoice_number=data.invoice_number,
             total_cost_pln=data.total_cost_pln,
+            destination=batch_location,
             notes=data.notes,
             transaction_id=db_transaction.id,
             delivered_at=data.delivered_at or datetime.now(),
@@ -165,15 +173,20 @@ def create_delivery(
         db.add(db_delivery)
         db.flush()  # Get delivery ID
 
-        # Create delivery items
+        # Create delivery items and batches
         for item_data in data.items:
             db_item = DeliveryItem(
                 delivery_id=db_delivery.id,
                 ingredient_id=item_data.ingredient_id,
                 quantity=item_data.quantity,
                 cost_pln=item_data.cost_pln,
+                expiry_date=item_data.expiry_date,
             )
             db.add(db_item)
+            db.flush()  # Get item ID for batch creation
+
+            # Auto-create batch for tracking at the specified destination
+            batch_service.create_batch_from_delivery_item(db, db_item, location=destination_str)
 
         db.commit()
         db.refresh(db_delivery)
@@ -194,7 +207,8 @@ def get_deliveries(
     Uses eager loading to avoid N+1 queries.
     """
     query = db.query(Delivery).options(
-        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient)
+        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient),
+        joinedload(Delivery.items).joinedload(DeliveryItem.batch)
     )
 
     if daily_record_id is not None:
@@ -223,7 +237,8 @@ def get_delivery_by_id(
     Get a single delivery by ID with all items.
     """
     delivery = db.query(Delivery).options(
-        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient)
+        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient),
+        joinedload(Delivery.items).joinedload(DeliveryItem.batch)
     ).filter(Delivery.id == delivery_id).first()
 
     if not delivery:
@@ -274,6 +289,13 @@ def delete_delivery(
 
 def _build_delivery_item_response(item: DeliveryItem, ingredient: Ingredient) -> DeliveryItemResponse:
     """Build response schema for a single delivery item."""
+    # Get batch info if available
+    batch_id = None
+    batch_number = None
+    if hasattr(item, 'batch') and item.batch:
+        batch_id = item.batch.id
+        batch_number = item.batch.batch_number
+
     return DeliveryItemResponse(
         id=item.id,
         delivery_id=item.delivery_id,
@@ -282,6 +304,9 @@ def _build_delivery_item_response(item: DeliveryItem, ingredient: Ingredient) ->
         unit_label=ingredient.unit_label or "szt",
         quantity=Decimal(str(item.quantity)),
         cost_pln=Decimal(str(item.cost_pln)) if item.cost_pln else None,
+        expiry_date=item.expiry_date,
+        batch_id=batch_id,
+        batch_number=batch_number,
         created_at=item.created_at,
     )
 
@@ -299,12 +324,18 @@ def _build_delivery_response(
         if ingredient:
             items_responses.append(_build_delivery_item_response(item, ingredient))
 
+    # Get destination as string value
+    destination_value = "storage"
+    if delivery.destination:
+        destination_value = delivery.destination.value if hasattr(delivery.destination, 'value') else str(delivery.destination)
+
     return DeliveryResponse(
         id=delivery.id,
         daily_record_id=delivery.daily_record_id,
         supplier_name=delivery.supplier_name,
         invoice_number=delivery.invoice_number,
         total_cost_pln=Decimal(str(delivery.total_cost_pln)),
+        destination=destination_value,
         notes=delivery.notes,
         transaction_id=delivery.transaction_id,
         items=items_responses,
@@ -474,6 +505,8 @@ def create_spoilage(
     """
     Create a new spoilage record.
 
+    If batch_id is provided, also deducts from the batch.
+
     Returns:
         Tuple of (response, error_message). If error_message is not None, operation failed.
     """
@@ -487,6 +520,15 @@ def create_spoilage(
     if error:
         return None, error
 
+    # Validate batch if provided
+    batch = None
+    if data.batch_id:
+        batch = db.query(IngredientBatch).filter(IngredientBatch.id == data.batch_id).first()
+        if not batch:
+            return None, t("errors.batch_not_found")
+        if batch.ingredient_id != data.ingredient_id:
+            return None, t("errors.batch_ingredient_mismatch")
+
     # Convert schema enum to model enum
     reason_value = SpoilageReason(data.reason.value)
 
@@ -495,16 +537,35 @@ def create_spoilage(
         db_spoilage = Spoilage(
             daily_record_id=data.daily_record_id,
             ingredient_id=data.ingredient_id,
+            batch_id=data.batch_id,
             quantity=data.quantity,
             reason=reason_value,
             notes=data.notes,
             recorded_at=data.recorded_at or datetime.now(),
         )
         db.add(db_spoilage)
+        db.flush()  # Get spoilage ID
+
+        # Deduct from batch if provided
+        if data.batch_id:
+            _, batch_error = batch_service.deduct_from_batch(
+                db=db,
+                batch_id=data.batch_id,
+                quantity=Decimal(str(data.quantity)),
+                reason="spoilage",
+                daily_record_id=data.daily_record_id,
+                reference_type="spoilage",
+                reference_id=db_spoilage.id,
+                notes=f"Strata: {reason_value.value}"
+            )
+            if batch_error:
+                db.rollback()
+                return None, batch_error
+
         db.commit()
         db.refresh(db_spoilage)
 
-        return _build_spoilage_response(db_spoilage, ingredient), None
+        return _build_spoilage_response(db_spoilage, ingredient, batch), None
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Blad integralnosci bazy danych przy tworzeniu straty: {e}")
@@ -519,7 +580,10 @@ def get_spoilages(
     Get list of spoilage records, optionally filtered by daily_record_id.
     Uses eager loading to avoid N+1 queries.
     """
-    query = db.query(Spoilage).options(joinedload(Spoilage.ingredient))
+    query = db.query(Spoilage).options(
+        joinedload(Spoilage.ingredient),
+        joinedload(Spoilage.batch)
+    )
 
     if daily_record_id is not None:
         query = query.filter(Spoilage.daily_record_id == daily_record_id)
@@ -527,7 +591,7 @@ def get_spoilages(
     spoilages = query.order_by(Spoilage.recorded_at.desc()).all()
 
     items = [
-        _build_spoilage_response(spoilage, spoilage.ingredient)
+        _build_spoilage_response(spoilage, spoilage.ingredient, spoilage.batch)
         for spoilage in spoilages
         if spoilage.ingredient
     ]
@@ -542,15 +606,17 @@ def get_spoilage_by_id(
     """
     Get a single spoilage record by ID.
     """
-    spoilage = db.query(Spoilage).filter(Spoilage.id == spoilage_id).first()
+    spoilage = db.query(Spoilage).options(
+        joinedload(Spoilage.ingredient),
+        joinedload(Spoilage.batch)
+    ).filter(Spoilage.id == spoilage_id).first()
     if not spoilage:
         return None, t("errors.spoilage_not_found")
 
-    ingredient = db.query(Ingredient).filter(Ingredient.id == spoilage.ingredient_id).first()
-    if not ingredient:
+    if not spoilage.ingredient:
         return None, t("errors.ingredient_not_found")
 
-    return _build_spoilage_response(spoilage, ingredient), None
+    return _build_spoilage_response(spoilage, spoilage.ingredient, spoilage.batch), None
 
 
 def delete_spoilage(
@@ -579,7 +645,11 @@ def delete_spoilage(
     return True, None
 
 
-def _build_spoilage_response(spoilage: Spoilage, ingredient: Ingredient) -> SpoilageResponse:
+def _build_spoilage_response(
+    spoilage: Spoilage,
+    ingredient: Ingredient,
+    batch: Optional[IngredientBatch] = None
+) -> SpoilageResponse:
     """Build response schema from spoilage model."""
     # Get Polish label for reason
     try:
@@ -587,6 +657,13 @@ def _build_spoilage_response(spoilage: Spoilage, ingredient: Ingredient) -> Spoi
         reason_label = SPOILAGE_REASON_LABELS.get(reason_enum, spoilage.reason.value)
     except (ValueError, AttributeError):
         reason_label = str(spoilage.reason)
+
+    # Get batch info
+    batch_id = None
+    batch_number = None
+    if batch:
+        batch_id = batch.id
+        batch_number = batch.batch_number
 
     return SpoilageResponse(
         id=spoilage.id,
@@ -597,6 +674,8 @@ def _build_spoilage_response(spoilage: Spoilage, ingredient: Ingredient) -> Spoi
         quantity=Decimal(str(spoilage.quantity)),
         reason=spoilage.reason.value if hasattr(spoilage.reason, 'value') else str(spoilage.reason),
         reason_label=reason_label,
+        batch_id=batch_id,
+        batch_number=batch_number,
         notes=spoilage.notes,
         recorded_at=spoilage.recorded_at,
         created_at=spoilage.created_at,

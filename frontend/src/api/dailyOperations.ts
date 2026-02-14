@@ -8,6 +8,7 @@ import type {
   RecentDayRecord,
   InventorySnapshotItem,
   DayEventsSummary,
+  ReconciliationReport,
 } from '../types'
 
 /**
@@ -135,5 +136,32 @@ export async function checkPreviousDayStatus(): Promise<{
     previous_date: string | null
     previous_record_id: number | null
   }>('/daily-records/check-previous')
+  return data
+}
+
+/**
+ * Update opening inventory for an existing daily record
+ */
+export async function updateOpeningInventory(
+  recordId: number,
+  items: InventorySnapshotItem[]
+): Promise<DailyRecord> {
+  const { data } = await client.put<DailyRecord>(
+    `/daily-records/${recordId}/opening-inventory`,
+    { items }
+  )
+  return data
+}
+
+/**
+ * Get sales reconciliation report for a daily record
+ * Compares recorded sales vs calculated sales from inventory usage
+ */
+export async function getReconciliationReport(
+  recordId: number
+): Promise<ReconciliationReport> {
+  const { data } = await client.get<ReconciliationReport>(
+    `/recorded-sales/${recordId}/reconciliation`
+  )
   return data
 }

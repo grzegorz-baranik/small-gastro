@@ -15,6 +15,9 @@ from app.api.v1 import (
     employees,
     shifts,
     wage_analytics,
+    batches,
+    shift_templates,
+    recorded_sales,
 )
 
 api_router = APIRouter()
@@ -36,3 +39,12 @@ api_router.include_router(positions.router, prefix="/positions", tags=["Stanowis
 api_router.include_router(employees.router, prefix="/employees", tags=["Pracownicy"])
 api_router.include_router(shifts.router, prefix="", tags=["Zmiany"])  # Uses /daily-records/{id}/shifts
 api_router.include_router(wage_analytics.router, prefix="/analytics/wages", tags=["Analityka wynagrodzen"])
+
+# Batch/Expiry Tracking
+api_router.include_router(batches.router, prefix="/batches", tags=["Partie i terminy waznosci"])
+
+# Shift Templates & Schedule Management
+api_router.include_router(shift_templates.router, prefix="", tags=["Szablony zmian i harmonogram"])
+
+# Recorded Sales & Reconciliation
+api_router.include_router(recorded_sales.router, tags=["Rejestracja sprzedazy"])

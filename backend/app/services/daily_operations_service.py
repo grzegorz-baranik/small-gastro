@@ -61,6 +61,7 @@ from app.schemas.daily_operations import (
     DailyRecordDetailResponse,
     CalculatedSaleItem,
     PreviousDayStatusResponse,
+    UpdateOpeningInventoryResponse,
 )
 from app.core.i18n import t
 
@@ -1045,6 +1046,79 @@ def edit_closed_day(
         updated_at=db_record.updated_at,
         usage_summary=usage_summary,
         message=t("success.day_updated")
+    ), None
+
+
+# -----------------------------------------------------------------------------
+# Update Opening Inventory (for open days)
+# -----------------------------------------------------------------------------
+
+def update_opening_inventory(
+    db: Session,
+    record_id: int,
+    items: list[InventorySnapshotItem]
+) -> tuple[Optional[UpdateOpeningInventoryResponse], Optional[str]]:
+    """
+    Update opening inventory for an open day.
+
+    Allows updating opening counts while the day is still open.
+    This enables corrections during the day before closing.
+
+    Args:
+        db: Database session
+        record_id: ID of the daily record to update
+        items: List of opening inventory items with updated quantities
+
+    Returns:
+        Tuple of (response, error_message). If error_message is not None, operation failed.
+
+    Business Rules:
+        - Can only update opening inventory for days with status='open'
+        - Replaces all existing opening snapshots with new values
+    """
+    # Get the record
+    db_record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
+    if not db_record:
+        return None, t("errors.record_not_found")
+
+    # Validate day is still open
+    if db_record.status != DayStatus.OPEN:
+        return None, t("errors.can_only_update_opening_for_open_days")
+
+    # Delete existing opening snapshots
+    db.query(InventorySnapshot).filter(
+        InventorySnapshot.daily_record_id == record_id,
+        InventorySnapshot.snapshot_type == SnapshotType.OPEN,
+        InventorySnapshot.location == InventoryLocation.SHOP
+    ).delete()
+
+    # Create new opening snapshots
+    opening_snapshots = []
+    for item in items:
+        db_snapshot = InventorySnapshot(
+            daily_record_id=record_id,
+            ingredient_id=item.ingredient_id,
+            snapshot_type=SnapshotType.OPEN,
+            location=InventoryLocation.SHOP,
+            quantity=item.quantity,
+        )
+        db.add(db_snapshot)
+        db.flush()
+
+        # Load ingredient relationship for response
+        db.refresh(db_snapshot)
+        opening_snapshots.append(_build_snapshot_response(db_snapshot))
+
+    db.commit()
+    db.refresh(db_record)
+
+    return UpdateOpeningInventoryResponse(
+        id=db_record.id,
+        date=db_record.date,
+        status=db_record.status,
+        updated_at=db_record.updated_at,
+        opening_snapshots=opening_snapshots,
+        message=t("success.opening_inventory_updated")
     ), None
 
 

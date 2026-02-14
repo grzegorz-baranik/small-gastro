@@ -12,12 +12,14 @@ class Product(Base):
     has_variants = Column(Boolean, nullable=False, server_default="false")  # True for products with size variants
     is_active = Column(Boolean, nullable=False, server_default="true")
     sort_order = Column(Integer, nullable=False, server_default="0", index=True)  # For menu ordering
+    category_id = Column(Integer, ForeignKey("product_categories.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
     sales_items = relationship("SalesItem", back_populates="product")  # Legacy relationship
+    category = relationship("ProductCategory", back_populates="products")
 
 
 class ProductVariant(Base):
@@ -44,6 +46,7 @@ class ProductVariant(Base):
     product = relationship("Product", back_populates="variants")
     ingredients = relationship("ProductIngredient", back_populates="product_variant", cascade="all, delete-orphan")
     calculated_sales = relationship("CalculatedSale", back_populates="product_variant")
+    recorded_sales = relationship("RecordedSale", back_populates="product_variant")
 
 
 class ProductIngredient(Base):

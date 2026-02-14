@@ -9,7 +9,7 @@ These schemas support recording events that occur during an open day:
 
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
 
@@ -45,6 +45,7 @@ class DeliveryItemCreate(BaseModel):
     ingredient_id: int = Field(..., description="ID skladnika")
     quantity: Decimal = Field(..., gt=0, description="Ilosc w jednostce skladnika")
     cost_pln: Optional[Decimal] = Field(None, ge=0, description="Opcjonalny koszt pozycji w PLN")
+    expiry_date: Optional[date] = Field(None, description="Data waznosci (opcjonalna, dla sledzenia partii)")
 
     @field_validator("quantity", mode="before")
     @classmethod
@@ -70,6 +71,9 @@ class DeliveryItemResponse(BaseModel):
     unit_label: str
     quantity: Decimal
     cost_pln: Optional[Decimal]
+    expiry_date: Optional[date] = None
+    batch_id: Optional[int] = None
+    batch_number: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -83,6 +87,7 @@ class DeliveryCreate(BaseModel):
     total_cost_pln: Decimal = Field(..., ge=0, description="Calkowity koszt dostawy w PLN")
     supplier_name: Optional[str] = Field(None, max_length=255, description="Nazwa dostawcy")
     invoice_number: Optional[str] = Field(None, max_length=100, description="Numer faktury")
+    destination: Optional[str] = Field("storage", description="Miejsce docelowe dostawy: 'storage' (magazyn) lub 'shop' (sklep)")
     notes: Optional[str] = Field(None, description="Dodatkowe notatki")
     delivered_at: Optional[datetime] = Field(None, description="Czas dostawy (domyslnie teraz)")
 
@@ -101,6 +106,7 @@ class DeliveryResponse(BaseModel):
     supplier_name: Optional[str]
     invoice_number: Optional[str]
     total_cost_pln: Decimal
+    destination: str = "storage"
     notes: Optional[str]
     transaction_id: Optional[int]
     items: list[DeliveryItemResponse] = []
@@ -167,6 +173,7 @@ class SpoilageCreate(BaseModel):
     ingredient_id: int = Field(..., description="ID skladnika")
     quantity: Decimal = Field(..., gt=0, description="Ilosc stracona")
     reason: SpoilageReasonEnum = Field(..., description="Przyczyna straty")
+    batch_id: Optional[int] = Field(None, description="ID partii (opcjonalne, dla powiazania ze strata)")
     notes: Optional[str] = Field(None, max_length=500, description="Dodatkowe uwagi")
     recorded_at: Optional[datetime] = Field(None, description="Czas zarejestrowania (domyslnie teraz)")
 
@@ -188,6 +195,8 @@ class SpoilageResponse(BaseModel):
     quantity: Decimal
     reason: str
     reason_label: str  # Polish display name
+    batch_id: Optional[int] = None
+    batch_number: Optional[str] = None
     notes: Optional[str]
     recorded_at: datetime
     created_at: datetime

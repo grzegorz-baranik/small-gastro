@@ -21,6 +21,7 @@ from app.models.transaction import Transaction, TransactionType, PaymentMethod
 from app.models.expense_category import ExpenseCategory
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.delivery import Delivery
+from app.models.storage_transfer import StorageTransfer
 from app.models.position import Position
 from app.models.employee import Employee
 from app.models.shift_assignment import ShiftAssignment
@@ -209,21 +210,66 @@ def build_delivery(
     ingredient_id: int,
     quantity: Decimal = Decimal("5.00"),
     price_pln: Decimal = Decimal("50.00"),
+    supplier_name: Optional[str] = None,
     **overrides
 ) -> Delivery:
-    """Create a delivery record with sensible defaults."""
+    """
+    Create a delivery record with a single item.
+
+    Note: The Delivery model now uses DeliveryItem for ingredients.
+    This builder creates a Delivery with one DeliveryItem for convenience.
+    """
+    from app.models.delivery import DeliveryItem
+
+    # Create the delivery
+    delivery_data = {
+        "daily_record_id": daily_record_id,
+        "total_cost_pln": price_pln,
+        "supplier_name": supplier_name,
+    }
+    delivery_data.update(overrides)
+
+    delivery = Delivery(**delivery_data)
+    db.add(delivery)
+    db.flush()
+
+    # Create the delivery item
+    item = DeliveryItem(
+        delivery_id=delivery.id,
+        ingredient_id=ingredient_id,
+        quantity=quantity,
+        cost_pln=price_pln,
+    )
+    db.add(item)
+    db.flush()
+
+    return delivery
+
+
+def build_storage_transfer(
+    db: Session,
+    daily_record_id: int,
+    ingredient_id: int,
+    quantity: Decimal = Decimal("5.00"),
+    transferred_at: Optional[datetime] = None,
+    **overrides
+) -> StorageTransfer:
+    """Create a storage transfer record with sensible defaults."""
+    if transferred_at is None:
+        transferred_at = datetime.now()
+
     data = {
         "daily_record_id": daily_record_id,
         "ingredient_id": ingredient_id,
         "quantity": quantity,
-        "price_pln": price_pln,
+        "transferred_at": transferred_at,
     }
     data.update(overrides)
 
-    delivery = Delivery(**data)
-    db.add(delivery)
+    transfer = StorageTransfer(**data)
+    db.add(transfer)
     db.flush()
-    return delivery
+    return transfer
 
 
 def build_position(
@@ -378,3 +424,124 @@ def build_wage_transaction(
     db.add(transaction)
     db.flush()
     return transaction
+
+
+# -----------------------------------------------------------------------------
+# Shift Template and Schedule Override Builders
+# These builders are for the Unified Day Operations feature.
+# Note: Models are expected to be created at:
+#   - app/models/shift_template.py
+#   - app/models/shift_schedule_override.py
+# -----------------------------------------------------------------------------
+
+def build_shift_template(
+    db: Session,
+    employee_id: Optional[int] = None,
+    employee: Optional[Employee] = None,
+    day_of_week: int = 0,  # 0=Monday, 6=Sunday
+    start_time: Optional["time"] = None,
+    end_time: Optional["time"] = None,
+    **overrides
+) -> "ShiftTemplate":
+    """
+    Create a shift template with sensible defaults.
+
+    A shift template defines a recurring pattern for an employee's shifts
+    (e.g., "Anna works Mon-Fri 08:00-16:00").
+
+    You can pass either employee_id or employee object.
+    If neither is provided, a new employee will be created.
+    """
+    from datetime import time as time_type
+    # Import the model - this will fail until the model is created
+    from app.models.shift_template import ShiftTemplate
+
+    # Handle employee
+    if employee_id is None:
+        if employee is not None:
+            employee_id = employee.id
+        else:
+            new_employee = build_employee(db)
+            employee_id = new_employee.id
+
+    # Default times
+    if start_time is None:
+        start_time = time_type(8, 0)
+    if end_time is None:
+        end_time = time_type(16, 0)
+
+    data = {
+        "employee_id": employee_id,
+        "day_of_week": day_of_week,
+        "start_time": start_time,
+        "end_time": end_time,
+    }
+    data.update(overrides)
+
+    template = ShiftTemplate(**data)
+    db.add(template)
+    db.flush()
+    return template
+
+
+def build_schedule_override(
+    db: Session,
+    employee_id: Optional[int] = None,
+    employee: Optional[Employee] = None,
+    override_date: Optional[date] = None,
+    start_time: Optional["time"] = None,
+    end_time: Optional["time"] = None,
+    is_day_off: bool = False,
+    **overrides
+) -> "ShiftScheduleOverride":
+    """
+    Create a shift schedule override with sensible defaults.
+
+    A schedule override replaces the template for a specific date.
+    Can be used to:
+    - Change shift hours for a specific day
+    - Mark an employee as having the day off
+
+    You can pass either employee_id or employee object.
+    If neither is provided, a new employee will be created.
+    """
+    from datetime import time as time_type
+    # Import the model - this will fail until the model is created
+    from app.models.shift_schedule_override import ShiftScheduleOverride
+
+    # Handle employee
+    if employee_id is None:
+        if employee is not None:
+            employee_id = employee.id
+        else:
+            new_employee = build_employee(db)
+            employee_id = new_employee.id
+
+    # Default date
+    if override_date is None:
+        override_date = date.today()
+
+    # Default times (unless day off)
+    if not is_day_off:
+        if start_time is None:
+            start_time = time_type(9, 0)  # Different from template default
+        if end_time is None:
+            end_time = time_type(17, 0)
+    else:
+        # Day off - times should be null
+        start_time = None
+        end_time = None
+
+    data = {
+        "employee_id": employee_id,
+        "date": override_date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "is_day_off": is_day_off,
+    }
+    data.update(overrides)
+
+    override = ShiftScheduleOverride(**data)
+    db.add(override)
+    db.flush()
+    return override
