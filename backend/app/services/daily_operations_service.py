@@ -17,20 +17,21 @@ Business Rules:
 
 import math
 import logging
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from typing import Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from app.models.daily_record import DailyRecord, DayStatus
 from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.ingredient import Ingredient
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage
 from app.models.product import ProductVariant, ProductIngredient
 from app.models.calculated_sale import CalculatedSale
+from app.models.transaction import Transaction, TransactionType, PaymentMethod
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ from app.schemas.daily_operations import (
     DailyRecordDetailResponse,
     CalculatedSaleItem,
     PreviousDayStatusResponse,
+    UpdateOpeningInventoryResponse,
 )
 from app.core.i18n import t
 
@@ -83,16 +85,16 @@ def _build_snapshot_response(snapshot: InventorySnapshot) -> InventorySnapshotRe
     )
 
 
-def _build_delivery_summary(delivery: Delivery) -> DeliverySummaryItem:
-    """Convert Delivery model to summary item."""
+def _build_delivery_item_summary(item: DeliveryItem, delivered_at) -> DeliverySummaryItem:
+    """Convert DeliveryItem model to summary item."""
     return DeliverySummaryItem(
-        id=delivery.id,
-        ingredient_id=delivery.ingredient_id,
-        ingredient_name=delivery.ingredient.name,
-        unit_label=delivery.ingredient.unit_label or "szt",
-        quantity=Decimal(str(delivery.quantity)),
-        price_pln=Decimal(str(delivery.price_pln)),
-        delivered_at=delivery.delivered_at,
+        id=item.id,
+        ingredient_id=item.ingredient_id,
+        ingredient_name=item.ingredient.name,
+        unit_label=item.ingredient.unit_label or "szt",
+        quantity=Decimal(str(item.quantity)),
+        price_pln=Decimal(str(item.cost_pln)) if item.cost_pln else Decimal("0"),
+        delivered_at=delivered_at,
     )
 
 
@@ -124,13 +126,19 @@ def _build_spoilage_summary(spoilage: Spoilage) -> SpoilageSummaryItem:
 
 def _get_mid_day_events_summary(db: Session, daily_record_id: int) -> MidDayEventsSummary:
     """Get summary of all mid-day events for a record."""
-    # Get deliveries
-    deliveries = db.query(Delivery).filter(
+    # Get deliveries with their items
+    deliveries = db.query(Delivery).options(
+        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient)
+    ).filter(
         Delivery.daily_record_id == daily_record_id
     ).all()
 
-    delivery_items = [_build_delivery_summary(d) for d in deliveries]
-    deliveries_total = sum(d.price_pln for d in delivery_items)
+    # Flatten delivery items into summary items
+    delivery_summaries = []
+    for delivery in deliveries:
+        for item in delivery.items:
+            delivery_summaries.append(_build_delivery_item_summary(item, delivery.delivered_at))
+    deliveries_total = sum(delivery.total_cost_pln for delivery in deliveries)
 
     # Get transfers
     transfers = db.query(StorageTransfer).filter(
@@ -147,8 +155,8 @@ def _get_mid_day_events_summary(db: Session, daily_record_id: int) -> MidDayEven
     spoilage_items = [_build_spoilage_summary(s) for s in spoilages]
 
     return MidDayEventsSummary(
-        deliveries=delivery_items,
-        deliveries_count=len(delivery_items),
+        deliveries=delivery_summaries,
+        deliveries_count=len(delivery_summaries),
         deliveries_total_pln=deliveries_total,
         transfers=transfer_items,
         transfers_count=len(transfer_items),
@@ -166,10 +174,12 @@ def _get_ingredient_quantities_for_day(
     Get total deliveries, transfers, and spoilage for an ingredient on a day.
     Returns (deliveries_total, transfers_total, spoilage_total).
     """
-    # Sum deliveries
-    deliveries_sum = db.query(func.coalesce(func.sum(Delivery.quantity), 0)).filter(
+    # Sum deliveries (join through DeliveryItem since deliveries have multi-item structure)
+    deliveries_sum = db.query(func.coalesce(func.sum(DeliveryItem.quantity), 0)).join(
+        Delivery, DeliveryItem.delivery_id == Delivery.id
+    ).filter(
         Delivery.daily_record_id == daily_record_id,
-        Delivery.ingredient_id == ingredient_id
+        DeliveryItem.ingredient_id == ingredient_id
     ).scalar()
 
     # Sum transfers
@@ -305,6 +315,68 @@ def _delete_calculated_sales(db: Session, daily_record_id: int) -> None:
     ).delete()
 
 
+def _create_or_update_daily_revenue_transaction(
+    db: Session,
+    daily_record: DailyRecord,
+    total_income: Decimal
+) -> Optional[Transaction]:
+    """
+    Create or update the daily revenue transaction for a closed day.
+
+    This ensures that the calculated sales revenue appears in the finances.
+    Uses CASH as the default payment method for auto-generated revenue.
+
+    Args:
+        db: Database session
+        daily_record: The daily record being closed
+        total_income: Total calculated revenue for the day
+
+    Returns:
+        The created/updated Transaction, or None if no revenue
+    """
+    # Find existing revenue transaction for this day (if editing a closed day)
+    existing_transaction = db.query(Transaction).filter(
+        Transaction.daily_record_id == daily_record.id,
+        Transaction.type == TransactionType.REVENUE,
+        Transaction.description.like("%[AUTO]%")  # Marker for auto-generated
+    ).first()
+
+    # If no income, delete any existing auto-generated transaction
+    if total_income <= 0:
+        if existing_transaction:
+            db.delete(existing_transaction)
+        return None
+
+    description = t("finances.auto_daily_revenue", date=daily_record.date)
+    description_with_marker = f"{description} [AUTO]"
+
+    if existing_transaction:
+        # Update existing transaction
+        existing_transaction.amount = total_income
+        existing_transaction.description = description_with_marker
+        logger.info(
+            f"Zaktualizowano transakcje przychodu dla dnia {daily_record.date}: "
+            f"{total_income} PLN"
+        )
+        return existing_transaction
+    else:
+        # Create new transaction
+        new_transaction = Transaction(
+            type=TransactionType.REVENUE,
+            amount=total_income,
+            payment_method=PaymentMethod.CASH,  # Default to cash
+            description=description_with_marker,
+            transaction_date=daily_record.date,
+            daily_record_id=daily_record.id,
+        )
+        db.add(new_transaction)
+        logger.info(
+            f"Utworzono transakcje przychodu dla dnia {daily_record.date}: "
+            f"{total_income} PLN"
+        )
+        return new_transaction
+
+
 def _get_calculated_sales_items(
     db: Session,
     daily_record_id: int
@@ -361,6 +433,24 @@ def get_previous_unclosed_day(db: Session, target_date: date) -> Optional[DailyR
     ).order_by(desc(DailyRecord.date)).first()
 
 
+def check_for_gap_in_days(db: Session, target_date: date) -> Optional[date]:
+    """
+    Check if there's a gap in closed days before the target date.
+
+    Returns the date of an open (unclosed) day if found, None otherwise.
+    """
+    # Find any open day that exists before the target date
+    open_day = db.query(DailyRecord).filter(
+        DailyRecord.date < target_date,
+        DailyRecord.status == DayStatus.OPEN
+    ).order_by(desc(DailyRecord.date)).first()
+
+    if open_day:
+        return open_day.date
+
+    return None
+
+
 def open_day(
     db: Session,
     data: OpenDayRequest,
@@ -384,12 +474,17 @@ def open_day(
     if existing:
         return None, t("errors.day_already_exists", date=target_date, id=existing.id)
 
-    # Check for currently open day
+    # Check for gap in days - block if there's an unclosed day before target date
+    gap_date = check_for_gap_in_days(db, target_date)
+    if gap_date:
+        return None, t("errors.gap_in_days", target_date=target_date, gap_date=gap_date)
+
+    # Check for currently open day (this is now redundant with gap check, but kept for clarity)
     open_record = get_open_day(db)
     if open_record and not force:
         return None, t("errors.another_day_open", date=open_record.date)
 
-    # Check for previous unclosed day (warning, not blocking)
+    # Check for previous unclosed day (warning, not blocking - now handled by gap check)
     previous_warning = None
     previous_unclosed = get_previous_unclosed_day(db, target_date)
     if previous_unclosed:
@@ -546,7 +641,7 @@ def close_day(
         db.add(db_snapshot)
 
     # Calculate total delivery cost for the day
-    total_delivery_cost = db.query(func.coalesce(func.sum(Delivery.price_pln), 0)).filter(
+    total_delivery_cost = db.query(func.coalesce(func.sum(Delivery.total_cost_pln), 0)).filter(
         Delivery.daily_record_id == record_id
     ).scalar()
 
@@ -560,6 +655,9 @@ def close_day(
     db_record.total_income_pln = total_income
     if data.notes:
         db_record.notes = data.notes
+
+    # Create revenue transaction in finances (so it appears in the finances page)
+    _create_or_update_daily_revenue_transaction(db, db_record, total_income)
 
     db.commit()
     db.refresh(db_record)
@@ -666,10 +764,10 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
         spoilage_count=mid_day_events.spoilages_count,
     )
 
-    # Calculate usage if day is closed
+    # Calculate usage items
     usage_items: list[UsageItemResponse] = []
     if db_record.status == DayStatus.CLOSED:
-        # Get closing snapshots
+        # For CLOSED days: get closing snapshots and calculate full usage
         closing_snapshots = db.query(InventorySnapshot).filter(
             InventorySnapshot.daily_record_id == record_id,
             InventorySnapshot.snapshot_type == SnapshotType.CLOSE,
@@ -698,6 +796,55 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
                 ingredient = ingredient_map.get(item.ingredient_id)
                 if ingredient:
                     usage_items.append(_build_usage_item_response(item, ingredient))
+    else:
+        # For OPEN days: provide opening + mid-day data so frontend can calculate
+        opening_snapshots = db.query(InventorySnapshot).filter(
+            InventorySnapshot.daily_record_id == record_id,
+            InventorySnapshot.snapshot_type == SnapshotType.OPEN,
+            InventorySnapshot.location == InventoryLocation.SHOP
+        ).all()
+
+        if opening_snapshots:
+            # Get ingredient lookup
+            ingredient_ids = [s.ingredient_id for s in opening_snapshots]
+            ingredients = db.query(Ingredient).filter(
+                Ingredient.id.in_(ingredient_ids)
+            ).all()
+            ingredient_map = {ing.id: ing for ing in ingredients}
+
+            for opening_snap in opening_snapshots:
+                ingredient = ingredient_map.get(opening_snap.ingredient_id)
+                if not ingredient:
+                    continue
+
+                ingredient_id = opening_snap.ingredient_id
+                opening_qty = Decimal(str(opening_snap.quantity))
+
+                # Get mid-day quantities
+                deliveries, transfers, spoilage = _get_ingredient_quantities_for_day(
+                    db, record_id, ingredient_id
+                )
+
+                # Calculate expected closing (before actual closing count)
+                expected = opening_qty + deliveries + transfers - spoilage
+
+                usage_items.append(UsageItemResponse(
+                    ingredient_id=ingredient_id,
+                    ingredient_name=ingredient.name,
+                    unit_type=ingredient.unit_type.value if ingredient.unit_type else "weight",
+                    unit_label=ingredient.unit_label or "szt",
+                    opening_quantity=opening_qty,
+                    deliveries_quantity=deliveries,
+                    transfers_quantity=transfers,
+                    spoilage_quantity=spoilage,
+                    expected_closing=expected,
+                    closing_quantity=None,  # Not set yet
+                    usage=None,  # Can't calculate without closing
+                    expected_usage=None,
+                    discrepancy=None,
+                    discrepancy_percent=None,
+                    discrepancy_level=None,
+                ))
 
     # Build discrepancy alerts
     discrepancy_alerts = _build_discrepancy_alerts(usage_items)
@@ -735,6 +882,28 @@ def get_day_summary(db: Session, record_id: int) -> Optional[DaySummaryResponse]
         calculated_sales=calculated_sales,
         total_income_pln=db_record.total_income_pln or Decimal("0"),
         discrepancy_alerts=discrepancy_alerts,
+    )
+
+
+def get_day_events(db: Session, record_id: int) -> Optional[DayEventsSummary]:
+    """
+    Get day events summary (deliveries, transfers, spoilage).
+
+    Returns simplified events summary matching frontend DayEventsSummary type.
+    """
+    db_record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
+    if not db_record:
+        return None
+
+    # Get mid-day events
+    mid_day_events = _get_mid_day_events_summary(db, record_id)
+
+    # Build events summary for frontend
+    return DayEventsSummary(
+        deliveries_count=mid_day_events.deliveries_count,
+        deliveries_total_pln=mid_day_events.deliveries_total_pln,
+        transfers_count=mid_day_events.transfers_count,
+        spoilage_count=mid_day_events.spoilages_count,
     )
 
 
@@ -864,6 +1033,9 @@ def edit_closed_day(
     total_income = calculate_and_save_sales(db, record_id, usage_summary)
     db_record.total_income_pln = total_income
 
+    # Update the revenue transaction in finances
+    _create_or_update_daily_revenue_transaction(db, db_record, total_income)
+
     db.commit()
     db.refresh(db_record)
 
@@ -874,6 +1046,79 @@ def edit_closed_day(
         updated_at=db_record.updated_at,
         usage_summary=usage_summary,
         message=t("success.day_updated")
+    ), None
+
+
+# -----------------------------------------------------------------------------
+# Update Opening Inventory (for open days)
+# -----------------------------------------------------------------------------
+
+def update_opening_inventory(
+    db: Session,
+    record_id: int,
+    items: list[InventorySnapshotItem]
+) -> tuple[Optional[UpdateOpeningInventoryResponse], Optional[str]]:
+    """
+    Update opening inventory for an open day.
+
+    Allows updating opening counts while the day is still open.
+    This enables corrections during the day before closing.
+
+    Args:
+        db: Database session
+        record_id: ID of the daily record to update
+        items: List of opening inventory items with updated quantities
+
+    Returns:
+        Tuple of (response, error_message). If error_message is not None, operation failed.
+
+    Business Rules:
+        - Can only update opening inventory for days with status='open'
+        - Replaces all existing opening snapshots with new values
+    """
+    # Get the record
+    db_record = db.query(DailyRecord).filter(DailyRecord.id == record_id).first()
+    if not db_record:
+        return None, t("errors.record_not_found")
+
+    # Validate day is still open
+    if db_record.status != DayStatus.OPEN:
+        return None, t("errors.can_only_update_opening_for_open_days")
+
+    # Delete existing opening snapshots
+    db.query(InventorySnapshot).filter(
+        InventorySnapshot.daily_record_id == record_id,
+        InventorySnapshot.snapshot_type == SnapshotType.OPEN,
+        InventorySnapshot.location == InventoryLocation.SHOP
+    ).delete()
+
+    # Create new opening snapshots
+    opening_snapshots = []
+    for item in items:
+        db_snapshot = InventorySnapshot(
+            daily_record_id=record_id,
+            ingredient_id=item.ingredient_id,
+            snapshot_type=SnapshotType.OPEN,
+            location=InventoryLocation.SHOP,
+            quantity=item.quantity,
+        )
+        db.add(db_snapshot)
+        db.flush()
+
+        # Load ingredient relationship for response
+        db.refresh(db_snapshot)
+        opening_snapshots.append(_build_snapshot_response(db_snapshot))
+
+    db.commit()
+    db.refresh(db_record)
+
+    return UpdateOpeningInventoryResponse(
+        id=db_record.id,
+        date=db_record.date,
+        status=db_record.status,
+        updated_at=db_record.updated_at,
+        opening_snapshots=opening_snapshots,
+        message=t("success.opening_inventory_updated")
     ), None
 
 

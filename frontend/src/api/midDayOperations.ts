@@ -6,6 +6,7 @@ import type {
   StorageTransferCreate,
   Spoilage,
   SpoilageCreate,
+  TransferStockItem,
 } from '../types'
 
 // Deliveries API
@@ -87,4 +88,14 @@ export async function getSpoilage(dailyRecordId: number): Promise<Spoilage[]> {
  */
 export async function deleteSpoilage(id: number): Promise<void> {
   await client.delete(`/spoilage/${id}`)
+}
+
+// Transfer Stock Info API
+
+/**
+ * Get stock information for transfer modal (storage and shop quantities)
+ */
+export async function getTransferStockInfo(dailyRecordId: number): Promise<TransferStockItem[]> {
+  const { data } = await client.get<TransferStockItem[]>(`/inventory/daily-record/${dailyRecordId}/transfer-stock`)
+  return data
 }

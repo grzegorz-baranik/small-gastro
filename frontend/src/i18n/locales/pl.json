@@ -29,7 +29,11 @@
     "filterOptional": "Filtruj (opcjonalnie)",
     "exportToExcel": "Eksportuj do Excel",
     "unknown": "Nieznana",
-    "ok": "OK"
+    "ok": "OK",
+    "storage": "Magazyn",
+    "shop": "Sklep",
+    "remaining": "Pozostalo",
+    "age": "Wiek"
   },
   "navigation": {
     "dashboard": "Pulpit",
@@ -85,12 +89,14 @@
   "dailyOperations": {
     "title": "Operacje dzienne",
     "todayLabel": "DZISIAJ:",
+    "openDayLabel": "OTWARTY DZIEN",
     "openedAt": "Otwarty o:",
     "statusOpen": "OTWARTY",
     "statusClosed": "ZAMKNIETY",
     "statusNotOpened": "NIEOTWART",
     "openDay": "Otworz dzien",
     "closeDay": "Zamknij dzien",
+    "manageDay": "Zarzadzaj dniem",
     "summary": "Podsumowanie",
     "storageOperations": "Operacje magazynowe",
     "addDelivery": "Dodaj dostawe",
@@ -123,6 +129,7 @@
     "title": "Otworz dzien",
     "previousDayNotClosed": "Poprzedni dzien nie zostal zamkniety",
     "dateLabel": "Data:",
+    "dateRange": "Mozesz otworzyc dzien z ostatnich 7 dni",
     "recommendClosePrevious": "Zalecamy najpierw zamknac poprzedni dzien.",
     "lastClose": "Ostatnie zamkniecie:",
     "copyFromLastClose": "Kopiuj z ostatniego zamkniecia",
@@ -142,7 +149,9 @@
     "continueAnyway": "Kontynuuj mimo to",
     "closePreviousDay": "Zamknij poprzedni dzien",
     "dayOpened": "Dzien zostal otwarty",
-    "errorOpening": "Wystapil blad podczas otwierania dnia"
+    "errorOpening": "Wystapil blad podczas otwierania dnia",
+    "gapError": "Nie mozna otworzyc dnia - istnieja niezamkniete dni poprzednie",
+    "gapErrorDetail": "Zamknij wszystkie poprzednie dni przed otwarciem nowego dnia."
   },
   "closeDayModal": {
     "title": "Zamknij dzien: {{date}}",
@@ -175,6 +184,8 @@
   },
   "deliveryModal": {
     "title": "Dodaj dostawe",
+    "step1": "Skladniki",
+    "step2": "Dane faktury",
     "selectIngredient": "Wybierz skladnik...",
     "quantity": "Ilosc",
     "price": "Cena (PLN)",
@@ -184,14 +195,32 @@
     "selectIngredientError": "Wybierz skladnik",
     "enterQuantity": "Podaj ilosc",
     "quantityMustBePositive": "Ilosc musi byc wieksza od 0",
-    "enterPrice": "Podaj cene",
-    "priceCannotBeNegative": "Cena nie moze byc ujemna"
+    "enterPrice": "Podaj koszt calkowity",
+    "priceCannotBeNegative": "Cena nie moze byc ujemna",
+    "ingredientsList": "Skladniki",
+    "addIngredient": "Dodaj skladnik",
+    "costOptional": "Koszt (opc.)",
+    "next": "Dalej",
+    "back": "Wstecz",
+    "itemsCount": "Dodano {{count}} skladnikow",
+    "supplierName": "Nazwa dostawcy",
+    "supplierPlaceholder": "np. Hurtownia ABC",
+    "invoiceNumber": "Numer faktury",
+    "invoicePlaceholder": "np. FV/2025/001",
+    "totalCost": "Calkowity koszt dostawy (PLN)",
+    "notes": "Notatki",
+    "notesPlaceholder": "Dodatkowe notatki o dostawie...",
+    "destination": "Miejsce docelowe",
+    "toWarehouse": "Magazyn",
+    "toShop": "Sklep"
   },
   "transferModal": {
     "title": "Transfer z magazynu",
     "info": "Transfer z magazynu oznacza przeniesienie skladnika z magazynu glownego do kuchni/punktu sprzedazy.",
     "selectIngredient": "Wybierz skladnik...",
     "quantity": "Ilosc",
+    "storageStock": "Stan magazynu",
+    "shopStock": "Stan sklepu",
     "saveTransfer": "Zapisz transfer",
     "transferAdded": "Transfer zostal dodany",
     "errorSaving": "Wystapil blad podczas zapisywania transferu",
@@ -245,7 +274,64 @@
     }
   },
   "inventory": {
-    "title": "Historia magazynowa",
+    "title": "Magazyn",
+    "tabs": {
+      "stockLevels": "Stany magazynowe",
+      "batches": "Partie i terminy"
+    },
+    "summary": {
+      "warehouseItems": "Produktow w magazynie",
+      "shopItems": "Produktow w sklepie",
+      "expiryAlerts": "Alertow o terminach"
+    },
+    "table": {
+      "ingredient": "Skladnik",
+      "warehouse": "Magazyn",
+      "shop": "Sklep",
+      "total": "Razem",
+      "actions": "Akcje",
+      "noData": "Brak danych o stanach magazynowych",
+      "search": "Szukaj skladnika..."
+    },
+    "adjustment": {
+      "title": "Korekta stanu",
+      "type": "Typ korekty",
+      "set": "Ustaw wartosc",
+      "add": "Dodaj",
+      "subtract": "Odejmij",
+      "quantity": "Ilosc",
+      "reason": "Powod",
+      "notes": "Notatki (opcjonalnie)",
+      "preview": "Podglad zmiany",
+      "current": "Obecnie",
+      "new": "Po korekcie",
+      "submit": "Zatwierdz korekte",
+      "success": "Korekta zostala zapisana",
+      "error": "Blad podczas zapisywania korekty",
+      "reasons": {
+        "inventoryCount": "Korekta inwentaryzacyjna",
+        "damage": "Uszkodzenie",
+        "loss": "Straty",
+        "other": "Inne"
+      }
+    },
+    "transfer": {
+      "title": "Szybki transfer",
+      "available": "Dostepne w magazynie",
+      "quantity": "Ilosc do przeniesienia",
+      "toShop": "Przenies do sklepu",
+      "success": "Transfer zostal zapisany",
+      "error": "Blad podczas zapisywania transferu"
+    },
+    "actions": {
+      "adjust": "Korekta",
+      "transfer": "Transfer",
+      "refresh": "Odswiez"
+    },
+    "expiry": {
+      "warning": "Zbliza sie termin waznosci",
+      "batches": "partii"
+    },
     "days": "Dni",
     "statusClosed": "Zamkniety",
     "statusOpen": "Otwarty",
@@ -253,6 +339,7 @@
     "soldProducts": "Sprzedane produkty",
     "revenue": "Przychody",
     "deliveries": "Dostawy",
+    "transfers": "Transfery",
     "calculatedSales": "Obliczona sprzedaz",
     "ingredientUsage": "Zuzycie skladnikow",
     "startQty": "Poczatek",
@@ -260,6 +347,15 @@
     "usage": "Zuzycie",
     "difference": "Roznica",
     "selectDayPrompt": "Wybierz dzien z listy, aby zobaczyc szczegoly"
+  },
+  "delivery": {
+    "destination": "Miejsce docelowe",
+    "toWarehouse": "Magazyn",
+    "toShop": "Sklep"
+  },
+  "daySummary": {
+    "dayEvents": "Wydarzenia dnia",
+    "clickToAdd": "kliknij, aby dodac"
   },
   "reports": {
     "title": "Raporty",
@@ -283,7 +379,8 @@
     "summaryByIngredient": "Podsumowanie wg skladnika",
     "cases": "przypadkow",
     "spoilageList": "Lista strat",
-    "notes": "Notatki"
+    "notes": "Notatki",
+    "formula": "Wzor"
   },
   "employees": {
     "positions": "Stanowiska",
@@ -416,5 +513,191 @@
   "confirmDialog": {
     "defaultConfirm": "Potwierdz",
     "defaultCancel": "Anuluj"
+  },
+  "wizard": {
+    "back": "Wstecz",
+    "next": "Dalej",
+    "step1Title": "Otwarcie",
+    "step2Title": "Zdarzenia",
+    "step3Title": "Zamkniecie",
+    "step4Title": "Potwierdz",
+    "openingInventory": "Stan otwarcia",
+    "dayEvents": "Zdarzenia dnia",
+    "closingInventory": "Wprowadz ilości zamkniecia",
+    "confirmation": "Potwierdzenie zamkniecia dnia",
+    "formula": "Otwarcie + Dostawy + Transfery - Straty = Oczekiwane",
+    "enterClosingHint": "Wprowadz ilosci zamkniecia dla kazdego skladnika",
+    "copyExpected": "Kopiuj oczekiwane",
+    "noEventsToday": "Brak zdarzen w ciagu dnia",
+    "noEventsInfo": "Nie bylo dostaw, transferow ani strat w ciagu tego dnia",
+    "discrepancies": "Rozbieznosci",
+    "discrepancyLabel": "rozbieznosci",
+    "discrepancyWarning": "Wykryto rozbieznosci",
+    "criticalDiscrepancies": "krytycznych rozbieznosci",
+    "warningDiscrepancies": "ostrzezen",
+    "reviewBeforeConfirm": "Przejrzyj dane przed zamknieciem dnia",
+    "allLooksGood": "Wszystko wyglada dobrze",
+    "noDiscrepancies": "Nie wykryto znaczacych rozbieznosci",
+    "closingSummary": "Podsumowanie zamkniecia",
+    "financialSummary": "Podsumowanie finansowe",
+    "revenue": "Przychod",
+    "deliveryCosts": "Koszty dostaw",
+    "grossProfit": "Zysk brutto",
+    "notes": "Notatki",
+    "notesPlaceholder": "Dodaj notatki do zamkniecia dnia...",
+    "confirmationInfo": "Po kliknieciu przycisku zamknij dzien, stany magazynowe zostana zapisane i dzien zostanie zamkniety.",
+    "discrepancyNote": "Uwaga: {{count}} skladnikow ma rozbieznosci powyzej 5%",
+    "openedAt": "Otwarty",
+    "infoOpeningValues": "Te wartosci zostaly wprowadzone przy otwieraniu dnia.",
+    "continueToEvents": "Przejdz dalej, aby zobaczyc zdarzenia w ciagu dnia.",
+    "previousDayComparison": "Porownanie z poprzednim dniem",
+    "previousDayInfo": "Kolumna 'Poprz. zamkniecie' pokazuje wartosci z zamkniecia poprzedniego dnia dla porownania.",
+    "openingQty": "Otwarcie",
+    "previousClosing": "Poprz. zamkniecie",
+    "impactSummary": "Podsumowanie wplywu na stan",
+    "deliveries": "Dostawy",
+    "transfers": "Transfery",
+    "spoilage": "Straty",
+    "fromStorage": "z magazynu",
+    "deliveriesShort": "Dost.",
+    "transfersShort": "Trans.",
+    "spoilageShort": "Straty",
+    "expectedShort": "Oczek.",
+    "openingShort": "Otw.",
+    "closingShort": "Zamkn.",
+    "usageShort": "Zuzycie",
+    "warningLevel": "Ostrzezenie",
+    "criticalLevel": "Krytyczny",
+    "step5Title": "Uzgodnienie"
+  },
+  "reconciliation": {
+    "title": "Uzgodnienie sprzedazy",
+    "recordedSales": "Sprzedaz zarejestrowana",
+    "calculatedSales": "Sprzedaz obliczona",
+    "discrepancy": "Rozbieznosc",
+    "product": "Produkt",
+    "recordedQty": "Zarejest.",
+    "calculatedQty": "Oblicz.",
+    "qtyDiscrepancy": "Roznica ilosci",
+    "status": {
+      "ideal": "Idealnie",
+      "acceptable": "Akceptowalne",
+      "review_recommended": "Zalecany przeglad",
+      "investigation_needed": "Wymaga weryfikacji"
+    },
+    "productStatus": {
+      "match": "Zgodne",
+      "minor_discrepancy": "Mala rozbieznosc",
+      "major_discrepancy": "Duza rozbieznosc",
+      "recorded_only": "Tylko zarejestrowane",
+      "calculated_only": "Tylko obliczone"
+    },
+    "recordedOnlySection": "Tylko zarejestrowane",
+    "calculatedOnlySection": "Tylko obliczone",
+    "recordedOnlyHint": "Produkty zarejestrowane w sprzedazy, ale nie wykryte w zuzyciu skladnikow",
+    "calculatedOnlyHint": "Produkty wykryte w zuzyciu skladnikow, ale nie zarejestrowane w sprzedazy",
+    "noDiscrepancies": "Brak rozbieznosci",
+    "allMatches": "Wszystkie produkty zgodne - sprzedaz zarejestrowana odpowiada zuzyciu skladnikow",
+    "infoTitle": "Informacja",
+    "infoText": "Ten krok porownuje sprzedaz zarejestrowana w ciagu dnia ze sprzedaza obliczona na podstawie zuzycia skladnikow. Rozbieznosci sa informacyjne i nie blokuja zamkniecia dnia.",
+    "notesLabel": "Notatki dotyczace rozbieznosci",
+    "notesPlaceholder": "Dodaj notatki wyjasniajace rozbieznosci (opcjonalne)...",
+    "loading": "Ladowanie danych uzgodnienia...",
+    "error": "Nie udalo sie zaladowac danych uzgodnienia",
+    "productsComparison": "Porownanie produktow",
+    "suggestions": "Sugestie",
+    "noSuggestions": "Brak sugestii"
+  },
+  "errors": {
+    "generic": "Wystapil blad",
+    "networkError": "Blad polaczenia z serwerem",
+    "notFound": "Nie znaleziono",
+    "unauthorized": "Brak autoryzacji",
+    "forbidden": "Brak dostepu",
+    "closeDayFailed": "Nie udalo sie zamknac dnia. Sprobuj ponownie."
+  },
+  "batch": {
+    "title": "Partie",
+    "batchNumber": "Numer partii",
+    "expiryDate": "Data waznosci",
+    "expiryDateOptional": "Data waznosci (opcjonalnie)",
+    "daysUntilExpiry": "Dni do waznosci",
+    "selectBatch": "Wybierz partie",
+    "noBatches": "Brak dostepnych partii",
+    "expiryAlerts": "Alerty waznosci",
+    "expired": "Przeterminowane",
+    "expiringSoon": "Wkrotce wygasa"
+  },
+  "dayManagement": {
+    "backToList": "Powrot do listy",
+    "notFound": "Nie znaleziono dnia",
+    "notFoundDescription": "Dzien o podanym identyfikatorze nie istnieje.",
+    "loadError": "Blad ladowania",
+    "loadErrorDescription": "Nie udalo sie zaladowac danych dnia. Sprobuj ponownie.",
+    "sections": {
+      "overview": "Przeglad",
+      "opening": "Otwarcie",
+      "shifts": "Zmiany",
+      "operations": "Operacje",
+      "sales": "Sprzedaz",
+      "closing": "Zamkniecie"
+    },
+    "placeholders": {
+      "overview": "Tutaj pojawi sie przeglad dnia.",
+      "opening": "Tutaj pojawia sie dane otwarcia dnia.",
+      "shifts": "Tutaj pojawi sie zarzadzanie zmianami pracownikow.",
+      "operations": "Tutaj pojawia sie operacje magazynowe (dostawy, transfery, straty).",
+      "sales": "Tutaj pojawi sie sprzedaz i przychody.",
+      "closing": "Tutaj pojawi sie zamkniecie dnia i podsumowanie."
+    }
+  },
+  "salesEntry": {
+    "title": "Sprzedaz",
+    "todayTotal": "Dzis",
+    "allCategories": "Wszystkie",
+    "noProducts": "Brak produktow w tej kategorii",
+    "noProductsAvailable": "Brak dostepnych produktow do sprzedazy",
+    "addProductsFirst": "Dodaj produkty w menu, aby moc rejestrowac sprzedaz.",
+    "recentSales": "Ostatnie sprzedaze",
+    "noRecentSales": "Brak zarejestrowanych sprzedazy",
+    "voidSale": "Anuluj",
+    "saleRecorded": "Sprzedaz zarejestrowana",
+    "saleRecordedDesc": "{{product}} - {{price}}",
+    "errorRecording": "Nie udalo sie zarejestrowac sprzedazy",
+    "dayNotOpen": "Dzien nie jest otwarty",
+    "dayNotOpenDesc": "Otworz dzien, aby rejestrowac sprzedaz.",
+    "openDayFirst": "Otworz dzien",
+    "soldToday": "sprzedano",
+    "quantitySelector": {
+      "title": "Ilosc",
+      "add": "Dodaj",
+      "cancel": "Anuluj"
+    },
+    "voidDialog": {
+      "title": "Anuluj sprzedaz",
+      "productLabel": "Produkt",
+      "recordedAt": "Zarejestrowano",
+      "reasonLabel": "Powod anulowania",
+      "selectReason": "Wybierz powod...",
+      "notesLabel": "Notatki (opcjonalne)",
+      "notesPlaceholder": "Dodatkowe informacje...",
+      "confirm": "Anuluj sprzedaz",
+      "cancel": "Zachowaj",
+      "reasons": {
+        "mistake": "Pomylka przy rejestracji",
+        "customer_refund": "Zwrot klientowi",
+        "duplicate": "Duplikat",
+        "other": "Inny powod"
+      },
+      "success": "Sprzedaz anulowana",
+      "error": "Nie udalo sie anulowac sprzedazy"
+    },
+    "categories": {
+      "kebaby": "Kebaby",
+      "zapiekanki": "Zapiekanki",
+      "hotdogi": "Hot-Dogi",
+      "napoje": "Napoje",
+      "dodatki": "Dodatki"
+    }
   }
 }

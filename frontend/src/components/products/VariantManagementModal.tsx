@@ -155,7 +155,7 @@ export default function VariantManagementModal({
                           )}
                         </div>
                         <p className="text-lg font-bold text-primary-600">
-                          {formatCurrency(variant.price)}
+                          {formatCurrency(variant.price_pln)}
                         </p>
                       </div>
                     </div>
@@ -221,8 +221,8 @@ function VariantForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit({
-      name,
-      price: parseFloat(price),
+      name: name || undefined,
+      price_pln: parseFloat(price),
       is_default: isDefault,
     })
   }
@@ -295,14 +295,14 @@ function VariantEditForm({
   onCancel: () => void
   isLoading: boolean
 }) {
-  const [name, setName] = useState(variant.name)
-  const [price, setPrice] = useState(variant.price.toString())
+  const [name, setName] = useState(variant.name || '')
+  const [price, setPrice] = useState(variant.price_pln.toString())
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit({
-      name,
-      price: parseFloat(price),
+      name: name || undefined,
+      price_pln: parseFloat(price),
     })
   }
 

@@ -26,7 +26,8 @@ class Ingredient(Base):
     # Relationships
     product_ingredients = relationship("ProductIngredient", back_populates="ingredient")
     inventory_snapshots = relationship("InventorySnapshot", back_populates="ingredient")
-    deliveries = relationship("Delivery", back_populates="ingredient")
+    delivery_items = relationship("DeliveryItem", back_populates="ingredient")
     storage_transfers = relationship("StorageTransfer", back_populates="ingredient")
     spoilages = relationship("Spoilage", back_populates="ingredient")
     storage_inventory = relationship("StorageInventory", back_populates="ingredient", uselist=False)
+    batches = relationship("IngredientBatch", back_populates="ingredient")

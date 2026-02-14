@@ -23,6 +23,12 @@ class Spoilage(Base):
     id = Column(Integer, primary_key=True, index=True)
     daily_record_id = Column(Integer, ForeignKey("daily_records.id", ondelete="CASCADE"), nullable=False, index=True)
     ingredient_id = Column(Integer, ForeignKey("ingredients.id", ondelete="RESTRICT"), nullable=False)
+    batch_id = Column(
+        Integer,
+        ForeignKey("ingredient_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )  # Optional link to specific batch
     quantity = Column(Numeric(10, 3), nullable=False)  # In ingredient's unit (kg or count)
     reason = Column(
         SQLEnum(SpoilageReason, values_callable=lambda x: [e.value for e in x]),
@@ -39,3 +45,4 @@ class Spoilage(Base):
     # Relationships
     daily_record = relationship("DailyRecord", back_populates="spoilages")
     ingredient = relationship("Ingredient", back_populates="spoilages")
+    batch = relationship("IngredientBatch", back_populates="spoilages")

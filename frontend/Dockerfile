@@ -6,6 +6,9 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+
+# For Docker, use relative API URL so nginx can proxy to backend
+ENV VITE_API_BASE_URL=/api/v1
 RUN npm run build
 
 FROM nginx:alpine

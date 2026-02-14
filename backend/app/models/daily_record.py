@@ -22,6 +22,12 @@ class DailyRecord(Base):
     total_delivery_cost_pln = Column(Numeric(10, 2), nullable=False, server_default="0")
     total_spoilage_cost_pln = Column(Numeric(10, 2), nullable=False, server_default="0")
 
+    # Revenue tracking for hybrid sales
+    recorded_revenue_pln = Column(Numeric(10, 2), nullable=True)
+    calculated_revenue_pln = Column(Numeric(10, 2), nullable=True)
+    revenue_discrepancy_pln = Column(Numeric(10, 2), nullable=True)
+    revenue_source = Column(String(20), server_default="calculated")  # 'recorded', 'calculated', 'hybrid'
+
     # Timestamps
     opened_at = Column(DateTime(timezone=True), server_default=func.now())
     closed_at = Column(DateTime(timezone=True), nullable=True)
@@ -38,3 +44,5 @@ class DailyRecord(Base):
     spoilages = relationship("Spoilage", back_populates="daily_record", cascade="all, delete-orphan")
     calculated_sales = relationship("CalculatedSale", back_populates="daily_record", cascade="all, delete-orphan")
     shift_assignments = relationship("ShiftAssignment", back_populates="daily_record", cascade="all, delete-orphan")
+    batch_deductions = relationship("BatchDeduction", back_populates="daily_record")
+    recorded_sales = relationship("RecordedSale", back_populates="daily_record", cascade="all, delete-orphan")

@@ -25,7 +25,7 @@ from openpyxl.utils import get_column_letter
 from app.models.daily_record import DailyRecord, DayStatus
 from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.ingredient import Ingredient
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.calculated_sale import CalculatedSale
@@ -110,9 +110,11 @@ def _get_ingredient_day_quantities(
     Get total deliveries, transfers, and spoilage for an ingredient on a day.
     Returns (deliveries_total, transfers_total, spoilage_total).
     """
-    deliveries_sum = db.query(func.coalesce(func.sum(Delivery.quantity), 0)).filter(
+    deliveries_sum = db.query(func.coalesce(func.sum(DeliveryItem.quantity), 0)).join(
+        Delivery, DeliveryItem.delivery_id == Delivery.id
+    ).filter(
         Delivery.daily_record_id == daily_record_id,
-        Delivery.ingredient_id == ingredient_id
+        DeliveryItem.ingredient_id == ingredient_id
     ).scalar()
 
     transfers_sum = db.query(func.coalesce(func.sum(StorageTransfer.quantity), 0)).filter(

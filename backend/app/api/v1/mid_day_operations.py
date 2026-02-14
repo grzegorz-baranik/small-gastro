@@ -41,22 +41,27 @@ def create_delivery(
     db: Session = Depends(get_db),
 ):
     """
-    Zarejestruj dostawe skladnika.
+    Zarejestruj dostawe z wieloma skladnikami.
 
     Tworzy rekord dostawy dla otwartego dnia.
-    Dostawy zwiekszaja dostepna ilosc skladnika.
+    Automatycznie tworzy transakcje wydatku.
 
     Wymagane:
     - daily_record_id: ID otwartego dnia
-    - ingredient_id: ID skladnika
-    - quantity: Ilosc (w jednostce skladnika)
-    - price_pln: Cena dostawy
+    - items: Lista skladnikow z ilosciami
+    - total_cost_pln: Calkowity koszt dostawy
+
+    Opcjonalne:
+    - supplier_name: Nazwa dostawcy
+    - invoice_number: Numer faktury
+    - notes: Dodatkowe notatki
+    - delivered_at: Czas dostawy
 
     Walidacja:
     - Dzien musi byc otwarty
-    - Skladnik musi istniec i byc aktywny
-    - Ilosc musi byc > 0
-    - Cena musi byc >= 0
+    - Wszystkie skladniki musza istniec i byc aktywne
+    - Ilosci musza byc > 0
+    - Koszt musi byc >= 0
     """
     response, error = mid_day_operations_service.create_delivery(db, data)
 
@@ -89,7 +94,7 @@ def get_delivery(
     db: Session = Depends(get_db),
 ):
     """
-    Pobierz dostawe po ID.
+    Pobierz dostawe po ID wraz z wszystkimi pozycjami.
     """
     response, error = mid_day_operations_service.get_delivery_by_id(db, delivery_id)
 
@@ -108,9 +113,10 @@ def delete_delivery(
     db: Session = Depends(get_db),
 ):
     """
-    Usun dostawe.
+    Usun dostawe wraz z powiazana transakcja wydatku.
 
     Mozna usuwac tylko dostawy z otwartego dnia.
+    Wszystkie pozycje dostawy sa automatycznie usuwane.
     """
     success, error = mid_day_operations_service.delete_delivery(db, delivery_id)
 

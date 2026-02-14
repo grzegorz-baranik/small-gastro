@@ -12,7 +12,7 @@ import {
   getSpoilage,
   deleteSpoilage,
 } from '../../api/midDayOperations'
-import { formatCurrency, formatDateTime, formatQuantity } from '../../utils/formatters'
+import { formatCurrency, formatDateTime, formatQuantity, inferUnitType } from '../../utils/formatters'
 import type { Delivery, StorageTransfer, Spoilage, SpoilageReason } from '../../types'
 
 interface MidDayEventsListProps {
@@ -73,6 +73,7 @@ export default function MidDayEventsList({ dailyRecordId }: MidDayEventsListProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deliveries', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
       showSuccess('Dostawa zostala usunieta')
       closeDeleteConfirm()
     },
@@ -206,35 +207,72 @@ export default function MidDayEventsList({ dailyRecordId }: MidDayEventsListProp
                     {deliveries.length}
                   </span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {deliveries.map((delivery: Delivery) => (
                     <div
                       key={delivery.id}
-                      className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                      className="p-3 bg-green-50 rounded-lg"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-900">
-                            {delivery.ingredient_name}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {formatQuantity(delivery.quantity, delivery.unit_label === 'kg' ? 'weight' : 'count')}
-                          </span>
+                      {/* Delivery header */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {delivery.supplier_name && (
+                              <span className="font-medium text-gray-900">
+                                {delivery.supplier_name}
+                              </span>
+                            )}
+                            {delivery.invoice_number && (
+                              <span className="text-sm text-gray-500">
+                                ({delivery.invoice_number})
+                              </span>
+                            )}
+                            {!delivery.supplier_name && !delivery.invoice_number && (
+                              <span className="font-medium text-gray-900">
+                                Dostawa
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded">
+                              {delivery.items.length} {delivery.items.length === 1 ? 'skladnik' : 'skladnikow'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+                            <span className="font-medium text-green-700">{formatCurrency(delivery.total_cost_pln)}</span>
+                            <span>{formatDateTime(delivery.delivered_at)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                          <span>{formatCurrency(delivery.price_pln)}</span>
-                          <span>{formatDateTime(delivery.delivered_at)}</span>
-                        </div>
+                        <button
+                          onClick={() => openDeleteConfirm('delivery', delivery.id, delivery.supplier_name || 'Dostawa')}
+                          disabled={isDeleting}
+                          className="p-2 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
+                          title="Usun dostawe"
+                          aria-label={`Usun dostawe ${delivery.supplier_name || 'Dostawa'}`}
+                        >
+                          <X className="w-4 h-4 text-red-600" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => openDeleteConfirm('delivery', delivery.id, delivery.ingredient_name)}
-                        disabled={isDeleting}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
-                        title="Usun dostawe"
-                        aria-label={`Usun dostawe ${delivery.ingredient_name}`}
-                      >
-                        <X className="w-4 h-4 text-red-600" />
-                      </button>
+                      {/* Delivery items (always expanded) */}
+                      <div className="pl-2 border-l-2 border-green-200 space-y-1">
+                        {delivery.items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 text-sm">
+                            <span className="text-gray-700">{item.ingredient_name}</span>
+                            <span className="text-gray-500">
+                              {formatQuantity(item.quantity, inferUnitType(item.unit_label), item.unit_label)}
+                            </span>
+                            {item.cost_pln && (
+                              <span className="text-gray-400">
+                                ({formatCurrency(item.cost_pln)})
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Notes if any */}
+                      {delivery.notes && (
+                        <div className="mt-2 text-sm text-gray-500 italic">
+                          "{delivery.notes}"
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -263,7 +301,7 @@ export default function MidDayEventsList({ dailyRecordId }: MidDayEventsListProp
                             {transfer.ingredient_name}
                           </span>
                           <span className="text-sm text-gray-500">
-                            {formatQuantity(transfer.quantity, transfer.unit_label === 'kg' ? 'weight' : 'count')}
+                            {formatQuantity(transfer.quantity, inferUnitType(transfer.unit_label), transfer.unit_label)}
                           </span>
                         </div>
                         <div className="text-sm text-gray-500">
@@ -307,7 +345,7 @@ export default function MidDayEventsList({ dailyRecordId }: MidDayEventsListProp
                             {spoilage.ingredient_name}
                           </span>
                           <span className="text-sm text-gray-500">
-                            {formatQuantity(spoilage.quantity, spoilage.unit_label === 'kg' ? 'weight' : 'count')}
+                            {formatQuantity(spoilage.quantity, inferUnitType(spoilage.unit_label), spoilage.unit_label)}
                           </span>
                           <span className="px-2 py-0.5 text-xs bg-red-200 text-red-800 rounded">
                             {SPOILAGE_REASON_LABELS[spoilage.reason]}

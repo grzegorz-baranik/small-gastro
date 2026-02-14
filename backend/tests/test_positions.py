@@ -378,12 +378,14 @@ class TestPositionApiGet:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
+        assert data["total"] == 2
+        items = data["items"]
+        assert len(items) == 2
 
-        kucharz = next(p for p in data if p["name"] == "Kucharz")
+        kucharz = next(p for p in items if p["name"] == "Kucharz")
         assert kucharz["employee_count"] == 1
 
-        kasjer = next(p for p in data if p["name"] == "Kasjer")
+        kasjer = next(p for p in items if p["name"] == "Kasjer")
         assert kasjer["employee_count"] == 0
 
     def test_get_position_by_id_api(self, client: TestClient, db_session: Session):

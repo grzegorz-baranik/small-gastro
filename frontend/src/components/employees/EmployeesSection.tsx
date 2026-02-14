@@ -113,6 +113,7 @@ export default function EmployeesSection() {
             onClick={() => setShowModal(true)}
             className="btn btn-primary flex items-center gap-2"
             disabled={!positionsData?.items.length}
+            data-testid="add-employee-btn"
           >
             <Plus className="w-4 h-4" />
             {t('employees.addEmployee')}
@@ -136,7 +137,7 @@ export default function EmployeesSection() {
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" data-testid="employees-table">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
@@ -161,6 +162,7 @@ export default function EmployeesSection() {
                 <tr
                   key={employee.id}
                   className={`hover:bg-gray-50 ${!employee.is_active ? 'opacity-60' : ''}`}
+                  data-testid={`employee-row-${employee.id}`}
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {employee.name}
@@ -301,6 +303,7 @@ function EmployeeForm({
           className="input"
           placeholder={t('employees.employeeNamePlaceholder')}
           required
+          data-testid="employee-name-input"
         />
       </div>
 
@@ -369,7 +372,7 @@ function EmployeeForm({
         )}
       </div>
 
-      <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+      <button type="submit" className="btn btn-primary w-full" disabled={isLoading} data-testid="save-employee-btn">
         {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>

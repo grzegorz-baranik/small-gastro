@@ -8,7 +8,7 @@ import LoadingSpinner from '../common/LoadingSpinner'
 import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
 import { closeDay, getDaySummary } from '../../api/dailyOperations'
-import { formatCurrency, formatDate, formatQuantity } from '../../utils/formatters'
+import { formatCurrency, formatDate, formatQuantity, formatDateTime } from '../../utils/formatters'
 import type {
   DailyRecord,
   Ingredient,
@@ -340,7 +340,7 @@ export default function CloseDayModal({
                 <div>
                   <span className="text-gray-500">{t('closeDayModal.opening')}</span>{' '}
                   <span className="font-medium">
-                    {daySummary.opening_time || '-'}
+                    {daySummary.opening_time ? formatDateTime(daySummary.opening_time) : '-'}
                   </span>
                 </div>
                 <div>

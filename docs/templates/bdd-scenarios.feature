@@ -1,115 +1,115 @@
-# language: pl
+# language: en
 # encoding: utf-8
 
 # BDD Scenario Template for the small-gastro project
 # Use this template as a basis for new features
-# Note: Polish Gherkin keywords are used as this represents user-facing behavior
+# Note: English Gherkin keywords are used (Polish is ONLY for UI labels)
 
 @{feature-tag}
-Funkcja: {Feature Name}
-  Jako {user role}
-  Chcę {action/capability}
-  Aby {benefit/business goal}
+Feature: {Feature Name}
+  As a {user role}
+  I want to {action/capability}
+  So that {benefit/business goal}
 
-  Założenia:
+  Background:
     # Common steps for all scenarios in this feature
-    Zakładając że baza danych jest pusta
-    I jestem zalogowany jako "{role}"
+    Given the database is empty
+    And I am logged in as "{role}"
 
   # ============================================
   # POSITIVE SCENARIOS (Happy Path)
   # ============================================
 
   @happy-path @smoke
-  Scenariusz: {Basic success scenario}
-    Zakładając że {precondition}
-    Gdy {user action}
-    Wtedy {expected result}
-    I {additional verification}
+  Scenario: {Basic success scenario}
+    Given {precondition}
+    When {user action}
+    Then {expected result}
+    And {additional verification}
 
   @happy-path
-  Scenariusz: {Second success scenario}
-    Zakładając że {precondition}
-    Gdy {user action}
-    Wtedy {expected result}
+  Scenario: {Second success scenario}
+    Given {precondition}
+    When {user action}
+    Then {expected result}
 
   # ============================================
   # DATA-DRIVEN SCENARIOS (Scenario Outline)
   # ============================================
 
   @parametrized
-  Szablon scenariusza: {Name with parameters}
-    Zakładając że istnieje {object} o nazwie "<nazwa>"
-    Gdy zmieniam {field} na "<nowa_wartość>"
-    Wtedy {field} powinno mieć wartość "<nowa_wartość>"
+  Scenario Outline: {Name with parameters}
+    Given there exists a {object} named "<name>"
+    When I change {field} to "<new_value>"
+    Then {field} should have value "<new_value>"
 
-    Przykłady:
-      | nazwa     | nowa_wartość |
-      | Example1  | Value1       |
-      | Example2  | Value2       |
-      | Example3  | Value3       |
+    Examples:
+      | name      | new_value |
+      | Example1  | Value1    |
+      | Example2  | Value2    |
+      | Example3  | Value3    |
 
   # ============================================
   # ERROR SCENARIOS
   # ============================================
 
   @error-handling
-  Scenariusz: Validation error - {error description}
-    Zakładając że jestem na stronie {page name}
-    Gdy próbuję utworzyć {object} z pustym polem "{field}"
-    Wtedy powinienem zobaczyć komunikat błędu "{Field is required}"
-    I {object} nie powinien zostać utworzony
+  Scenario: Validation error - {error description}
+    Given I am on the {page name} page
+    When I try to create {object} with an empty "{field}" field
+    Then I should see error message "{Field is required}"
+    And {object} should not be created
 
   @error-handling
-  Scenariusz: Validation error - invalid format
-    Zakładając że jestem na stronie {page name}
-    Gdy wprowadzam "{invalid_value}" w polu "{field}"
-    Wtedy powinienem zobaczyć komunikat błędu "{Invalid format}"
+  Scenario: Validation error - invalid format
+    Given I am on the {page name} page
+    When I enter "{invalid_value}" in the "{field}" field
+    Then I should see error message "{Invalid format}"
 
   @error-handling @404
-  Scenariusz: Attempt to access non-existent resource
-    Gdy próbuję wyświetlić {object} o ID 99999
-    Wtedy powinienem zobaczyć komunikat "Nie znaleziono"
-    I zostanę przekierowany na {main page/list}
+  Scenario: Attempt to access non-existent resource
+    When I try to view {object} with ID 99999
+    Then I should see message "Not found"
+    And I am redirected to {main page/list}
 
   # ============================================
   # EDGE CASES
   # ============================================
 
   @edge-case
-  Scenariusz: {Edge case name}
-    Zakładając że {special condition}
-    Gdy {action}
-    Wtedy {expected behavior in this case}
+  Scenario: {Edge case name}
+    Given {special condition}
+    When {action}
+    Then {expected behavior in this case}
 
   @edge-case @concurrent
-  Scenariusz: Concurrent modification of the same resource
-    Zakładając że dwóch użytkowników edytuje ten sam {object}
-    Gdy pierwszy użytkownik zapisuje zmiany
-    I drugi użytkownik próbuje zapisać swoje zmiany
-    Wtedy drugi użytkownik powinien zobaczyć komunikat o konflikcie
+  Scenario: Concurrent modification of the same resource
+    Given two users are editing the same {object}
+    When the first user saves changes
+    And the second user tries to save their changes
+    Then the second user should see a conflict message
 
   # ============================================
   # PERFORMANCE
   # ============================================
 
   @performance
-  Scenariusz: List loading performance
-    Zakładając że w bazie jest 1000 {objects}
-    Gdy otwieram stronę z listą {objects}
-    Wtedy strona powinna załadować się w mniej niż 2 sekundy
-    I powinienem zobaczyć paginację
+  Scenario: List loading performance
+    Given the database contains 1000 {objects}
+    When I open the {objects} list page
+    Then the page should load in less than 2 seconds
+    And I should see pagination
 
   # ============================================
   # SECURITY
   # ============================================
 
   @security
-  Scenariusz: Access attempt without permissions
-    Zakładając że jestem zalogowany jako użytkownik bez uprawnień
-    Gdy próbuję uzyskać dostęp do {protected function}
-    Wtedy powinienem zobaczyć komunikat "Brak uprawnień"
-    I nie powinienem zobaczyć {protected data}
+  Scenario: Access attempt without permissions
+    Given I am logged in as a user without permissions
+    When I try to access {protected function}
+    Then I should see message "Access denied"
+    And I should not see {protected data}
 
 # ============================================
 # EXAMPLES FOR SMALL-GASTRO PROJECT
@@ -118,77 +118,77 @@ Funkcja: {Feature Name}
 # Below are example scenarios specific to small-gastro
 
 @ingredients
-Funkcja: Ingredient Management
-  Jako właściciel lokalu gastronomicznego
-  Chcę zarządzać listą składników
-  Aby móc kontrolować stany magazynowe
+Feature: Ingredient Management
+  As a food establishment owner
+  I want to manage the list of ingredients
+  So that I can control inventory levels
 
   @happy-path @smoke
-  Scenariusz: Adding a new weight-based ingredient
-    Zakładając że jestem na stronie "Składniki"
-    Gdy klikam przycisk "Dodaj składnik"
-    I wprowadzam nazwę "Sałata lodowa"
-    I wybieram jednostkę "kg"
-    I klikam "Zapisz"
-    Wtedy składnik "Sałata lodowa" powinien pojawić się na liście
-    I powinien mieć jednostkę "kg"
+  Scenario: Adding a new weight-based ingredient
+    Given I am on the "Ingredients" page
+    When I click the "Add ingredient" button
+    And I enter name "Iceberg lettuce"
+    And I select unit "kg"
+    And I click "Save"
+    Then ingredient "Iceberg lettuce" should appear on the list
+    And it should have unit "kg"
 
   @happy-path
-  Scenariusz: Adding a new count-based ingredient
-    Zakładając że jestem na stronie "Składniki"
-    Gdy klikam przycisk "Dodaj składnik"
-    I wprowadzam nazwę "Bułka burger"
-    I wybieram jednostkę "szt"
-    I klikam "Zapisz"
-    Wtedy składnik "Bułka burger" powinien pojawić się na liście
-    I powinien mieć jednostkę "szt"
+  Scenario: Adding a new count-based ingredient
+    Given I am on the "Ingredients" page
+    When I click the "Add ingredient" button
+    And I enter name "Burger bun"
+    And I select unit "pcs"
+    And I click "Save"
+    Then ingredient "Burger bun" should appear on the list
+    And it should have unit "pcs"
 
   @error-handling
-  Scenariusz: Error - attempt to add ingredient with existing name
-    Zakładając że istnieje składnik "Pomidor"
-    Gdy próbuję dodać składnik o nazwie "Pomidor"
-    Wtedy powinienem zobaczyć komunikat "Składnik o tej nazwie już istnieje"
-    I nowy składnik nie powinien zostać utworzony
+  Scenario: Error - attempt to add ingredient with existing name
+    Given ingredient "Tomato" exists
+    When I try to add ingredient with name "Tomato"
+    Then I should see message "Ingredient with this name already exists"
+    And new ingredient should not be created
 
 @products
-Funkcja: Product Management
-  Jako właściciel lokalu gastronomicznego
-  Chcę tworzyć produkty z przypisanymi składnikami
-  Aby móc śledzić zużycie składników przy sprzedaży
+Feature: Product Management
+  As a food establishment owner
+  I want to create products with assigned ingredients
+  So that I can track ingredient usage during sales
 
   @happy-path
-  Scenariusz: Creating a product with assigned ingredients
-    Zakładając że istnieją składniki:
-      | nazwa       | jednostka |
-      | Bułka burger| szt       |
-      | Mięso       | kg        |
-      | Sałata      | kg        |
-    Gdy tworzę produkt "Burger Classic" w cenie 25.00 PLN
-    I przypisuję składniki:
-      | składnik    | ilość |
-      | Bułka burger| 1     |
-      | Mięso       | 0.15  |
-      | Sałata      | 0.02  |
-    Wtedy produkt "Burger Classic" powinien zostać utworzony
-    I powinien mieć 3 przypisane składniki
+  Scenario: Creating a product with assigned ingredients
+    Given the following ingredients exist:
+      | name        | unit |
+      | Burger bun  | pcs  |
+      | Meat        | kg   |
+      | Lettuce     | kg   |
+    When I create product "Burger Classic" priced at 25.00 PLN
+    And I assign ingredients:
+      | ingredient  | quantity |
+      | Burger bun  | 1        |
+      | Meat        | 0.15     |
+      | Lettuce     | 0.02     |
+    Then product "Burger Classic" should be created
+    And it should have 3 assigned ingredients
 
 @daily-report
-Funkcja: Day Open and Close
-  Jako pracownik lokalu
-  Chcę otwierać i zamykać dzień pracy
-  Aby śledzić stany magazynowe na początku i końcu dnia
+Feature: Day Open and Close
+  As a restaurant employee
+  I want to open and close the work day
+  So that I can track inventory levels at the beginning and end of the day
 
   @happy-path @smoke
-  Scenariusz: Opening a new day
-    Zakładając że poprzedni dzień został zamknięty
-    Gdy otwieram nowy dzień
-    I wprowadzam stany początkowe składników
-    Wtedy nowy rekord dnia powinien zostać utworzony
-    I stany początkowe powinny zostać zapisane
+  Scenario: Opening a new day
+    Given the previous day has been closed
+    When I open a new day
+    And I enter initial ingredient quantities
+    Then a new day record should be created
+    And initial quantities should be saved
 
   @edge-case
-  Scenariusz: Attempt to open day when previous is not closed
-    Zakładając że poprzedni dzień nie został zamknięty
-    Gdy próbuję otworzyć nowy dzień
-    Wtedy powinienem zobaczyć komunikat "Najpierw zamknij poprzedni dzień"
-    I nowy dzień nie powinien zostać otwarty
+  Scenario: Attempt to open day when previous is not closed
+    Given the previous day has not been closed
+    When I try to open a new day
+    Then I should see message "Close the previous day first"
+    And new day should not be opened

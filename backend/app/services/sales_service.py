@@ -1,9 +1,9 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
 from decimal import Decimal
 from app.models.sales_item import SalesItem
-from app.models.product import Product
+from app.models.product import Product, ProductVariant
 from app.models.daily_record import DailyRecord, DayStatus
 from app.schemas.sales import SalesItemCreate, SalesItemResponse, DailySalesSummary
 
@@ -66,18 +66,38 @@ def create_sale(db: Session, daily_record_id: int, data: SalesItemCreate) -> Opt
     if not record or record.status != DayStatus.OPEN:
         return None
 
-    # Get product for price
-    product = db.query(Product).filter(Product.id == data.product_id).first()
+    # Get product with its variants
+    product = (
+        db.query(Product)
+        .options(joinedload(Product.variants))
+        .filter(Product.id == data.product_id)
+        .first()
+    )
     if not product or not product.is_active:
         return None
 
-    total_price = product.price * data.quantity_sold
+    # Get the price from the default variant, or the first active variant
+    # Products now have variants, and price is on the variant (price_pln)
+    unit_price = None
+    for variant in product.variants:
+        if variant.is_active:
+            if variant.is_default:
+                unit_price = variant.price_pln
+                break
+            elif unit_price is None:
+                unit_price = variant.price_pln
+
+    if unit_price is None:
+        # No active variant found
+        return None
+
+    total_price = unit_price * data.quantity_sold
 
     db_sale = SalesItem(
         daily_record_id=daily_record_id,
         product_id=data.product_id,
         quantity_sold=data.quantity_sold,
-        unit_price=product.price,
+        unit_price=unit_price,
         total_price=total_price,
     )
     db.add(db_sale)

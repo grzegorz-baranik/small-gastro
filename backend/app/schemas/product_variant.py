@@ -5,8 +5,8 @@ from decimal import Decimal
 
 
 class ProductVariantBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="Nazwa wariantu (np. 'Maly', 'Duzy')")
-    price: Decimal = Field(..., ge=0, description="Cena wariantu")
+    name: Optional[str] = Field(None, max_length=50, description="Nazwa wariantu (np. 'Maly', 'Duzy') - NULL dla produktow bez wariantow")
+    price_pln: Decimal = Field(..., gt=0, description="Cena wariantu w PLN")
 
 
 class ProductVariantCreate(ProductVariantBase):
@@ -14,8 +14,8 @@ class ProductVariantCreate(ProductVariantBase):
 
 
 class ProductVariantUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    price: Optional[Decimal] = Field(None, ge=0)
+    name: Optional[str] = Field(None, max_length=50)
+    price_pln: Optional[Decimal] = Field(None, gt=0)
     is_default: Optional[bool] = None
     is_active: Optional[bool] = None
 
@@ -26,15 +26,10 @@ class ProductVariantResponse(ProductVariantBase):
     is_default: bool
     is_active: bool
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
-
-
-class ProductVariantListResponse(BaseModel):
-    items: list[ProductVariantResponse]
-    total: int
 
 
 # Recipe ingredient schemas for variants
@@ -68,6 +63,12 @@ class VariantIngredientListResponse(BaseModel):
     total: int
 
 
-# Extended variant response with ingredients
+# Extended variant response with ingredients (must be defined before ProductVariantListResponse)
 class ProductVariantWithIngredientsResponse(ProductVariantResponse):
     ingredients: list[VariantIngredientResponse] = []
+
+
+# List response using the extended response type
+class ProductVariantListResponse(BaseModel):
+    items: list[ProductVariantWithIngredientsResponse]
+    total: int

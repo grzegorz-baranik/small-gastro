@@ -133,6 +133,7 @@ export default function MenuPage() {
         <button
           onClick={() => activeTab === 'products' ? setShowProductModal(true) : setShowIngredientModal(true)}
           className="btn btn-primary flex items-center gap-2"
+          data-testid={activeTab === 'products' ? 'add-product-btn' : 'add-ingredient-btn'}
         >
           <Plus className="w-4 h-4" />
           {activeTab === 'products' ? t('menu.addProduct') : t('menu.addIngredient')}
@@ -165,7 +166,7 @@ export default function MenuPage() {
 
       {/* Products List */}
       {activeTab === 'products' && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="products-table">
           {productsLoading ? (
             <LoadingSpinner />
           ) : productsData?.items.length === 0 ? (
@@ -189,6 +190,7 @@ export default function MenuPage() {
                     product={product}
                     onManageVariants={() => setSelectedProductForVariants(product)}
                     onDelete={() => handleDeleteProduct(product)}
+                    data-testid={`product-row-${product.id}`}
                   />
                 ))}
               </SortableContext>
@@ -296,6 +298,7 @@ function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) 
           className="input"
           placeholder={t('menu.productNamePlaceholder')}
           required
+          data-testid="product-name-input"
         />
       </div>
       <div>
@@ -308,12 +311,13 @@ function ProductForm({ onSubmit, isLoading }: { onSubmit: (data: ProductCreate) 
           onChange={(e) => setPrice(e.target.value)}
           className="input"
           required
+          data-testid="product-price-input"
         />
         <p className="text-xs text-gray-500 mt-1">
           {t('menu.variantsNote')}
         </p>
       </div>
-      <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+      <button type="submit" className="btn btn-primary w-full" disabled={isLoading} data-testid="save-product-btn">
         {isLoading ? t('common.saving') : t('common.save')}
       </button>
     </form>

@@ -6,6 +6,9 @@
 
   "errors.product_exists": "Produkt o tej nazwie juz istnieje",
   "errors.product_not_found": "Produkt nie znaleziony",
+  "errors.variant_not_found": "Wariant nie znaleziony",
+  "errors.variant_or_ingredient_not_found": "Wariant lub skladnik nie znaleziony",
+  "errors.ingredient_not_in_recipe": "Skladnik nie znajduje sie w przepisie",
 
   "errors.category_not_found": "Kategoria nie znaleziona",
   "errors.category_has_subcategories": "Nie mozna usunac kategorii. Upewnij sie, ze nie ma podkategorii.",
@@ -40,7 +43,11 @@
   "errors.day_already_closed": "Dzien jest juz zamkniety",
   "errors.no_previous_closed_days": "Brak poprzednich zamknietych dni",
   "errors.can_only_edit_closed_days": "Mozna edytowac tylko zamkniete dni",
+  "errors.can_only_update_opening_for_open_days": "Mozna aktualizowac stany poczatkowe tylko dla otwartych dni",
   "errors.day_not_closed": "Dzien {date} nie zostal zamkniety",
+  "errors.gap_in_days": "Nie mozna otworzyc dnia {target_date}. Dzien {gap_date} nie jest zamkniety. Zamknij wszystkie poprzednie dni przed otwarciem nowego.",
+  "errors.date_too_old": "Nie mozna otworzyc dnia starszego niz {days} dni wstecz",
+  "errors.date_in_future": "Nie mozna otworzyc dnia w przyszlosci",
 
   "errors.cannot_add_to_closed_day": "Nie mozna dodawac wydarzen do zamknietego dnia",
   "errors.insufficient_storage": "Niewystarczajacy stan magazynowy (dostepne: {available})",
@@ -55,6 +62,13 @@
   "errors.spoilage_not_found": "Strata nie znaleziona",
   "errors.cannot_delete_spoilage_closed": "Nie mozna usuwac strat z zamknietego dnia",
 
+  "errors.shop_adjustment_not_supported": "Korekty stanu sklepu nie sa jeszcze obslugiwane. Uzyj tylko korekt magazynowych.",
+
+  "errors.batch_not_found": "Partia nie znaleziona",
+  "errors.batch_inactive": "Partia jest nieaktywna (zuzywa)",
+  "errors.batch_insufficient_quantity": "Niewystarczajaca ilosc w partii (dostepne: {available})",
+  "errors.batch_ingredient_mismatch": "Partia nie nalezy do tego skladnika",
+
   "errors.position_exists": "Stanowisko o tej nazwie juz istnieje",
   "errors.position_not_found": "Stanowisko nie znalezione",
   "errors.position_has_employees": "Nie mozna usunac stanowiska z przypisanymi pracownikami",
@@ -67,9 +81,19 @@
   "errors.shift_not_found": "Zmiana nie znaleziona",
   "errors.shift_end_before_start": "Godzina zakonczenia musi byc po godzinie rozpoczecia",
 
+  "errors.day_not_open": "Dzien nie jest otwarty",
+  "errors.product_not_found_or_inactive": "Produkt nie istnieje lub jest nieaktywny",
+  "errors.sale_not_found_or_voided": "Sprzedaz nie istnieje lub zostala juz anulowana",
+  "errors.sale_not_found_or_already_voided": "Sprzedaz nie znaleziona lub juz anulowana",
+  "errors.cannot_void_sale_closed_day": "Nie mozna anulowac sprzedazy z zamknietego dnia",
+
   "success.order_updated": "Kolejnosc zaktualizowana",
   "success.day_updated": "Dzien zostal zaktualizowany",
   "success.all_days_closed": "Wszystkie poprzednie dni sa zamkniete",
+  "success.opening_inventory_updated": "Stan poczatkowy zostal zaktualizowany",
 
-  "labels.uncategorized": "Bez kategorii"
+  "labels.uncategorized": "Bez kategorii",
+  "labels.delivery_expense": "Dostawa towarow",
+
+  "finances.auto_daily_revenue": "Przychod dzienny {date}"
 }

@@ -9,6 +9,8 @@ import FinancesPage from './pages/FinancesPage'
 import InventoryPage from './pages/InventoryPage'
 import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
+import DayManagementPage from './pages/DayManagementPage'
+import SalesEntryPage from './pages/SalesEntryPage'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
               <Route path="/pulpit" element={<DashboardPage />} />
               <Route path="/menu" element={<MenuPage />} />
               <Route path="/operacje" element={<DailyOperationsPage />} />
+              <Route path="/operacje/:dayId" element={<DayManagementPage />} />
+              <Route path="/sprzedaz" element={<SalesEntryPage />} />
               <Route path="/finanse" element={<FinancesPage />} />
               <Route path="/magazyn" element={<InventoryPage />} />
               <Route path="/raporty" element={<ReportsPage />} />

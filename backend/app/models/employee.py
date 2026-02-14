@@ -29,6 +29,8 @@ class Employee(Base):
     position = relationship("Position", back_populates="employees")
     shift_assignments = relationship("ShiftAssignment", back_populates="employee")
     transactions = relationship("Transaction", back_populates="employee")
+    shift_templates = relationship("ShiftTemplate", back_populates="employee", cascade="all, delete-orphan")
+    schedule_overrides = relationship("ShiftScheduleOverride", back_populates="employee", cascade="all, delete-orphan")
 
     @property
     def effective_hourly_rate(self) -> Decimal:

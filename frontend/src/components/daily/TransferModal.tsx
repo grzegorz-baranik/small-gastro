@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Package, AlertCircle } from 'lucide-react'
+import { Package, AlertCircle, Warehouse, Store } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
 import { useToast } from '../../context/ToastContext'
 import { getIngredients } from '../../api/ingredients'
-import { createTransfer } from '../../api/midDayOperations'
-import type { Ingredient } from '../../types'
+import { createTransfer, getTransferStockInfo } from '../../api/midDayOperations'
+import { formatQuantity } from '../../utils/formatters'
+import type { Ingredient, TransferStockItem } from '../../types'
 
 interface TransferModalProps {
   isOpen: boolean
@@ -37,12 +38,26 @@ export default function TransferModal({
     enabled: isOpen,
   })
 
+  // Fetch stock info for transfer display
+  const { data: stockData, isLoading: stockLoading } = useQuery({
+    queryKey: ['transferStock', dailyRecordId],
+    queryFn: () => getTransferStockInfo(dailyRecordId),
+    enabled: isOpen && dailyRecordId > 0,
+  })
+
+  // Create a map of ingredient_id to stock info for quick lookup
+  const stockMap = useMemo(() => {
+    if (!stockData) return new Map<number, TransferStockItem>()
+    return new Map(stockData.map((item) => [item.ingredient_id, item]))
+  }, [stockData])
+
   // Create transfer mutation
   const createTransferMutation = useMutation({
     mutationFn: createTransfer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transfers', dailyRecordId] })
       queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecordId] })
+      queryClient.invalidateQueries({ queryKey: ['transferStock', dailyRecordId] })
       showSuccess(t('transferModal.transferAdded'))
       onSuccess()
       onClose()
@@ -68,6 +83,9 @@ export default function TransferModal({
   const selectedIngredient = ingredientsData?.items.find(
     (ing: Ingredient) => ing.id === ingredientId
   )
+
+  // Get stock info for selected ingredient
+  const selectedStock = ingredientId ? stockMap.get(ingredientId as number) : null
 
   // Get unit label for ingredient
   const getUnitLabel = (ingredient: Ingredient): string => {
@@ -114,9 +132,11 @@ export default function TransferModal({
     })
   }
 
+  const isLoading = ingredientsLoading || stockLoading
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('transferModal.title')} size="md">
-      {ingredientsLoading ? (
+      {isLoading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner />
         </div>
@@ -167,6 +187,30 @@ export default function TransferModal({
               <p className="text-xs text-red-600 mt-1">{errors.ingredientId}</p>
             )}
           </div>
+
+          {/* Stock info display */}
+          {selectedStock && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-800 mb-1">
+                  <Warehouse className="w-4 h-4" />
+                  <span className="text-sm font-medium">{t('transferModal.storageStock')}</span>
+                </div>
+                <p className="text-lg font-semibold text-amber-900">
+                  {formatQuantity(selectedStock.storage_quantity, selectedStock.unit_type)}
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800 mb-1">
+                  <Store className="w-4 h-4" />
+                  <span className="text-sm font-medium">{t('transferModal.shopStock')}</span>
+                </div>
+                <p className="text-lg font-semibold text-green-900">
+                  {formatQuantity(selectedStock.shop_quantity, selectedStock.unit_type)}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Quantity input */}
           <div>

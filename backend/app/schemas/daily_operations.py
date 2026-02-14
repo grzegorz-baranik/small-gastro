@@ -361,3 +361,28 @@ class PreviousDayStatusResponse(BaseModel):
     unclosed_date: Optional[date] = None
     unclosed_record_id: Optional[int] = None
     message: Optional[str] = None
+
+
+# -----------------------------------------------------------------------------
+# Update Opening Inventory (for editing opening inventory while day is open)
+# -----------------------------------------------------------------------------
+
+class UpdateOpeningInventoryRequest(BaseModel):
+    """Request to update opening inventory for an open day."""
+    items: list[InventorySnapshotItem] = Field(
+        ...,
+        description="Lista zaktualizowanych stanow poczatkowych skladnikow"
+    )
+
+
+class UpdateOpeningInventoryResponse(BaseModel):
+    """Response after updating opening inventory."""
+    id: int
+    date: date
+    status: DayStatus
+    updated_at: datetime
+    opening_snapshots: list[InventorySnapshotResponse] = []
+    message: str = "Stan poczatkowy zostal zaktualizowany"
+
+    class Config:
+        from_attributes = True
