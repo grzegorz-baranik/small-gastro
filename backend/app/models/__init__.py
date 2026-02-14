@@ -5,7 +5,7 @@ from app.models.daily_record import DailyRecord, DayStatus
 from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, InventoryLocation
 from app.models.sales_item import SalesItem
 from app.models.transaction import Transaction, TransactionType, PaymentMethod, WagePeriodType
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.calculated_sale import CalculatedSale
@@ -32,6 +32,7 @@ __all__ = [
 
     # Mid-day events
     "Delivery",
+    "DeliveryItem",
     "StorageTransfer",
     "Spoilage",
     "SpoilageReason",

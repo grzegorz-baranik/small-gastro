@@ -6,6 +6,9 @@
 
   "errors.product_exists": "Produkt o tej nazwie juz istnieje",
   "errors.product_not_found": "Produkt nie znaleziony",
+  "errors.variant_not_found": "Wariant nie znaleziony",
+  "errors.variant_or_ingredient_not_found": "Wariant lub skladnik nie znaleziony",
+  "errors.ingredient_not_in_recipe": "Skladnik nie znajduje sie w przepisie",
 
   "errors.category_not_found": "Kategoria nie znaleziona",
   "errors.category_has_subcategories": "Nie mozna usunac kategorii. Upewnij sie, ze nie ma podkategorii.",
@@ -41,6 +44,9 @@
   "errors.no_previous_closed_days": "Brak poprzednich zamknietych dni",
   "errors.can_only_edit_closed_days": "Mozna edytowac tylko zamkniete dni",
   "errors.day_not_closed": "Dzien {date} nie zostal zamkniety",
+  "errors.gap_in_days": "Nie mozna otworzyc dnia {target_date}. Dzien {gap_date} nie jest zamkniety. Zamknij wszystkie poprzednie dni przed otwarciem nowego.",
+  "errors.date_too_old": "Nie mozna otworzyc dnia starszego niz {days} dni wstecz",
+  "errors.date_in_future": "Nie mozna otworzyc dnia w przyszlosci",
 
   "errors.cannot_add_to_closed_day": "Nie mozna dodawac wydarzen do zamknietego dnia",
   "errors.insufficient_storage": "Niewystarczajacy stan magazynowy (dostepne: {available})",
@@ -71,5 +77,8 @@
   "success.day_updated": "Dzien zostal zaktualizowany",
   "success.all_days_closed": "Wszystkie poprzednie dni sa zamkniete",
 
-  "labels.uncategorized": "Bez kategorii"
+  "labels.uncategorized": "Bez kategorii",
+  "labels.delivery_expense": "Dostawa towarow",
+
+  "finances.auto_daily_revenue": "Przychod dzienny {date}"
 }

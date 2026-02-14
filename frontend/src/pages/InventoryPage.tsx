@@ -132,20 +132,20 @@ export default function InventoryPage() {
                             <div className="mt-2 grid grid-cols-4 gap-2 text-sm text-gray-600">
                               <div>
                                 <p className="text-xs text-gray-400">{t('inventory.startQty')}</p>
-                                <p>{formatQuantity(item.opening_quantity, item.unit_type)}</p>
+                                <p>{formatQuantity(item.opening_quantity, item.unit_type, item.unit_label)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-400">{t('inventory.endQty')}</p>
-                                <p>{formatQuantity(item.closing_quantity || 0, item.unit_type)}</p>
+                                <p>{formatQuantity(item.closing_quantity || 0, item.unit_type, item.unit_label)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-400">{t('inventory.usage')}</p>
-                                <p>{formatQuantity(item.usage || 0, item.unit_type)}</p>
+                                <p>{formatQuantity(item.usage || 0, item.unit_type, item.unit_label)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-400">{t('inventory.difference')}</p>
                                 <p className={Math.abs(item.discrepancy || 0) > 0.01 ? 'text-red-600 font-medium' : ''}>
-                                  {formatQuantity(item.discrepancy || 0, item.unit_type)}
+                                  {formatQuantity(item.discrepancy || 0, item.unit_type, item.unit_label)}
                                 </p>
                               </div>
                             </div>

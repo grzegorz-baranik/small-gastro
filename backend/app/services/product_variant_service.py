@@ -21,14 +21,16 @@ def get_variants_for_product(
     product_id: int,
     active_only: bool = True
 ) -> tuple[list[ProductVariant], int]:
-    """Pobierz warianty produktu."""
+    """Pobierz warianty produktu z przepisami (skladnikami)."""
     query = db.query(ProductVariant).filter(ProductVariant.product_id == product_id)
 
     if active_only:
         query = query.filter(ProductVariant.is_active == True)
 
     total = query.count()
-    items = query.order_by(ProductVariant.is_default.desc(), ProductVariant.name).all()
+    items = query.options(
+        joinedload(ProductVariant.ingredients).joinedload(ProductIngredient.ingredient)
+    ).order_by(ProductVariant.is_default.desc(), ProductVariant.name).all()
     return items, total
 
 
@@ -65,7 +67,7 @@ def create_variant(
     db_variant = ProductVariant(
         product_id=product_id,
         name=variant.name,
-        price=variant.price,
+        price_pln=variant.price_pln,
         is_default=variant.is_default or False,
         is_active=True,
     )
@@ -132,7 +134,7 @@ def get_variant_ingredients(
 ) -> tuple[list[ProductIngredient], int]:
     """Pobierz skladniki (przepis) wariantu."""
     query = db.query(ProductIngredient).filter(
-        ProductIngredient.variant_id == variant_id
+        ProductIngredient.product_variant_id == variant_id
     ).options(
         joinedload(ProductIngredient.ingredient)
     )
@@ -160,7 +162,7 @@ def add_variant_ingredient(
 
     # Check if already exists
     existing = db.query(ProductIngredient).filter(
-        ProductIngredient.variant_id == variant_id,
+        ProductIngredient.product_variant_id == variant_id,
         ProductIngredient.ingredient_id == data.ingredient_id
     ).first()
 
@@ -172,11 +174,19 @@ def add_variant_ingredient(
         db.refresh(existing)
         return existing
 
+    # Check if this is the first ingredient - if so, make it primary automatically
+    existing_count = db.query(ProductIngredient).filter(
+        ProductIngredient.product_variant_id == variant_id
+    ).count()
+
+    # Auto-set primary if: explicitly requested OR this is the first ingredient
+    should_be_primary = data.is_primary or (existing_count == 0)
+
     db_pi = ProductIngredient(
-        variant_id=variant_id,
+        product_variant_id=variant_id,
         ingredient_id=data.ingredient_id,
         quantity=data.quantity,
-        is_primary=data.is_primary or False,
+        is_primary=should_be_primary,
     )
     db.add(db_pi)
     db.commit()
@@ -192,7 +202,7 @@ def update_variant_ingredient(
 ) -> Optional[ProductIngredient]:
     """Zaktualizuj skladnik w przepisie wariantu."""
     db_pi = db.query(ProductIngredient).filter(
-        ProductIngredient.variant_id == variant_id,
+        ProductIngredient.product_variant_id == variant_id,
         ProductIngredient.ingredient_id == ingredient_id
     ).first()
 
@@ -215,7 +225,7 @@ def remove_variant_ingredient(
 ) -> bool:
     """Usun skladnik z przepisu wariantu."""
     db_pi = db.query(ProductIngredient).filter(
-        ProductIngredient.variant_id == variant_id,
+        ProductIngredient.product_variant_id == variant_id,
         ProductIngredient.ingredient_id == ingredient_id
     ).first()
 

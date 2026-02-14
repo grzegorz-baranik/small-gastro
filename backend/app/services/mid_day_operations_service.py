@@ -23,15 +23,17 @@ logger = logging.getLogger(__name__)
 
 from app.models.daily_record import DailyRecord, DayStatus
 from app.models.ingredient import Ingredient
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage, SpoilageReason
 from app.models.storage_inventory import StorageInventory
+from app.models.transaction import Transaction, TransactionType, PaymentMethod
 
 from app.schemas.mid_day_operations import (
     DeliveryCreate,
     DeliveryResponse,
     DeliveryListResponse,
+    DeliveryItemResponse,
     StorageTransferCreate,
     StorageTransferResponse,
     StorageTransferListResponse,
@@ -104,7 +106,7 @@ def _validate_storage_inventory_sufficient(
 
 
 # -----------------------------------------------------------------------------
-# Delivery CRUD
+# Delivery CRUD (Multi-item structure)
 # -----------------------------------------------------------------------------
 
 def create_delivery(
@@ -112,7 +114,7 @@ def create_delivery(
     data: DeliveryCreate
 ) -> tuple[Optional[DeliveryResponse], Optional[str]]:
     """
-    Create a new delivery record.
+    Create a new multi-item delivery record with auto-expense transaction.
 
     Returns:
         Tuple of (response, error_message). If error_message is not None, operation failed.
@@ -122,25 +124,61 @@ def create_delivery(
     if error:
         return None, error
 
-    # Validate ingredient
-    ingredient, error = _validate_ingredient_active(db, data.ingredient_id)
-    if error:
-        return None, error
+    # Validate all ingredients upfront
+    ingredients_map: dict[int, Ingredient] = {}
+    for item in data.items:
+        ingredient, error = _validate_ingredient_active(db, item.ingredient_id)
+        if error:
+            return None, error
+        ingredients_map[item.ingredient_id] = ingredient
 
     try:
+        # Create expense transaction for the delivery
+        transaction_description = t("labels.delivery_expense")
+        if data.supplier_name:
+            transaction_description = f"{transaction_description} - {data.supplier_name}"
+        if data.invoice_number:
+            transaction_description = f"{transaction_description} ({data.invoice_number})"
+
+        db_transaction = Transaction(
+            type=TransactionType.EXPENSE,
+            category_id=None,  # Optional - admin can categorize later
+            amount=data.total_cost_pln,
+            payment_method=PaymentMethod.CASH,  # Default, can be changed later
+            description=transaction_description,
+            transaction_date=daily_record.date,
+            daily_record_id=data.daily_record_id,
+        )
+        db.add(db_transaction)
+        db.flush()  # Get transaction ID without committing
+
         # Create delivery
         db_delivery = Delivery(
             daily_record_id=data.daily_record_id,
-            ingredient_id=data.ingredient_id,
-            quantity=data.quantity,
-            price_pln=data.price_pln,
+            supplier_name=data.supplier_name,
+            invoice_number=data.invoice_number,
+            total_cost_pln=data.total_cost_pln,
+            notes=data.notes,
+            transaction_id=db_transaction.id,
             delivered_at=data.delivered_at or datetime.now(),
         )
         db.add(db_delivery)
+        db.flush()  # Get delivery ID
+
+        # Create delivery items
+        for item_data in data.items:
+            db_item = DeliveryItem(
+                delivery_id=db_delivery.id,
+                ingredient_id=item_data.ingredient_id,
+                quantity=item_data.quantity,
+                cost_pln=item_data.cost_pln,
+            )
+            db.add(db_item)
+
         db.commit()
         db.refresh(db_delivery)
 
-        return _build_delivery_response(db_delivery, ingredient), None
+        return _build_delivery_response(db, db_delivery, ingredients_map), None
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Blad integralnosci bazy danych przy tworzeniu dostawy: {e}")
@@ -152,23 +190,29 @@ def get_deliveries(
     daily_record_id: Optional[int] = None
 ) -> DeliveryListResponse:
     """
-    Get list of deliveries, optionally filtered by daily_record_id.
+    Get list of deliveries with items, optionally filtered by daily_record_id.
     Uses eager loading to avoid N+1 queries.
     """
-    query = db.query(Delivery).options(joinedload(Delivery.ingredient))
+    query = db.query(Delivery).options(
+        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient)
+    )
 
     if daily_record_id is not None:
         query = query.filter(Delivery.daily_record_id == daily_record_id)
 
     deliveries = query.order_by(Delivery.delivered_at.desc()).all()
 
-    items = [
-        _build_delivery_response(delivery, delivery.ingredient)
-        for delivery in deliveries
-        if delivery.ingredient
-    ]
+    result_items = []
+    for delivery in deliveries:
+        # Build ingredients map from loaded items
+        ingredients_map = {
+            item.ingredient_id: item.ingredient
+            for item in delivery.items
+            if item.ingredient
+        }
+        result_items.append(_build_delivery_response(db, delivery, ingredients_map))
 
-    return DeliveryListResponse(items=items, total=len(items))
+    return DeliveryListResponse(items=result_items, total=len(result_items))
 
 
 def get_delivery_by_id(
@@ -176,17 +220,23 @@ def get_delivery_by_id(
     delivery_id: int
 ) -> tuple[Optional[DeliveryResponse], Optional[str]]:
     """
-    Get a single delivery by ID.
+    Get a single delivery by ID with all items.
     """
-    delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
+    delivery = db.query(Delivery).options(
+        joinedload(Delivery.items).joinedload(DeliveryItem.ingredient)
+    ).filter(Delivery.id == delivery_id).first()
+
     if not delivery:
         return None, t("errors.delivery_not_found")
 
-    ingredient = db.query(Ingredient).filter(Ingredient.id == delivery.ingredient_id).first()
-    if not ingredient:
-        return None, t("errors.ingredient_not_found")
+    # Build ingredients map from loaded items
+    ingredients_map = {
+        item.ingredient_id: item.ingredient
+        for item in delivery.items
+        if item.ingredient
+    }
 
-    return _build_delivery_response(delivery, ingredient), None
+    return _build_delivery_response(db, delivery, ingredients_map), None
 
 
 def delete_delivery(
@@ -194,7 +244,7 @@ def delete_delivery(
     delivery_id: int
 ) -> tuple[bool, Optional[str]]:
     """
-    Delete a delivery record.
+    Delete a delivery record and its associated transaction.
     Can only delete from an open day.
 
     Returns:
@@ -209,22 +259,55 @@ def delete_delivery(
     if daily_record and daily_record.status != DayStatus.OPEN:
         return False, t("errors.cannot_delete_delivery_closed")
 
+    # Delete associated transaction if exists
+    if delivery.transaction_id:
+        transaction = db.query(Transaction).filter(Transaction.id == delivery.transaction_id).first()
+        if transaction:
+            db.delete(transaction)
+
+    # Delete delivery (items cascade automatically)
     db.delete(delivery)
     db.commit()
 
     return True, None
 
 
-def _build_delivery_response(delivery: Delivery, ingredient: Ingredient) -> DeliveryResponse:
-    """Build response schema from delivery model."""
+def _build_delivery_item_response(item: DeliveryItem, ingredient: Ingredient) -> DeliveryItemResponse:
+    """Build response schema for a single delivery item."""
+    return DeliveryItemResponse(
+        id=item.id,
+        delivery_id=item.delivery_id,
+        ingredient_id=item.ingredient_id,
+        ingredient_name=ingredient.name,
+        unit_label=ingredient.unit_label or "szt",
+        quantity=Decimal(str(item.quantity)),
+        cost_pln=Decimal(str(item.cost_pln)) if item.cost_pln else None,
+        created_at=item.created_at,
+    )
+
+
+def _build_delivery_response(
+    db: Session,
+    delivery: Delivery,
+    ingredients_map: dict[int, Ingredient]
+) -> DeliveryResponse:
+    """Build response schema from delivery model with all items."""
+    # Build items responses
+    items_responses = []
+    for item in delivery.items:
+        ingredient = ingredients_map.get(item.ingredient_id)
+        if ingredient:
+            items_responses.append(_build_delivery_item_response(item, ingredient))
+
     return DeliveryResponse(
         id=delivery.id,
         daily_record_id=delivery.daily_record_id,
-        ingredient_id=delivery.ingredient_id,
-        ingredient_name=ingredient.name,
-        unit_label=ingredient.unit_label or "szt",
-        quantity=Decimal(str(delivery.quantity)),
-        price_pln=Decimal(str(delivery.price_pln)),
+        supplier_name=delivery.supplier_name,
+        invoice_number=delivery.invoice_number,
+        total_cost_pln=Decimal(str(delivery.total_cost_pln)),
+        notes=delivery.notes,
+        transaction_id=delivery.transaction_id,
+        items=items_responses,
         delivered_at=delivery.delivered_at,
         created_at=delivery.created_at,
     )

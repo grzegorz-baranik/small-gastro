@@ -27,6 +27,22 @@ export async function getTodayRecord(): Promise<DailyRecord | null> {
 }
 
 /**
+ * Get the currently open day (any date)
+ * Returns null if no day is currently open
+ */
+export async function getOpenRecord(): Promise<DailyRecord | null> {
+  try {
+    const { data } = await client.get<DailyRecord>('/daily-records/status/open')
+    return data
+  } catch (error: unknown) {
+    if ((error as { response?: { status?: number } }).response?.status === 404) {
+      return null
+    }
+    throw error
+  }
+}
+
+/**
  * Get the last closing inventory to pre-fill opening values
  */
 export async function getPreviousClosing(): Promise<PreviousClosingResponse> {

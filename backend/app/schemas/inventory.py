@@ -106,3 +106,16 @@ class IngredientAvailability(BaseModel):
     transfers: Decimal
     spoilage: Decimal
     available: Decimal  # Opening + Deliveries + Transfers - Spoilage
+
+
+class TransferStockItem(BaseModel):
+    """
+    Stock information for an ingredient, showing both storage and shop quantities.
+    Used in TransferModal to help users decide how much to transfer.
+    """
+    ingredient_id: int
+    ingredient_name: str
+    unit_type: str
+    unit_label: str
+    storage_quantity: Decimal  # Current quantity in storage
+    shop_quantity: Decimal     # Current quantity in shop (opening + deliveries + transfers - spoilage)

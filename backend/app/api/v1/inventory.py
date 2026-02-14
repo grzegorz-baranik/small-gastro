@@ -16,6 +16,7 @@ from app.schemas.inventory import (
     InventoryDiscrepancy,
     CurrentStock,
     IngredientAvailability,
+    TransferStockItem,
 )
 from app.models.inventory_snapshot import SnapshotType, InventoryLocation
 from app.services import inventory_service
@@ -108,3 +109,18 @@ def get_ingredient_availability(
             detail=t("errors.ingredient_or_record_not_found")
         )
     return result
+
+
+@router.get("/daily-record/{daily_record_id}/transfer-stock", response_model=list[TransferStockItem])
+def get_transfer_stock(
+    daily_record_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz stany magazynowe do transferu.
+
+    Zwraca ilosci w magazynie i na sklepie dla wszystkich skladnikow.
+    Uzywane w oknie dialogowym transferu aby pomoc uzytkownikom
+    zdecydowac ile przenieść.
+    """
+    return inventory_service.get_transfer_stock_info(db, daily_record_id)

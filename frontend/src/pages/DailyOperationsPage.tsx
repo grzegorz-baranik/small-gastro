@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useDailyRecord } from '../context/DailyRecordContext'
 import { getRecentDays, getDayEvents } from '../api/dailyOperations'
-import { getTodaySales, createSale, deleteSale } from '../api/sales'
+import { getSalesForDay, createSale, deleteSale } from '../api/sales'
 import { getProducts } from '../api/products'
 import { formatCurrency, formatDate, getTodayDateString } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -33,7 +33,7 @@ import type { DailyRecord, RecentDayRecord } from '../types'
 
 export default function DailyOperationsPage() {
   const { t } = useTranslation()
-  const { todayRecord, isDayOpen, isLoading: recordLoading, refetch } = useDailyRecord()
+  const { todayRecord, openRecord, isDayOpen, isLoading: recordLoading, refetch } = useDailyRecord()
   const queryClient = useQueryClient()
 
   // Modal states
@@ -41,6 +41,7 @@ export default function DailyOperationsPage() {
   const [closeDayModalOpen, setCloseDayModalOpen] = useState(false)
   const [summaryModalOpen, setSummaryModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<DailyRecord | null>(null)
+  const [recordToClose, setRecordToClose] = useState<DailyRecord | null>(null)
 
   // Mid-day operation modal states
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
@@ -53,18 +54,18 @@ export default function DailyOperationsPage() {
     queryFn: () => getRecentDays(7),
   })
 
-  // Fetch today's sales
+  // Fetch sales for open day
   const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ['todaySales'],
-    queryFn: getTodaySales,
-    enabled: isDayOpen,
+    queryKey: ['openDaySales', openRecord?.id],
+    queryFn: () => getSalesForDay(openRecord!.id),
+    enabled: isDayOpen && !!openRecord?.id,
   })
 
-  // Fetch day events for today
+  // Fetch day events for open day
   const { data: dayEvents } = useQuery({
-    queryKey: ['dayEvents', todayRecord?.id],
-    queryFn: () => getDayEvents(todayRecord!.id),
-    enabled: isDayOpen && !!todayRecord?.id,
+    queryKey: ['dayEvents', openRecord?.id],
+    queryFn: () => getDayEvents(openRecord!.id),
+    enabled: isDayOpen && !!openRecord?.id,
   })
 
   // Fetch products
@@ -77,13 +78,13 @@ export default function DailyOperationsPage() {
   // Create sale mutation
   const createSaleMutation = useMutation({
     mutationFn: createSale,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todaySales'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['openDaySales'] }),
   })
 
   // Delete sale mutation
   const deleteSaleMutation = useMutation({
     mutationFn: deleteSale,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todaySales'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['openDaySales'] }),
   })
 
   // Get day of week name
@@ -123,6 +124,14 @@ export default function DailyOperationsPage() {
     setSummaryModalOpen(true)
   }
 
+  // Handle close day from summary modal
+  const handleCloseDayFromSummary = () => {
+    if (selectedRecord && selectedRecord.status === 'open') {
+      setRecordToClose(selectedRecord)
+      setCloseDayModalOpen(true)
+    }
+  }
+
   // Handle success callbacks
   const handleOpenDaySuccess = () => {
     refetch()
@@ -132,13 +141,13 @@ export default function DailyOperationsPage() {
   const handleCloseDaySuccess = () => {
     refetch()
     queryClient.invalidateQueries({ queryKey: ['recentDays'] })
-    queryClient.invalidateQueries({ queryKey: ['todaySales'] })
+    queryClient.invalidateQueries({ queryKey: ['openDaySales'] })
   }
 
   // Handle mid-day operation success - just invalidate day events
   const handleMidDayOperationSuccess = () => {
-    if (todayRecord) {
-      queryClient.invalidateQueries({ queryKey: ['dayEvents', todayRecord.id] })
+    if (openRecord) {
+      queryClient.invalidateQueries({ queryKey: ['dayEvents', openRecord.id] })
     }
   }
 
@@ -158,6 +167,29 @@ export default function DailyOperationsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('dailyOperations.title')}</h1>
       </div>
+
+      {/* Currently open day indicator - show when open day is not today */}
+      {isDayOpen && openRecord && openRecord.date !== today && (
+        <div className="card bg-amber-50 border-amber-200">
+          <div className="flex items-center gap-4">
+            <AlertTriangle className="w-8 h-8 text-amber-600" />
+            <div>
+              <h2 className="text-lg font-semibold text-amber-800">
+                {t('dailyOperations.openDayLabel')}: {formatDate(openRecord.date)} ({getDayName(openRecord.date)})
+              </h2>
+              {openRecord.opened_at && (
+                <p className="text-sm text-amber-600 flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {t('dailyOperations.openedAt')} {new Date(openRecord.opened_at).toLocaleTimeString('pl-PL', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Today's status card */}
       <div className="card">
@@ -205,7 +237,8 @@ export default function DailyOperationsPage() {
 
           <button
             onClick={() => {
-              if (todayRecord) {
+              if (openRecord) {
+                setRecordToClose(openRecord)
                 setCloseDayModalOpen(true)
               }
             }}
@@ -222,13 +255,15 @@ export default function DailyOperationsPage() {
 
           <button
             onClick={() => {
-              if (todayRecord) {
+              if (openRecord) {
+                handleOpenSummary(openRecord)
+              } else if (todayRecord) {
                 handleOpenSummary(todayRecord)
               }
             }}
-            disabled={!todayRecord}
+            disabled={!openRecord && !todayRecord}
             className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2 ${
-              !todayRecord
+              !openRecord && !todayRecord
                 ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                 : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300'
             }`}
@@ -240,7 +275,7 @@ export default function DailyOperationsPage() {
       </div>
 
       {/* Mid-day operations buttons - only show when day is open */}
-      {isDayOpen && todayRecord && (
+      {isDayOpen && openRecord && (
         <div className="card">
           <h3 className="card-header">{t('dailyOperations.storageOperations')}</h3>
           <div className="grid grid-cols-3 gap-4">
@@ -309,8 +344,8 @@ export default function DailyOperationsPage() {
       )}
 
       {/* Mid-day events list - only show when day is open */}
-      {isDayOpen && todayRecord && (
-        <MidDayEventsList dailyRecordId={todayRecord.id} />
+      {isDayOpen && openRecord && (
+        <MidDayEventsList dailyRecordId={openRecord.id} />
       )}
 
       {/* Shift assignments - only show when day is open or today's record exists */}
@@ -508,12 +543,15 @@ export default function DailyOperationsPage() {
         onSuccess={handleOpenDaySuccess}
       />
 
-      {todayRecord && (
+      {recordToClose && (
         <CloseDayModal
           isOpen={closeDayModalOpen}
-          onClose={() => setCloseDayModalOpen(false)}
+          onClose={() => {
+            setCloseDayModalOpen(false)
+            setRecordToClose(null)
+          }}
           onSuccess={handleCloseDaySuccess}
-          dailyRecord={todayRecord}
+          dailyRecord={recordToClose}
         />
       )}
 
@@ -525,29 +563,30 @@ export default function DailyOperationsPage() {
             setSelectedRecord(null)
           }}
           dailyRecord={selectedRecord}
+          onCloseDay={handleCloseDayFromSummary}
         />
       )}
 
       {/* Mid-day operation modals */}
-      {todayRecord && (
+      {openRecord && (
         <>
           <DeliveryModal
             isOpen={deliveryModalOpen}
             onClose={() => setDeliveryModalOpen(false)}
             onSuccess={handleMidDayOperationSuccess}
-            dailyRecordId={todayRecord.id}
+            dailyRecordId={openRecord.id}
           />
           <TransferModal
             isOpen={transferModalOpen}
             onClose={() => setTransferModalOpen(false)}
             onSuccess={handleMidDayOperationSuccess}
-            dailyRecordId={todayRecord.id}
+            dailyRecordId={openRecord.id}
           />
           <SpoilageModal
             isOpen={spoilageModalOpen}
             onClose={() => setSpoilageModalOpen(false)}
             onSuccess={handleMidDayOperationSuccess}
-            dailyRecordId={todayRecord.id}
+            dailyRecordId={openRecord.id}
           />
         </>
       )}

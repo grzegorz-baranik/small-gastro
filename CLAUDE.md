@@ -111,8 +111,19 @@ A web application for managing a small food business (kebab, burger, etc.) with:
 - **Frontend**: React + TypeScript + Vite + TailwindCSS
 - **Backend**: Python FastAPI + SQLAlchemy
 - **Database**: PostgreSQL
-- **Language**: Polish (all UI labels)
 - **Currency**: PLN (Polish Zloty)
+
+### Language Policy
+
+| Scope | Language |
+|-------|----------|
+| UI labels, buttons, messages (frontend) | Polish |
+| API error messages (backend i18n) | Polish |
+| Code (variables, functions, classes) | English |
+| Comments and documentation | English |
+| BDD scenarios (.feature files) | English |
+| Git commits | English |
+| Specification documents | English |
 
 ## Features
 
@@ -343,7 +354,7 @@ small-gastro/
 - **Services return data directly** - No complex Result types, keep it simple
 - **SQLAlchemy 2.0** - Use declarative models with relationships
 - **Pydantic schemas** - Separate Create/Update/Response schemas
-- **Polish error messages** - All API errors in Polish
+- **i18n for API errors** - See Language Policy above
 
 ### CRITICAL: Enum Columns in SQLAlchemy
 

@@ -6,6 +6,9 @@
 
   "errors.product_exists": "Product with this name already exists",
   "errors.product_not_found": "Product not found",
+  "errors.variant_not_found": "Variant not found",
+  "errors.variant_or_ingredient_not_found": "Variant or ingredient not found",
+  "errors.ingredient_not_in_recipe": "Ingredient is not in recipe",
 
   "errors.category_not_found": "Category not found",
   "errors.category_has_subcategories": "Cannot delete category. Make sure it has no subcategories.",
@@ -41,6 +44,9 @@
   "errors.no_previous_closed_days": "No previous closed days",
   "errors.can_only_edit_closed_days": "Can only edit closed days",
   "errors.day_not_closed": "Day {date} was not closed",
+  "errors.gap_in_days": "Cannot open day {target_date}. Day {gap_date} is not closed. Close all previous days before opening a new one.",
+  "errors.date_too_old": "Cannot open a day older than {days} days",
+  "errors.date_in_future": "Cannot open a day in the future",
 
   "errors.cannot_add_to_closed_day": "Cannot add events to closed day",
   "errors.insufficient_storage": "Insufficient storage (available: {available})",
@@ -71,5 +77,8 @@
   "success.day_updated": "Day has been updated",
   "success.all_days_closed": "All previous days are closed",
 
-  "labels.uncategorized": "Uncategorized"
+  "labels.uncategorized": "Uncategorized",
+  "labels.delivery_expense": "Goods delivery",
+
+  "finances.auto_daily_revenue": "Daily revenue {date}"
 }

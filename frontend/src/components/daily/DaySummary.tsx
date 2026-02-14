@@ -1,4 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   AlertTriangle,
@@ -7,21 +9,34 @@ import {
   Package,
   Truck,
   Trash2,
+  Square,
 } from 'lucide-react'
 import Modal from '../common/Modal'
 import LoadingSpinner from '../common/LoadingSpinner'
 import CalculatedSalesTable from './CalculatedSalesTable'
+import DeliveryModal from './DeliveryModal'
+import TransferModal from './TransferModal'
+import SpoilageModal from './SpoilageModal'
 import { getDaySummary } from '../../api/dailyOperations'
-import { formatCurrency, formatDate, formatDateTime, formatQuantity } from '../../utils/formatters'
+import { formatCurrency, formatDate, formatDateTime, formatQuantity, formatPercent } from '../../utils/formatters'
 import type { DailyRecord, UsageItem, DiscrepancyAlert } from '../../types'
 
 interface DaySummaryProps {
   isOpen: boolean
   onClose: () => void
   dailyRecord: DailyRecord
+  onCloseDay?: () => void
 }
 
-export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryProps) {
+export default function DaySummary({ isOpen, onClose, dailyRecord, onCloseDay }: DaySummaryProps) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+
+  // Modal states for storage operations
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
+  const [spoilageModalOpen, setSpoilageModalOpen] = useState(false)
+
   // Fetch day summary
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['daySummary', dailyRecord.id],
@@ -125,42 +140,74 @@ export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryP
             </div>
           </div>
 
-          {/* Events summary */}
+          {/* Events summary - clickable when day is open */}
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">
-              Wydarzenia dnia
+              {t('daySummary.dayEvents')}
+              {summary.daily_record.status === 'open' && (
+                <span className="text-xs text-gray-500 font-normal ml-2">
+                  ({t('daySummary.clickToAdd')})
+                </span>
+              )}
             </h4>
             <div className="grid grid-cols-3 gap-3">
-              <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+              <button
+                type="button"
+                onClick={() => summary.daily_record.status === 'open' && setDeliveryModalOpen(true)}
+                disabled={summary.daily_record.status !== 'open'}
+                className={`flex items-center gap-2 p-3 bg-green-50 rounded-lg text-left transition-colors ${
+                  summary.daily_record.status === 'open'
+                    ? 'hover:bg-green-100 cursor-pointer'
+                    : 'cursor-default'
+                }`}
+              >
                 <Truck className="w-5 h-5 text-green-600" />
                 <div>
-                  <p className="text-xs text-green-600">Dostawy</p>
+                  <p className="text-xs text-green-600">{t('dailyOperations.deliveries')}</p>
                   <p className="font-medium text-green-800">
-                    {summary.events.deliveries_count} pozycji
+                    {summary.events.deliveries_count} {t('common.items')}
                   </p>
                   <p className="text-xs text-green-600">
                     {formatCurrency(summary.events.deliveries_total_pln)}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+              </button>
+              <button
+                type="button"
+                onClick={() => summary.daily_record.status === 'open' && setTransferModalOpen(true)}
+                disabled={summary.daily_record.status !== 'open'}
+                className={`flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-left transition-colors ${
+                  summary.daily_record.status === 'open'
+                    ? 'hover:bg-blue-100 cursor-pointer'
+                    : 'cursor-default'
+                }`}
+              >
                 <Package className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-xs text-blue-600">Transfery</p>
+                  <p className="text-xs text-blue-600">{t('dailyOperations.transfers')}</p>
                   <p className="font-medium text-blue-800">
-                    {summary.events.transfers_count} pozycji
+                    {summary.events.transfers_count} {t('common.items')}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+              </button>
+              <button
+                type="button"
+                onClick={() => summary.daily_record.status === 'open' && setSpoilageModalOpen(true)}
+                disabled={summary.daily_record.status !== 'open'}
+                className={`flex items-center gap-2 p-3 bg-red-50 rounded-lg text-left transition-colors ${
+                  summary.daily_record.status === 'open'
+                    ? 'hover:bg-red-100 cursor-pointer'
+                    : 'cursor-default'
+                }`}
+              >
                 <Trash2 className="w-5 h-5 text-red-600" />
                 <div>
-                  <p className="text-xs text-red-600">Straty</p>
+                  <p className="text-xs text-red-600">{t('dailyOperations.spoilage')}</p>
                   <p className="font-medium text-red-800">
-                    {summary.events.spoilage_count} pozycji
+                    {summary.events.spoilage_count} {t('common.items')}
                   </p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -203,16 +250,16 @@ export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryP
                           </div>
                         </td>
                         <td className="px-4 py-2 text-right text-gray-600">
-                          {formatQuantity(item.opening_quantity, item.unit_type)}
+                          {formatQuantity(item.opening_quantity, item.unit_type, item.unit_label)}
                         </td>
                         <td className="px-4 py-2 text-right text-gray-600">
                           {item.closing_quantity !== null
-                            ? formatQuantity(item.closing_quantity, item.unit_type)
+                            ? formatQuantity(item.closing_quantity, item.unit_type, item.unit_label)
                             : '-'}
                         </td>
                         <td className="px-4 py-2 text-right font-medium text-gray-900">
                           {item.usage !== null
-                            ? formatQuantity(item.usage, item.unit_type)
+                            ? formatQuantity(item.usage, item.unit_type, item.unit_label)
                             : '-'}
                         </td>
                         <td className="px-4 py-2">
@@ -223,7 +270,7 @@ export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryP
                               {getDiscrepancyIcon(item.discrepancy_level)}
                               <span className="text-xs font-medium">
                                 {item.discrepancy_percent !== null
-                                  ? `${item.discrepancy_percent.toFixed(1)}%`
+                                  ? formatPercent(item.discrepancy_percent)
                                   : '-'}
                               </span>
                             </div>
@@ -307,18 +354,60 @@ export default function DaySummary({ isOpen, onClose, dailyRecord }: DaySummaryP
             </div>
           )}
 
-          {/* Close button */}
-          <div className="pt-4 sticky bottom-0 bg-white">
+          {/* Action buttons */}
+          <div className="pt-4 sticky bottom-0 bg-white flex gap-3">
+            {summary.daily_record.status === 'open' && onCloseDay && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onCloseDay()
+                }}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                <Square className="w-4 h-4" />
+                {t('dailyOperations.closeDay')}
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary w-full"
+              className={`btn btn-secondary ${summary.daily_record.status === 'open' && onCloseDay ? 'flex-1' : 'w-full'}`}
             >
-              Zamknij
+              {t('common.close')}
             </button>
           </div>
         </div>
       ) : null}
+
+      {/* Storage operation modals */}
+      <DeliveryModal
+        isOpen={deliveryModalOpen}
+        onClose={() => setDeliveryModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['daySummary', dailyRecord.id] })
+          queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecord.id] })
+        }}
+        dailyRecordId={dailyRecord.id}
+      />
+      <TransferModal
+        isOpen={transferModalOpen}
+        onClose={() => setTransferModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['daySummary', dailyRecord.id] })
+          queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecord.id] })
+        }}
+        dailyRecordId={dailyRecord.id}
+      />
+      <SpoilageModal
+        isOpen={spoilageModalOpen}
+        onClose={() => setSpoilageModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['daySummary', dailyRecord.id] })
+          queryClient.invalidateQueries({ queryKey: ['dayEvents', dailyRecord.id] })
+        }}
+        dailyRecordId={dailyRecord.id}
+      />
     </Modal>
   )
 }

@@ -26,23 +26,74 @@ export function formatDateTime(dateString: string): string {
   }).format(new Date(dateString))
 }
 
-export function formatWeight(grams: number | string): string {
-  const numGrams = typeof grams === 'string' ? parseFloat(grams) : grams
-  if (numGrams >= 1000) {
-    return `${(numGrams / 1000).toFixed(2)} kg`
-  }
-  return `${numGrams.toFixed(0)} g`
+/**
+ * Infer unit type from unit label.
+ * Weight-based units: 'kg', 'g'
+ * Count-based units: everything else (szt, opak, etc.)
+ */
+export function inferUnitType(unitLabel: string): 'weight' | 'count' {
+  const weightUnits = ['kg', 'g', 'gram', 'grams', 'kilogram', 'kilograms']
+  return weightUnits.includes(unitLabel.toLowerCase()) ? 'weight' : 'count'
 }
 
-export function formatQuantity(value: number | string, unitType: string): string {
-  const numValue = typeof value === 'string' ? parseFloat(value) : value
+/**
+ * Check if a unit label represents grams (needs conversion to kg)
+ */
+function isGramUnit(unitLabel: string): boolean {
+  return ['g', 'gram', 'grams'].includes(unitLabel.toLowerCase())
+}
+
+/**
+ * Format a quantity with its unit.
+ *
+ * For weight-based ingredients:
+ * - Always displays in kg
+ * - If stored in grams (unit_label='g'), converts to kg
+ *
+ * For count-based ingredients:
+ * - Displays as whole numbers with their unit label
+ *
+ * @param value - The quantity value
+ * @param unitType - 'weight' or 'count'
+ * @param unitLabel - The ingredient's unit label (e.g., 'kg', 'g', 'szt')
+ */
+export function formatQuantity(
+  value: number | string,
+  unitType: string,
+  unitLabel?: string
+): string {
+  let numValue = typeof value === 'string' ? parseFloat(value) : value
+
   if (unitType === 'weight') {
-    return formatWeight(numValue)
+    // Convert grams to kg if needed
+    if (unitLabel && isGramUnit(unitLabel)) {
+      numValue = numValue / 1000
+    }
+    // Always display weight in kg with 2 decimal places
+    return `${numValue.toFixed(2)} kg`
   }
-  return `${numValue} szt.`
+
+  // Count-based: show whole numbers with unit label
+  const displayLabel = unitLabel || 'szt.'
+  return `${Math.round(numValue)} ${displayLabel}`
+}
+
+export function formatPercent(value: number | string, decimals: number = 1): string {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value
+  return `${numValue.toFixed(decimals)}%`
 }
 
 export function getTodayDateString(): string {
   const today = new Date()
   return today.toISOString().split('T')[0]
+}
+
+export function getDateString(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
+export function getDateDaysAgo(days: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  return getDateString(date)
 }

@@ -53,3 +53,4 @@ class Transaction(Base):
     category = relationship("ExpenseCategory", back_populates="transactions")
     daily_record = relationship("DailyRecord", back_populates="transactions")
     employee = relationship("Employee", back_populates="transactions")
+    delivery = relationship("Delivery", back_populates="transaction", uselist=False)

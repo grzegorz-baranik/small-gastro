@@ -331,8 +331,8 @@ export interface DiscrepancyWarning {
 export interface ProductVariant {
   id: number
   product_id: number
-  name: string
-  price: number
+  name: string | null
+  price_pln: number
   is_default: boolean
   is_active: boolean
   created_at: string
@@ -340,20 +340,20 @@ export interface ProductVariant {
 }
 
 export interface ProductVariantCreate {
-  name: string
-  price: number
+  name?: string | null
+  price_pln: number
   is_default?: boolean
 }
 
 export interface ProductVariantUpdate {
-  name?: string
-  price?: number
+  name?: string | null
+  price_pln?: number
   is_default?: boolean
   is_active?: boolean
 }
 
 export interface ProductVariantListResponse {
-  items: ProductVariant[]
+  items: ProductVariantWithIngredients[]
   total: number
 }
 
@@ -391,23 +391,45 @@ export interface ProductVariantWithIngredients extends ProductVariant {
 
 // Mid-Day Operations types
 
-// Delivery types
-export interface Delivery {
+// Delivery types (Multi-item structure)
+export interface DeliveryItem {
   id: number
-  daily_record_id: number
+  delivery_id: number
   ingredient_id: number
   ingredient_name: string
   unit_label: string
   quantity: number
-  price_pln: number
+  cost_pln: number | null
+  created_at: string
+}
+
+export interface DeliveryItemCreate {
+  ingredient_id: number
+  quantity: number
+  cost_pln?: number | null
+}
+
+export interface Delivery {
+  id: number
+  daily_record_id: number
+  supplier_name: string | null
+  invoice_number: string | null
+  total_cost_pln: number
+  notes: string | null
+  transaction_id: number | null
+  items: DeliveryItem[]
   delivered_at: string
+  created_at: string
 }
 
 export interface DeliveryCreate {
   daily_record_id: number
-  ingredient_id: number
-  quantity: number
-  price_pln: number
+  items: DeliveryItemCreate[]
+  total_cost_pln: number
+  supplier_name?: string | null
+  invoice_number?: string | null
+  notes?: string | null
+  delivered_at?: string
 }
 
 // Storage Transfer types
@@ -425,6 +447,16 @@ export interface StorageTransferCreate {
   daily_record_id: number
   ingredient_id: number
   quantity: number
+}
+
+// Transfer stock info for display in TransferModal
+export interface TransferStockItem {
+  ingredient_id: number
+  ingredient_name: string
+  unit_type: 'weight' | 'count'
+  unit_label: string
+  storage_quantity: number
+  shop_quantity: number
 }
 
 // Spoilage types - must match backend SpoilageReason enum
@@ -448,6 +480,37 @@ export interface SpoilageCreate {
   quantity: number
   reason: SpoilageReason
   notes?: string
+}
+
+// Summary types for day wizard (flattened single-ingredient items)
+export interface DeliverySummaryItem {
+  id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  price_pln: number
+  delivered_at: string
+}
+
+export interface TransferSummaryItem {
+  id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  transferred_at: string
+}
+
+export interface SpoilageSummaryItem {
+  id: number
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  quantity: number
+  reason: SpoilageReason
+  notes: string | null
+  recorded_at: string
 }
 
 // Report types
@@ -479,22 +542,35 @@ export interface MonthlyTrendsResponse {
 // Ingredient usage report
 export interface IngredientUsageItem {
   date: string
+  day_of_week: string
   ingredient_id: number
   ingredient_name: string
   unit_label: string
-  opening_quantity: number
-  used_quantity: number
-  closing_quantity: number
+  opening: number
+  deliveries: number
+  transfers: number
+  spoilage: number
+  closing: number
+  usage: number
+  discrepancy: number | null
+  discrepancy_percent: number | null
+}
+
+export interface IngredientUsageSummaryItem {
+  ingredient_id: number
+  ingredient_name: string
+  unit_label: string
+  total_used: number
+  avg_daily_usage: number
+  days_with_data: number
 }
 
 export interface IngredientUsageResponse {
+  start_date: string
+  end_date: string
+  filtered_ingredient_ids: number[] | null
   items: IngredientUsageItem[]
-  summary: {
-    ingredient_id: number
-    ingredient_name: string
-    unit_label: string
-    total_used: number
-  }[]
+  summary: IngredientUsageSummaryItem[]
 }
 
 // Spoilage report

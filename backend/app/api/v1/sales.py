@@ -47,15 +47,15 @@ def create_sale(
     db: Session = Depends(get_db),
 ):
     """Zarejestruj sprzedaz (wymaga otwartego dnia)."""
-    # Get today's record
-    today_record = daily_operations_service.get_today_record(db)
-    if not today_record:
+    # Get currently open day (any date)
+    open_record = daily_operations_service.get_open_day(db)
+    if not open_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=t("errors.day_not_open_for_sales"),
         )
 
-    sale = sales_service.create_sale(db, today_record.id, data)
+    sale = sales_service.create_sale(db, open_record.id, data)
     if not sale:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

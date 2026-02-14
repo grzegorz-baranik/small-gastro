@@ -31,8 +31,10 @@ class ProductVariant(Base):
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(50), nullable=True)  # NULL for single-size products
     price_pln = Column(Numeric(10, 2), nullable=False)
+    is_default = Column(Boolean, nullable=False, server_default="false")  # Default variant for product
     is_active = Column(Boolean, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
         CheckConstraint("price_pln > 0", name="check_variant_price_positive"),

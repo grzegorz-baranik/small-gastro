@@ -21,6 +21,7 @@ from app.schemas.daily_operations import (
     CloseDayRequest,
     CloseDayResponse,
     DaySummaryResponse,
+    DayEventsSummary,
     PreviousClosingResponse,
     EditClosedDayRequest,
     EditClosedDayResponse,
@@ -235,6 +236,31 @@ def get_daily_record(
     - Podsumowanie dostaw, transferow, strat
     """
     result = daily_operations_service.get_daily_record_detail(db, record_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("errors.record_not_found")
+        )
+
+    return result
+
+
+# -----------------------------------------------------------------------------
+# Get Day Events
+# -----------------------------------------------------------------------------
+
+@router.get("/{record_id}/events", response_model=DayEventsSummary)
+def get_day_events(
+    record_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Pobierz podsumowanie wydarzen dnia (dostawy, transfery, straty).
+
+    Zwraca uproszczone podsumowanie wydarzen.
+    """
+    result = daily_operations_service.get_day_events(db, record_id)
 
     if not result:
         raise HTTPException(

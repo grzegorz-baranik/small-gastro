@@ -325,7 +325,7 @@ function IngredientUsageReport({
               <div key={item.ingredient_id} className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">{item.ingredient_name}</p>
                 <p className="text-xl font-bold text-gray-900">
-                  {item.total_used.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
+                  {Number(item.total_used).toFixed(item.unit_label === 'szt' ? 0 : 2)} {item.unit_label}
                 </p>
               </div>
             ))}
@@ -355,34 +355,61 @@ function IngredientUsageReport({
           <p className="text-gray-500 text-center py-8">{t('reports.noDataForRange')}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('common.date')}</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">{t('menu.ingredient')}</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('reports.openQty')}</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('inventory.usage')}</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">{t('reports.closeQty')}</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-700">{t('common.date')}</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-700">{t('menu.ingredient')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-700">{t('reports.openQty')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-green-600">+{t('inventory.deliveries')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-blue-600">+{t('inventory.transfers')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-red-600">-{t('reports.spoilage')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-orange-600">-{t('inventory.usage')}</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-900">{t('reports.closeQty')}</th>
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item, index) => (
-                  <tr key={`${item.date}-${item.ingredient_id}-${index}`} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">{formatDate(item.date)}</td>
-                    <td className="py-3 px-4">{item.ingredient_name}</td>
-                    <td className="py-3 px-4 text-right">
-                      {item.opening_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
-                    </td>
-                    <td className="py-3 px-4 text-right font-medium text-orange-600">
-                      {item.used_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {item.closing_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
-                    </td>
-                  </tr>
-                ))}
+                {data.items.map((item, index) => {
+                  const decimals = item.unit_label === 'szt' ? 0 : 2
+                  const opening = Number(item.opening)
+                  const deliveries = Number(item.deliveries)
+                  const transfers = Number(item.transfers)
+                  const spoilage = Number(item.spoilage)
+                  const usage = Number(item.usage)
+                  const closing = Number(item.closing)
+
+                  return (
+                    <tr key={`${item.date}-${item.ingredient_id}-${index}`} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-2 px-2">{formatDate(item.date)}</td>
+                      <td className="py-2 px-2 font-medium">{item.ingredient_name}</td>
+                      <td className="py-2 px-2 text-right">
+                        {opening.toFixed(decimals)}
+                      </td>
+                      <td className="py-2 px-2 text-right text-green-600">
+                        {deliveries > 0 ? `+${deliveries.toFixed(decimals)}` : '-'}
+                      </td>
+                      <td className="py-2 px-2 text-right text-blue-600">
+                        {transfers > 0 ? `+${transfers.toFixed(decimals)}` : '-'}
+                      </td>
+                      <td className="py-2 px-2 text-right text-red-600">
+                        {spoilage > 0 ? `-${spoilage.toFixed(decimals)}` : '-'}
+                      </td>
+                      <td className="py-2 px-2 text-right text-orange-600 font-medium">
+                        -{usage.toFixed(decimals)}
+                      </td>
+                      <td className="py-2 px-2 text-right font-bold">
+                        {closing.toFixed(decimals)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
+            {/* Legend */}
+            <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+              <p className="font-medium mb-1">{t('reports.formula')}:</p>
+              <p>{t('reports.openQty')} + {t('inventory.deliveries')} + {t('inventory.transfers')} - {t('reports.spoilage')} - {t('inventory.usage')} = {t('reports.closeQty')}</p>
+            </div>
           </div>
         )}
       </div>
@@ -447,7 +474,7 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
               <div key={item.ingredient_id} className="p-4 bg-orange-50 rounded-lg">
                 <p className="text-sm text-gray-500">{item.ingredient_name}</p>
                 <p className="text-xl font-bold text-orange-600">
-                  {item.total_quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
+                  {Number(item.total_quantity).toFixed(item.unit_label === 'szt' ? 0 : 2)} {item.unit_label}
                 </p>
                 <p className="text-sm text-gray-400">{item.total_count} {t('reports.cases')}</p>
               </div>
@@ -494,7 +521,7 @@ function SpoilageReportSection({ dateRange, isExporting, setIsExporting }: Repor
                     <td className="py-3 px-4">{formatDate(item.date)}</td>
                     <td className="py-3 px-4">{item.ingredient_name}</td>
                     <td className="py-3 px-4 text-right font-medium text-red-600">
-                      {item.quantity.toFixed(item.unit_label === 'szt.' ? 0 : 2)} {item.unit_label}
+                      {Number(item.quantity).toFixed(item.unit_label === 'szt' ? 0 : 2)} {item.unit_label}
                     </td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">

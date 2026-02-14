@@ -14,15 +14,17 @@ from app.models.inventory_snapshot import InventorySnapshot, SnapshotType, Inven
 from app.models.ingredient import Ingredient, UnitType
 from app.models.product import ProductIngredient
 from app.models.sales_item import SalesItem
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryItem
 from app.models.storage_transfer import StorageTransfer
 from app.models.spoilage import Spoilage
+from app.models.storage_inventory import StorageInventory
 from app.schemas.inventory import (
     InventorySnapshotCreate,
     InventorySnapshotResponse,
     InventoryDiscrepancy,
     CurrentStock,
     IngredientAvailability,
+    TransferStockItem,
 )
 
 
@@ -79,10 +81,12 @@ def get_mid_day_quantities(
 
     Returns (deliveries_total, transfers_total, spoilage_total).
     """
-    # Sum deliveries
-    deliveries_sum = db.query(func.coalesce(func.sum(Delivery.quantity), 0)).filter(
+    # Sum deliveries (join through DeliveryItem since Delivery has multi-item structure)
+    deliveries_sum = db.query(func.coalesce(func.sum(DeliveryItem.quantity), 0)).join(
+        Delivery, DeliveryItem.delivery_id == Delivery.id
+    ).filter(
         Delivery.daily_record_id == daily_record_id,
-        Delivery.ingredient_id == ingredient_id
+        DeliveryItem.ingredient_id == ingredient_id
     ).scalar()
 
     # Sum transfers
@@ -269,3 +273,57 @@ def get_ingredient_availability(
         spoilage=spoilage,
         available=available,
     )
+
+
+def get_transfer_stock_info(
+    db: Session,
+    daily_record_id: int
+) -> list[TransferStockItem]:
+    """
+    Get stock information for all ingredients showing both storage and shop quantities.
+
+    Used in TransferModal to help users decide how much to transfer.
+    Shop quantity = opening + deliveries + transfers - spoilage
+    Storage quantity = current storage inventory
+    """
+    # Get all active ingredients with storage inventory
+    ingredients = db.query(Ingredient).options(
+        joinedload(Ingredient.storage_inventory)
+    ).filter(Ingredient.is_active == True).all()
+
+    result = []
+
+    for ingredient in ingredients:
+        # Get opening snapshot for shop quantity
+        opening = db.query(InventorySnapshot).filter(
+            InventorySnapshot.daily_record_id == daily_record_id,
+            InventorySnapshot.ingredient_id == ingredient.id,
+            InventorySnapshot.snapshot_type == SnapshotType.OPEN,
+            InventorySnapshot.location == InventoryLocation.SHOP
+        ).first()
+
+        # Calculate shop quantity (opening + events)
+        if opening and opening.quantity is not None:
+            opening_qty = Decimal(str(opening.quantity))
+            deliveries, transfers, spoilage = get_mid_day_quantities(
+                db, daily_record_id, ingredient.id
+            )
+            shop_quantity = opening_qty + deliveries + transfers - spoilage
+        else:
+            shop_quantity = Decimal("0")
+
+        # Get storage quantity
+        storage_quantity = Decimal("0")
+        if ingredient.storage_inventory:
+            storage_quantity = Decimal(str(ingredient.storage_inventory.quantity))
+
+        result.append(TransferStockItem(
+            ingredient_id=ingredient.id,
+            ingredient_name=ingredient.name,
+            unit_type=ingredient.unit_type.value,
+            unit_label=ingredient.unit_label or "szt",
+            storage_quantity=storage_quantity,
+            shop_quantity=shop_quantity,
+        ))
+
+    return result
