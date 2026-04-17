@@ -33,6 +33,9 @@ wheels/
 .env.*.local
 *.local.env
 *.local
+# Deploy configs (keep config.example.sh)
+deploy/config.staging.sh
+deploy/config.production.sh
 
 # Build outputs
 frontend/dist/
